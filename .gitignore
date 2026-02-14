@@ -1,0 +1,22 @@
+# Database dump
+app-mynextory-backup.sql
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agent worktrees
+agents/
+
+# Temporary
+*.flag
+*.tmp
