@@ -23,4 +23,4 @@ Activity log uses Laravel Spatie polymorphic design (subject_type/subject_id, ca
 - None (leaf node in dependency graph)
 
 ## Recent Changes
-(Will be populated as the agent completes tasks)
+- [baap-kfu] Created v_database_summary view: shows table_name, row_count, data_size_mb, index_size_mb, engine for all 38 base tables. Filters TABLE_TYPE='BASE TABLE'. Ordered by row_count DESC.
