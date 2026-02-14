@@ -1,5 +1,7 @@
-# Database dump
+# Database dumps
 app-mynextory-backup.sql
+app-mynextory-backup-utf8.sql
+app-mynextory-mariadb.sql
 
 # Python
 .venv/

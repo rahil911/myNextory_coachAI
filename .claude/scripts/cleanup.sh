@@ -41,9 +41,48 @@ case "$ACTION" in
       git commit -m "Agent $NAME: final results [$(hostname -s)]" --no-verify
     fi
 
+    # ── Deterministic KG Ownership Check ────────────────────────────────────
+    # Every new file MUST have an owner in the KG before merging to main.
+    # If unregistered, auto-register to the agent that created it.
+    MAIN_BRANCH="$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)"
+    AG_CLI="$PROJECT/.claude/tools/ag"
+    KG_CACHE="$PROJECT/.claude/kg/agent_graph_cache.json"
+
+    if [ -x "$AG_CLI" ] && [ -f "$KG_CACHE" ]; then
+      echo "Checking KG ownership for new files..."
+      UNREGISTERED=0
+
+      # Get new files added by this agent branch (not in main)
+      NEW_FILES=$(cd "$WORKTREE" && git diff --name-only --diff-filter=A "$MAIN_BRANCH"..."$BRANCH" 2>/dev/null || true)
+
+      for f in $NEW_FILES; do
+        # Skip non-source files
+        case "$f" in
+          *.py|*.ts|*.tsx|*.js|*.jsx|*.sql|*.json) ;;
+          *) continue ;;
+        esac
+
+        # Check if file has an owner in KG
+        OWNER=$("$AG_CLI" owner "$f" 2>/dev/null | head -1 || true)
+        if [ -z "$OWNER" ] || echo "$OWNER" | grep -qi "no owner\|not found\|error"; then
+          echo "  Auto-registering: $f → $NAME"
+          "$AG_CLI" register "$f" "$NAME" 2>/dev/null || true
+          UNREGISTERED=$((UNREGISTERED + 1))
+        fi
+      done
+
+      if [ "$UNREGISTERED" -gt 0 ]; then
+        echo "Auto-registered $UNREGISTERED new file(s) to $NAME in KG"
+      else
+        echo "All new files already registered in KG ✓"
+      fi
+    else
+      echo "Note: KG not yet available (ag CLI or cache missing). Skipping ownership check."
+    fi
+    # ── End KG Check ────────────────────────────────────────────────────────
+
     # Switch to main repo and merge
     cd "$PROJECT"
-    MAIN_BRANCH="$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo main)"
     git checkout "$MAIN_BRANCH" 2>/dev/null
     git merge "$BRANCH" --no-ff -m "Merge $BRANCH results" --no-verify
 
