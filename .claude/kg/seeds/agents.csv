@@ -1,0 +1,10 @@
+id,type,level,parent,spec_path,memory_path,capabilities,model_tier,module
+orchestrator,agent,0,,".claude/agents/orchestrator/agent.md",".claude/agents/orchestrator/memory/","planning,blast-radius,dispatch,monitoring",opus,
+identity-agent,agent,1,orchestrator,".claude/agents/identity-agent/agent.md",".claude/agents/identity-agent/memory/","users,clients,coaches,employees,auth,onboarding",sonnet,identity-module
+content-agent,agent,1,orchestrator,".claude/agents/content-agent/agent.md",".claude/agents/content-agent/memory/","journeys,chapters,lessons,slides,video,curriculum",sonnet,content-module
+engagement-agent,agent,1,orchestrator,".claude/agents/engagement-agent/agent.md",".claude/agents/engagement-agent/memory/","backpacks,tasks,journals,ratings,user-responses",sonnet,engagement-module
+meetings-agent,agent,1,orchestrator,".claude/agents/meetings-agent/agent.md",".claude/agents/meetings-agent/memory/","meetings,scheduling,coach-availability,coaching-sessions",sonnet,meetings-module
+comms-agent,agent,1,orchestrator,".claude/agents/comms-agent/agent.md",".claude/agents/comms-agent/memory/","sms,email,notifications,chatbot,messaging",sonnet,comms-module
+platform-agent,agent,1,orchestrator,".claude/agents/platform-agent/agent.md",".claude/agents/platform-agent/memory/","activity-log,documents,jobs,infrastructure",sonnet,platform-module
+kg-agent,agent,1,orchestrator,".claude/agents/kg-agent/agent.md",".claude/agents/kg-agent/memory/","knowledge-graph,mcp,cli,seeds,cache",sonnet,kg-module
+review-agent,agent,1,orchestrator,".claude/agents/review-agent/agent.md",".claude/agents/review-agent/memory/","code-review,security,quality",opus,

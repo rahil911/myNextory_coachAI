@@ -1,0 +1,8 @@
+id,type,description,managed_by
+identity-module,module,"Identity and access — users, clients, coaches, employees, departments, onboarding, password resets, coach-client mappings",identity-agent
+content-module,module,"Learning content — journeys, chapters, lessons, lesson details, slides, video libraries",content-agent
+engagement-module,module,"User engagement — backpacks (user responses), tasks, journal entries, ratings (current and legacy)",engagement-agent
+meetings-module,module,"Coaching sessions — meetings, attendees, coach availability, coach profiles",meetings-agent
+comms-module,module,"Communications — SMS details/schedules, dynamic SMS, email/mail, notifications, chatbot documents/histories/sessions",comms-agent
+platform-module,module,"Platform infrastructure — activity log, documents, background jobs",platform-agent
+kg-module,module,"Knowledge graph infrastructure — MCP servers, CLI, seeds, cache",kg-agent

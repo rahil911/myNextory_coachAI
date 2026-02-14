@@ -1,0 +1,16 @@
+from,to,type,dependency_type,inferred_from
+orchestrator,identity-agent,PARENT_OF,,
+orchestrator,content-agent,PARENT_OF,,
+orchestrator,engagement-agent,PARENT_OF,,
+orchestrator,meetings-agent,PARENT_OF,,
+orchestrator,comms-agent,PARENT_OF,,
+orchestrator,platform-agent,PARENT_OF,,
+orchestrator,kg-agent,PARENT_OF,,
+orchestrator,review-agent,PARENT_OF,,
+engagement-agent,identity-agent,DEPENDS_ON,schema,"backpacks/tasks/ratings reference nx_users via created_by"
+engagement-agent,content-agent,DEPENDS_ON,schema,"backpacks/tasks/ratings reference journeys/chapters/lessons/slides"
+content-agent,identity-agent,DEPENDS_ON,schema,"journey_details/chapter_details/lessons reference nx_users via created_by"
+meetings-agent,identity-agent,DEPENDS_ON,schema,"meetings reference nx_users via hosting_by; meeting_attendees via participant_id; coaches via coach_id"
+comms-agent,identity-agent,DEPENDS_ON,schema,"sms_details/notification_histories reference nx_users/clients/coaches"
+comms-agent,content-agent,DEPENDS_ON,schema,"sms_details/sms_schedules/dynamic_sms_details reference chapters/lessons"
+platform-agent,identity-agent,DEPENDS_ON,schema,"activity_log references nx_users via causer_id"

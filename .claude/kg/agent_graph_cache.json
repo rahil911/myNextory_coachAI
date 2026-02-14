@@ -1,0 +1,1742 @@
+{
+  "metadata": {
+    "built_at": "2026-02-14T04:12:24.843266+00:00",
+    "node_count": 40,
+    "edge_count": 190,
+    "agent_count": 9,
+    "module_count": 7,
+    "concept_count": 24,
+    "builder_version": "1.0"
+  },
+  "nodes": [
+    {
+      "id": "orchestrator",
+      "type": "agent",
+      "level": 0,
+      "parent": null,
+      "spec_path": ".claude/agents/orchestrator/agent.md",
+      "memory_path": ".claude/agents/orchestrator/memory/",
+      "capabilities": [
+        "planning",
+        "blast-radius",
+        "dispatch",
+        "monitoring"
+      ],
+      "model_tier": "opus",
+      "status": "idle",
+      "module": null,
+      "safety": {
+        "max_children": 10,
+        "timeout_minutes": null,
+        "can_spawn": true,
+        "review_required": false
+      }
+    },
+    {
+      "id": "identity-agent",
+      "type": "agent",
+      "level": 1,
+      "parent": "orchestrator",
+      "spec_path": ".claude/agents/identity-agent/agent.md",
+      "memory_path": ".claude/agents/identity-agent/memory/",
+      "capabilities": [
+        "users",
+        "clients",
+        "coaches",
+        "employees",
+        "auth",
+        "onboarding"
+      ],
+      "model_tier": "sonnet",
+      "status": "idle",
+      "module": "identity-module",
+      "safety": {
+        "max_children": 5,
+        "timeout_minutes": 120,
+        "can_spawn": true,
+        "review_required": true
+      }
+    },
+    {
+      "id": "content-agent",
+      "type": "agent",
+      "level": 1,
+      "parent": "orchestrator",
+      "spec_path": ".claude/agents/content-agent/agent.md",
+      "memory_path": ".claude/agents/content-agent/memory/",
+      "capabilities": [
+        "journeys",
+        "chapters",
+        "lessons",
+        "slides",
+        "video",
+        "curriculum"
+      ],
+      "model_tier": "sonnet",
+      "status": "idle",
+      "module": "content-module",
+      "safety": {
+        "max_children": 5,
+        "timeout_minutes": 120,
+        "can_spawn": true,
+        "review_required": true
+      }
+    },
+    {
+      "id": "engagement-agent",
+      "type": "agent",
+      "level": 1,
+      "parent": "orchestrator",
+      "spec_path": ".claude/agents/engagement-agent/agent.md",
+      "memory_path": ".claude/agents/engagement-agent/memory/",
+      "capabilities": [
+        "backpacks",
+        "tasks",
+        "journals",
+        "ratings",
+        "user-responses"
+      ],
+      "model_tier": "sonnet",
+      "status": "idle",
+      "module": "engagement-module",
+      "safety": {
+        "max_children": 5,
+        "timeout_minutes": 120,
+        "can_spawn": true,
+        "review_required": true
+      }
+    },
+    {
+      "id": "meetings-agent",
+      "type": "agent",
+      "level": 1,
+      "parent": "orchestrator",
+      "spec_path": ".claude/agents/meetings-agent/agent.md",
+      "memory_path": ".claude/agents/meetings-agent/memory/",
+      "capabilities": [
+        "meetings",
+        "scheduling",
+        "coach-availability",
+        "coaching-sessions"
+      ],
+      "model_tier": "sonnet",
+      "status": "idle",
+      "module": "meetings-module",
+      "safety": {
+        "max_children": 5,
+        "timeout_minutes": 120,
+        "can_spawn": true,
+        "review_required": true
+      }
+    },
+    {
+      "id": "comms-agent",
+      "type": "agent",
+      "level": 1,
+      "parent": "orchestrator",
+      "spec_path": ".claude/agents/comms-agent/agent.md",
+      "memory_path": ".claude/agents/comms-agent/memory/",
+      "capabilities": [
+        "sms",
+        "email",
+        "notifications",
+        "chatbot",
+        "messaging"
+      ],
+      "model_tier": "sonnet",
+      "status": "idle",
+      "module": "comms-module",
+      "safety": {
+        "max_children": 5,
+        "timeout_minutes": 120,
+        "can_spawn": true,
+        "review_required": true
+      }
+    },
+    {
+      "id": "platform-agent",
+      "type": "agent",
+      "level": 1,
+      "parent": "orchestrator",
+      "spec_path": ".claude/agents/platform-agent/agent.md",
+      "memory_path": ".claude/agents/platform-agent/memory/",
+      "capabilities": [
+        "activity-log",
+        "documents",
+        "jobs",
+        "infrastructure"
+      ],
+      "model_tier": "sonnet",
+      "status": "idle",
+      "module": "platform-module",
+      "safety": {
+        "max_children": 5,
+        "timeout_minutes": 120,
+        "can_spawn": true,
+        "review_required": true
+      }
+    },
+    {
+      "id": "kg-agent",
+      "type": "agent",
+      "level": 1,
+      "parent": "orchestrator",
+      "spec_path": ".claude/agents/kg-agent/agent.md",
+      "memory_path": ".claude/agents/kg-agent/memory/",
+      "capabilities": [
+        "knowledge-graph",
+        "mcp",
+        "cli",
+        "seeds",
+        "cache"
+      ],
+      "model_tier": "sonnet",
+      "status": "idle",
+      "module": "kg-module",
+      "safety": {
+        "max_children": 5,
+        "timeout_minutes": 120,
+        "can_spawn": true,
+        "review_required": true
+      }
+    },
+    {
+      "id": "review-agent",
+      "type": "agent",
+      "level": 1,
+      "parent": "orchestrator",
+      "spec_path": ".claude/agents/review-agent/agent.md",
+      "memory_path": ".claude/agents/review-agent/memory/",
+      "capabilities": [
+        "code-review",
+        "security",
+        "quality"
+      ],
+      "model_tier": "opus",
+      "status": "idle",
+      "module": null,
+      "safety": {
+        "max_children": 5,
+        "timeout_minutes": 120,
+        "can_spawn": true,
+        "review_required": true
+      }
+    },
+    {
+      "id": "identity-module",
+      "type": "module",
+      "description": "Identity and access \u2014 users, clients, coaches, employees, departments, onboarding, password resets, coach-client mappings",
+      "managed_by": "identity-agent",
+      "file_count": 0,
+      "sub_modules": []
+    },
+    {
+      "id": "content-module",
+      "type": "module",
+      "description": "Learning content \u2014 journeys, chapters, lessons, lesson details, slides, video libraries",
+      "managed_by": "content-agent",
+      "file_count": 0,
+      "sub_modules": []
+    },
+    {
+      "id": "engagement-module",
+      "type": "module",
+      "description": "User engagement \u2014 backpacks (user responses), tasks, journal entries, ratings (current and legacy)",
+      "managed_by": "engagement-agent",
+      "file_count": 0,
+      "sub_modules": []
+    },
+    {
+      "id": "meetings-module",
+      "type": "module",
+      "description": "Coaching sessions \u2014 meetings, attendees, coach availability, coach profiles",
+      "managed_by": "meetings-agent",
+      "file_count": 0,
+      "sub_modules": []
+    },
+    {
+      "id": "comms-module",
+      "type": "module",
+      "description": "Communications \u2014 SMS details/schedules, dynamic SMS, email/mail, notifications, chatbot documents/histories/sessions",
+      "managed_by": "comms-agent",
+      "file_count": 0,
+      "sub_modules": []
+    },
+    {
+      "id": "platform-module",
+      "type": "module",
+      "description": "Platform infrastructure \u2014 activity log, documents, background jobs",
+      "managed_by": "platform-agent",
+      "file_count": 0,
+      "sub_modules": []
+    },
+    {
+      "id": "kg-module",
+      "type": "module",
+      "description": "Knowledge graph infrastructure \u2014 MCP servers, CLI, seeds, cache",
+      "managed_by": "kg-agent",
+      "file_count": 0,
+      "sub_modules": []
+    },
+    {
+      "id": "User",
+      "type": "concept",
+      "description": "Core user entity - employees/learners who take journeys and complete lessons. Hub table with 20 references. Links to clients, coaches, onboarding, ratings, and all learning activity.",
+      "tables": [
+        "nx_user_onboardings",
+        "nx_users"
+      ],
+      "domain": "identity",
+      "related_concepts": [
+        "ActivityLog",
+        "Client",
+        "Coach",
+        "Employee",
+        "Journey",
+        "Rating"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "auth-agent",
+        "db-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "Client",
+      "type": "concept",
+      "description": "Client organization (employer/company) that purchases coaching programs. Clients own users, map to coaches, and manage departments. Hub with 5 incoming references.",
+      "tables": [
+        "client_password_resets",
+        "clients"
+      ],
+      "domain": "identity",
+      "related_concepts": [
+        "ClientCoachMapping",
+        "Coach",
+        "Department",
+        "Employee",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "auth-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "Coach",
+      "type": "concept",
+      "description": "Coach entity with profile and availability. Coaches are mapped to clients and attend meetings. Hub with 4 incoming references.",
+      "tables": [
+        "coach_availabilities",
+        "coach_password_resets",
+        "coach_profiles",
+        "coaches"
+      ],
+      "domain": "identity",
+      "related_concepts": [
+        "Client",
+        "ClientCoachMapping",
+        "Meeting",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "auth-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "Employee",
+      "type": "concept",
+      "description": "Employee within a client organization. Linked to nx_users and departments. Represents the learner role within a company.",
+      "tables": [
+        "employees"
+      ],
+      "domain": "identity",
+      "related_concepts": [
+        "Client",
+        "Department",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "auth-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "AdminUser",
+      "type": "concept",
+      "description": "Platform administrator with elevated privileges for managing the coaching platform.",
+      "tables": [
+        "nx_admin_users"
+      ],
+      "domain": "identity",
+      "related_concepts": [
+        "Client",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "auth-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "PasswordReset",
+      "type": "concept",
+      "description": "Password reset tokens for platform users. Separate tables for different user types (general, client, coach).",
+      "tables": [
+        "nx_password_resets"
+      ],
+      "domain": "identity",
+      "related_concepts": [
+        "AdminUser",
+        "Client",
+        "Coach",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "auth-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "Journey",
+      "type": "concept",
+      "description": "Learning journey - the top-level learning path. nx_journey_details is a hub table (10 refs) linking to chapters, lessons, ratings, backpacks, tasks, and journals. Core of the learning hierarchy: Journey > Chapter > Lesson.",
+      "tables": [
+        "nx_journey_details"
+      ],
+      "domain": "learning",
+      "related_concepts": [
+        "Backpack",
+        "Chapter",
+        "Journal",
+        "Lesson",
+        "Rating",
+        "Task",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "learning-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "Chapter",
+      "type": "concept",
+      "description": "Chapter within a journey - mid-level learning unit. nx_chapter_details is a hub table (13 refs) connecting journeys to lessons, ratings, sms, and tasks. Learning hierarchy: Journey > Chapter > Lesson.",
+      "tables": [
+        "nx_chapter_details"
+      ],
+      "domain": "learning",
+      "related_concepts": [
+        "Backpack",
+        "Journey",
+        "Lesson",
+        "Rating",
+        "SMS",
+        "Task"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "learning-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "Lesson",
+      "type": "concept",
+      "description": "Lesson - the atomic learning unit. nx_lessons is a hub (13 refs). Contains lesson details and slides. Links to journeys, chapters, ratings, tasks, backpacks, and SMS. Learning hierarchy: Journey > Chapter > Lesson.",
+      "tables": [
+        "lesson_details",
+        "lesson_slides",
+        "nx_lessons"
+      ],
+      "domain": "learning",
+      "related_concepts": [
+        "Backpack",
+        "Chapter",
+        "Journey",
+        "Rating",
+        "Slide",
+        "Task",
+        "VideoLibrary"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "learning-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "Backpack",
+      "type": "concept",
+      "description": "Content backpack - saved/collected learning materials tied to journeys, chapters, and lessons. 5833 rows - indicates active use. References journey_details, chapter_details, lessons, and slides.",
+      "tables": [
+        "backpacks"
+      ],
+      "domain": "content",
+      "related_concepts": [
+        "Chapter",
+        "Journey",
+        "Lesson",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "content-agent",
+        "db-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "Document",
+      "type": "concept",
+      "description": "Uploaded documents and chatbot knowledge base documents for the learning platform.",
+      "tables": [
+        "chatbot_documents",
+        "documents"
+      ],
+      "domain": "content",
+      "related_concepts": [
+        "Chatbot",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "content-agent",
+        "db-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "VideoLibrary",
+      "type": "concept",
+      "description": "Video content library linked to journeys, chapters, and lessons. Referenced by lesson_slides for video-based learning content.",
+      "tables": [
+        "video_libraries"
+      ],
+      "domain": "content",
+      "related_concepts": [
+        "Chapter",
+        "Journey",
+        "Lesson",
+        "Slide"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "content-agent",
+        "db-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "Rating",
+      "type": "concept",
+      "description": "User ratings for learning content at every level (journey, chapter, lesson, slide). nx_user_ratings has 6 references spanning the full learning hierarchy. old_ratings preserves historical rating data. 3657 total rows.",
+      "tables": [
+        "nx_user_ratings",
+        "old_ratings"
+      ],
+      "domain": "engagement",
+      "related_concepts": [
+        "Chapter",
+        "Journey",
+        "Lesson",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "engagement-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "Task",
+      "type": "concept",
+      "description": "Tasks assigned within learning journeys. 2829 rows. Links to journey_details, chapter_details, lessons, and slides. Created by users.",
+      "tables": [
+        "tasks"
+      ],
+      "domain": "engagement",
+      "related_concepts": [
+        "Chapter",
+        "Journey",
+        "Lesson",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "engagement-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "Meeting",
+      "type": "concept",
+      "description": "Coaching meetings/sessions between coaches and learners. Includes attendee tracking with participant roles.",
+      "tables": [
+        "meeting_attendees",
+        "meetings"
+      ],
+      "domain": "engagement",
+      "related_concepts": [
+        "Coach",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "engagement-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "Journal",
+      "type": "concept",
+      "description": "User journal entries tied to learning progress. Links to users, journey details, chapter details, and lessons. Reflective learning tool.",
+      "tables": [
+        "nx_journal_details"
+      ],
+      "domain": "engagement",
+      "related_concepts": [
+        "Chapter",
+        "Journey",
+        "Lesson",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "engagement-agent",
+        "ui-agent"
+      ]
+    },
+    {
+      "id": "SMS",
+      "type": "concept",
+      "description": "SMS communication system for learning nudges and reminders. Includes scheduling and dynamic content tied to chapters and lessons. 1323 detail rows.",
+      "tables": [
+        "dynamic_sms_details",
+        "sms_details",
+        "sms_schedules"
+      ],
+      "domain": "communication",
+      "related_concepts": [
+        "Chapter",
+        "Lesson",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "comm-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "Notification",
+      "type": "concept",
+      "description": "Notification history tracking for users, coaches, and clients. Multi-stakeholder notification delivery.",
+      "tables": [
+        "notification_histories"
+      ],
+      "domain": "communication",
+      "related_concepts": [
+        "Client",
+        "Coach",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "comm-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "Mail",
+      "type": "concept",
+      "description": "Email communication system with transfer tracking. mail_communication_details is a hub with self-referencing for threaded conversations.",
+      "tables": [
+        "mail_communication_details",
+        "mail_transfers"
+      ],
+      "domain": "communication",
+      "related_concepts": [
+        "Notification",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "comm-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "Chatbot",
+      "type": "concept",
+      "description": "AI chatbot for learning support. Tracks sessions and conversation history with question/answer pairs and timing.",
+      "tables": [
+        "chatbot_histories",
+        "chatbot_sessions"
+      ],
+      "domain": "communication",
+      "related_concepts": [
+        "Document",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "comm-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "ActivityLog",
+      "type": "concept",
+      "description": "Polymorphic activity log (Laravel Spatie). 57210 rows (77% of all data). Tracks all user actions with subject/causer polymorphism. 30 distinct log types.",
+      "tables": [
+        "activity_log"
+      ],
+      "domain": "communication",
+      "related_concepts": [
+        "AdminUser",
+        "Coach",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "comm-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "ClientCoachMapping",
+      "type": "concept",
+      "description": "Many-to-many mapping between clients and coaches. Core relationship table for the coaching business model.",
+      "tables": [
+        "client_coach_mappings"
+      ],
+      "domain": "platform",
+      "related_concepts": [
+        "Client",
+        "Coach"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "Department",
+      "type": "concept",
+      "description": "Organizational departments within client companies. Employees belong to departments, departments belong to clients.",
+      "tables": [
+        "departments"
+      ],
+      "domain": "platform",
+      "related_concepts": [
+        "Client",
+        "Employee"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent"
+      ]
+    },
+    {
+      "id": "BackgroundJob",
+      "type": "concept",
+      "description": "Laravel queue/job infrastructure for async processing (email sending, SMS dispatch, etc.).",
+      "tables": [
+        "jobs"
+      ],
+      "domain": "platform",
+      "related_concepts": [
+        "Mail",
+        "Notification",
+        "SMS"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "identity-agent",
+      "to": "identity-module",
+      "type": "MANAGES"
+    },
+    {
+      "from": "content-agent",
+      "to": "content-module",
+      "type": "MANAGES"
+    },
+    {
+      "from": "engagement-agent",
+      "to": "engagement-module",
+      "type": "MANAGES"
+    },
+    {
+      "from": "meetings-agent",
+      "to": "meetings-module",
+      "type": "MANAGES"
+    },
+    {
+      "from": "comms-agent",
+      "to": "comms-module",
+      "type": "MANAGES"
+    },
+    {
+      "from": "platform-agent",
+      "to": "platform-module",
+      "type": "MANAGES"
+    },
+    {
+      "from": "kg-agent",
+      "to": "kg-module",
+      "type": "MANAGES"
+    },
+    {
+      "from": "api-agent",
+      "to": "User",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "auth-agent",
+      "to": "User",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "User",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "User",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "User",
+      "to": "ActivityLog",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "User",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "User",
+      "to": "Coach",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "User",
+      "to": "Employee",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "User",
+      "to": "Journey",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "User",
+      "to": "Rating",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Client",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "auth-agent",
+      "to": "Client",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Client",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Client",
+      "to": "ClientCoachMapping",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Client",
+      "to": "Coach",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Client",
+      "to": "Department",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Client",
+      "to": "Employee",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Client",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Coach",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "auth-agent",
+      "to": "Coach",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Coach",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Coach",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Coach",
+      "to": "ClientCoachMapping",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Coach",
+      "to": "Meeting",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Coach",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Employee",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "auth-agent",
+      "to": "Employee",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Employee",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Employee",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Employee",
+      "to": "Department",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Employee",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "AdminUser",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "auth-agent",
+      "to": "AdminUser",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "AdminUser",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "AdminUser",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "AdminUser",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "PasswordReset",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "auth-agent",
+      "to": "PasswordReset",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "PasswordReset",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "PasswordReset",
+      "to": "AdminUser",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "PasswordReset",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "PasswordReset",
+      "to": "Coach",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "PasswordReset",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Journey",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Journey",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "learning-agent",
+      "to": "Journey",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "Journey",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Journey",
+      "to": "Backpack",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Journey",
+      "to": "Chapter",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Journey",
+      "to": "Journal",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Journey",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Journey",
+      "to": "Rating",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Journey",
+      "to": "Task",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Journey",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Chapter",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Chapter",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "learning-agent",
+      "to": "Chapter",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "Chapter",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Chapter",
+      "to": "Backpack",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Chapter",
+      "to": "Journey",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Chapter",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Chapter",
+      "to": "Rating",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Chapter",
+      "to": "SMS",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Chapter",
+      "to": "Task",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Lesson",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Lesson",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "learning-agent",
+      "to": "Lesson",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "Lesson",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Lesson",
+      "to": "Backpack",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Lesson",
+      "to": "Chapter",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Lesson",
+      "to": "Journey",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Lesson",
+      "to": "Rating",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Lesson",
+      "to": "Slide",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Lesson",
+      "to": "Task",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Lesson",
+      "to": "VideoLibrary",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Backpack",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "content-agent",
+      "to": "Backpack",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Backpack",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "Backpack",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Backpack",
+      "to": "Chapter",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Backpack",
+      "to": "Journey",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Backpack",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Backpack",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Document",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "content-agent",
+      "to": "Document",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Document",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "Document",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Document",
+      "to": "Chatbot",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Document",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "VideoLibrary",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "content-agent",
+      "to": "VideoLibrary",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "VideoLibrary",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "VideoLibrary",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "VideoLibrary",
+      "to": "Chapter",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "VideoLibrary",
+      "to": "Journey",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "VideoLibrary",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "VideoLibrary",
+      "to": "Slide",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Rating",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Rating",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "engagement-agent",
+      "to": "Rating",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "Rating",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Rating",
+      "to": "Chapter",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Rating",
+      "to": "Journey",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Rating",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Rating",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Task",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Task",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "engagement-agent",
+      "to": "Task",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "Task",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Task",
+      "to": "Chapter",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Task",
+      "to": "Journey",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Task",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Task",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Meeting",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Meeting",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "engagement-agent",
+      "to": "Meeting",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "Meeting",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Meeting",
+      "to": "Coach",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Meeting",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Journal",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Journal",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "engagement-agent",
+      "to": "Journal",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "Journal",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Journal",
+      "to": "Chapter",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Journal",
+      "to": "Journey",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Journal",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Journal",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "SMS",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "comm-agent",
+      "to": "SMS",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "SMS",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "SMS",
+      "to": "Chapter",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "SMS",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "SMS",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Notification",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "comm-agent",
+      "to": "Notification",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Notification",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Notification",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Notification",
+      "to": "Coach",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Notification",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Mail",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "comm-agent",
+      "to": "Mail",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Mail",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Mail",
+      "to": "Notification",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Mail",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Chatbot",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "comm-agent",
+      "to": "Chatbot",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Chatbot",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Chatbot",
+      "to": "Document",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Chatbot",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ActivityLog",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "comm-agent",
+      "to": "ActivityLog",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ActivityLog",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ActivityLog",
+      "to": "AdminUser",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ActivityLog",
+      "to": "Coach",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ActivityLog",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ClientCoachMapping",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ClientCoachMapping",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ClientCoachMapping",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ClientCoachMapping",
+      "to": "Coach",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "Department",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "Department",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "Department",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "Department",
+      "to": "Employee",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "BackgroundJob",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "BackgroundJob",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "BackgroundJob",
+      "to": "Mail",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "BackgroundJob",
+      "to": "Notification",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "BackgroundJob",
+      "to": "SMS",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "orchestrator",
+      "to": "identity-agent",
+      "type": "PARENT_OF"
+    },
+    {
+      "from": "orchestrator",
+      "to": "content-agent",
+      "type": "PARENT_OF"
+    },
+    {
+      "from": "orchestrator",
+      "to": "engagement-agent",
+      "type": "PARENT_OF"
+    },
+    {
+      "from": "orchestrator",
+      "to": "meetings-agent",
+      "type": "PARENT_OF"
+    },
+    {
+      "from": "orchestrator",
+      "to": "comms-agent",
+      "type": "PARENT_OF"
+    },
+    {
+      "from": "orchestrator",
+      "to": "platform-agent",
+      "type": "PARENT_OF"
+    },
+    {
+      "from": "orchestrator",
+      "to": "kg-agent",
+      "type": "PARENT_OF"
+    },
+    {
+      "from": "orchestrator",
+      "to": "review-agent",
+      "type": "PARENT_OF"
+    },
+    {
+      "from": "engagement-agent",
+      "to": "identity-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "backpacks/tasks/ratings reference nx_users via created_by"
+    },
+    {
+      "from": "engagement-agent",
+      "to": "content-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "backpacks/tasks/ratings reference journeys/chapters/lessons/slides"
+    },
+    {
+      "from": "content-agent",
+      "to": "identity-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "journey_details/chapter_details/lessons reference nx_users via created_by"
+    },
+    {
+      "from": "meetings-agent",
+      "to": "identity-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "meetings reference nx_users via hosting_by; meeting_attendees via participant_id; coaches via coach_id"
+    },
+    {
+      "from": "comms-agent",
+      "to": "identity-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "sms_details/notification_histories reference nx_users/clients/coaches"
+    },
+    {
+      "from": "comms-agent",
+      "to": "content-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "sms_details/sms_schedules/dynamic_sms_details reference chapters/lessons"
+    },
+    {
+      "from": "platform-agent",
+      "to": "identity-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "activity_log references nx_users via causer_id"
+    }
+  ]
+}
