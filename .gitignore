@@ -16,8 +16,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Agent worktrees
-agents/
+# Agent worktrees (runtime, not .claude/agents/)
+/agents/
 
 # Temporary
 *.flag

@@ -1,0 +1,662 @@
+#!/usr/bin/env python3
+"""
+ag -- Ownership Knowledge Graph CLI
+
+Query file ownership, agent context, blast radius, and dependencies
+from the command line. Loads agent_graph_cache.json and runs dict-based
+BFS traversals.
+
+Usage:
+  ag owner src/api/users.py
+  ag files api-agent
+  ag context api-agent
+  ag search auth
+  ag blast User
+  ag deps api-agent
+  ag rdeps db-agent
+  ag path db-agent ui-agent
+  ag register src/new.py api-agent
+  ag lock src/api/users.py api-agent
+  ag unlock src/api/users.py
+  ag transfer src/old.py new-agent
+  ag stats
+"""
+
+import sys
+import json
+from pathlib import Path
+from collections import deque
+from datetime import datetime, timezone
+
+# Find the cache file relative to this script
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent.parent  # .claude/tools/ -> project root
+KG_DIR = PROJECT_ROOT / ".claude" / "kg"
+CACHE_FILE = KG_DIR / "agent_graph_cache.json"
+PROPOSALS_FILE = KG_DIR / "proposals.json"
+LOCKS_FILE = KG_DIR / "locks.json"
+
+# Graph data structures
+nodes_data = {}
+predecessors = {}
+successors = {}
+edges_data = {}
+
+
+def load_graph():
+    """Load graph from cache file."""
+    global nodes_data, predecessors, successors, edges_data
+
+    if not CACHE_FILE.exists():
+        print(f"Error: Graph cache not found at {CACHE_FILE}", file=sys.stderr)
+        print("Run: python3 .claude/kg/build_cache.py", file=sys.stderr)
+        sys.exit(1)
+
+    with open(CACHE_FILE) as f:
+        cache = json.load(f)
+
+    nodes_data = {}
+    predecessors = {}
+    successors = {}
+    edges_data = {}
+
+    for node in cache["nodes"]:
+        nid = node["id"]
+        nodes_data[nid] = node
+        predecessors[nid] = []
+        successors[nid] = []
+
+    for edge in cache["edges"]:
+        src, dst = edge["from"], edge["to"]
+        if dst in predecessors:
+            predecessors[dst].append(src)
+        if src in successors:
+            successors[src].append(dst)
+        edges_data[(src, dst)] = edge
+
+
+def cmd_owner(file_path):
+    """Find owner of a file."""
+    # Look for FILE node directly
+    if file_path in nodes_data:
+        node = nodes_data[file_path]
+        owner = node.get("owner", None)
+        if owner:
+            print(f"{file_path} -> {owner}")
+            return
+
+    # Search through OWNS edges
+    for (src, dst), edge in edges_data.items():
+        if edge.get("type") == "OWNS" and dst == file_path:
+            print(f"{file_path} -> {src}")
+            return
+
+    # Check proposals for pending ownership
+    if PROPOSALS_FILE.exists():
+        with open(PROPOSALS_FILE) as f:
+            proposals = json.load(f)
+        for p in proposals:
+            if p.get("file") == file_path and p.get("status") == "pending":
+                print(f"{file_path} -> {p['agent']} (pending proposal)")
+                return
+
+    print(f"{file_path} -> unowned (not in KG)")
+
+
+def cmd_files(agent_id):
+    """List files owned by an agent."""
+    if agent_id not in nodes_data:
+        print(f"Error: Agent '{agent_id}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    files = []
+    for target in successors.get(agent_id, []):
+        node = nodes_data.get(target, {})
+        if node.get("type") == "file":
+            files.append(target)
+
+    # Also check OWNS edges explicitly
+    for (src, dst), edge in edges_data.items():
+        if src == agent_id and edge.get("type") == "OWNS" and dst not in files:
+            files.append(dst)
+
+    # Check proposals for pending ownership
+    if PROPOSALS_FILE.exists():
+        with open(PROPOSALS_FILE) as f:
+            proposals = json.load(f)
+        for p in proposals:
+            if p.get("agent") == agent_id and p.get("status") == "pending":
+                fp = p.get("file", "")
+                if fp not in files:
+                    files.append(f"{fp} (pending)")
+
+    print(f"{agent_id} owns {len(files)} files:")
+    for fp in sorted(files):
+        print(f"  {fp}")
+
+
+def cmd_context(agent_id):
+    """Print full agent context as JSON."""
+    if agent_id not in nodes_data:
+        print(f"Error: Agent '{agent_id}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    agent = nodes_data[agent_id]
+
+    # Owned files
+    owned = []
+    for t in successors.get(agent_id, []):
+        node = nodes_data.get(t, {})
+        if node.get("type") == "file":
+            owned.append(node)
+
+    # Also from OWNS edges
+    for (src, dst), edge in edges_data.items():
+        if src == agent_id and edge.get("type") == "OWNS":
+            node = nodes_data.get(dst, {"id": dst, "type": "file"})
+            if node not in owned:
+                owned.append(node)
+
+    # Dependencies (agent DEPENDS_ON others)
+    deps = []
+    for t in successors.get(agent_id, []):
+        edge = edges_data.get((agent_id, t), {})
+        if edge.get("type") == "DEPENDS_ON":
+            deps.append({
+                "id": t,
+                "dep_type": edge.get("dependency_type", "general"),
+                "inferred_from": edge.get("inferred_from", "")
+            })
+
+    # Dependents (others DEPEND_ON agent)
+    rdeps = []
+    for s in predecessors.get(agent_id, []):
+        edge = edges_data.get((s, agent_id), {})
+        if edge.get("type") == "DEPENDS_ON":
+            rdeps.append({
+                "id": s,
+                "dep_type": edge.get("dependency_type", "general"),
+                "inferred_from": edge.get("inferred_from", "")
+            })
+
+    # Children (agent PARENT_OF others)
+    children = []
+    for t in successors.get(agent_id, []):
+        edge = edges_data.get((agent_id, t), {})
+        if edge.get("type") == "PARENT_OF":
+            child_node = nodes_data.get(t, {"id": t})
+            children.append({
+                "id": t,
+                "type": child_node.get("type", "unknown"),
+                "level": child_node.get("level"),
+                "model_tier": child_node.get("model_tier")
+            })
+
+    # Managed modules
+    managed = []
+    for t in successors.get(agent_id, []):
+        edge = edges_data.get((agent_id, t), {})
+        if edge.get("type") == "MANAGES":
+            mod_node = nodes_data.get(t, {"id": t})
+            managed.append({
+                "id": t,
+                "description": mod_node.get("description", "")
+            })
+
+    # Concepts (via IMPLEMENTS edges)
+    concepts = []
+    for t in successors.get(agent_id, []):
+        edge = edges_data.get((agent_id, t), {})
+        node = nodes_data.get(t, {})
+        if node.get("type") == "concept":
+            concepts.append({
+                "id": t,
+                "description": node.get("description", ""),
+                "domain": node.get("domain", ""),
+                "tables": node.get("tables", [])
+            })
+
+    context = {
+        "identity": {
+            "id": agent_id,
+            "type": agent.get("type", "unknown"),
+            "level": agent.get("level"),
+            "parent": agent.get("parent"),
+            "model_tier": agent.get("model_tier", "sonnet"),
+            "capabilities": agent.get("capabilities", []),
+            "status": agent.get("status", "unknown"),
+            "spec_path": agent.get("spec_path", ""),
+            "memory_path": agent.get("memory_path", ""),
+        },
+        "ownership": {
+            "files": owned,
+            "file_count": len(owned),
+            "managed_modules": managed
+        },
+        "relationships": {
+            "depends_on": deps,
+            "depended_by": rdeps,
+            "children": children
+        },
+        "domain": {
+            "concepts": concepts,
+            "concept_count": len(concepts)
+        },
+        "safety": agent.get("safety", {})
+    }
+
+    print(json.dumps(context, indent=2, default=str))
+
+
+def cmd_search(query):
+    """Search agents by name or capability."""
+    query_lower = query.lower()
+    matches = []
+
+    for nid, node in nodes_data.items():
+        if node.get("type") != "agent":
+            continue
+
+        # Match by ID
+        if query_lower in nid.lower():
+            matches.append({
+                "id": nid,
+                "match": "id",
+                "level": node.get("level"),
+                "capabilities": node.get("capabilities", [])
+            })
+            continue
+
+        # Match by capability
+        caps = node.get("capabilities", [])
+        for cap in caps:
+            if query_lower in cap.lower():
+                matches.append({
+                    "id": nid,
+                    "match": f"capability:{cap}",
+                    "level": node.get("level"),
+                    "capabilities": caps
+                })
+                break
+
+        # Match by module
+        module = node.get("module", "")
+        if module and query_lower in module.lower():
+            matches.append({
+                "id": nid,
+                "match": f"module:{module}",
+                "level": node.get("level"),
+                "capabilities": caps
+            })
+
+    if matches:
+        print(f"Found {len(matches)} agent(s) matching '{query}':")
+        for m in matches:
+            caps_str = ", ".join(m.get("capabilities", []))
+            print(f"  {m['id']} (L{m.get('level', '?')}) matched: {m['match']}  [{caps_str}]")
+    else:
+        print(f"No agents matching '{query}'")
+
+
+def cmd_blast(node_id):
+    """Calculate blast radius from any node using BFS in both directions."""
+    if node_id not in nodes_data:
+        print(f"Error: Node '{node_id}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    visited = set()
+    affected = {"agent": [], "module": [], "concept": [], "file": []}
+    queue = deque([(node_id, 0)])
+
+    while queue:
+        current, depth = queue.popleft()
+        if current in visited or depth > 5:
+            continue
+        visited.add(current)
+        node = nodes_data.get(current, {})
+
+        if current != node_id:
+            ntype = node.get("type", "unknown")
+            if ntype in affected:
+                affected[ntype].append({"id": current, "depth": depth})
+
+        # Forward: follow all successors
+        for succ in successors.get(current, []):
+            if succ not in visited:
+                queue.append((succ, depth + 1))
+
+        # Backward: follow predecessors only for ownership/management edges
+        for pred in predecessors.get(current, []):
+            edge = edges_data.get((pred, current), {})
+            if edge.get("type") in ("OWNS", "MANAGES", "IMPLEMENTS", "DEPENDS_ON", "PARENT_OF"):
+                if pred not in visited:
+                    queue.append((pred, depth + 1))
+
+    total = sum(len(v) for v in affected.values())
+    agent_count = len(affected["agent"])
+    if agent_count > 5:
+        severity = "critical"
+    elif agent_count > 2:
+        severity = "high"
+    elif agent_count > 1:
+        severity = "medium"
+    else:
+        severity = "low"
+
+    print(f"Blast radius for '{node_id}': {total} affected nodes (severity: {severity})")
+    for ntype in ["agent", "module", "concept", "file"]:
+        items = affected[ntype]
+        if items:
+            print(f"  {ntype}s ({len(items)}):")
+            for item in sorted(items, key=lambda x: x["depth"]):
+                print(f"    - {item['id']} (depth {item['depth']})")
+
+
+def cmd_deps(agent_id):
+    """Print upstream dependencies (who this agent depends on)."""
+    if agent_id not in nodes_data:
+        print(f"Error: Agent '{agent_id}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    deps = []
+    for t in successors.get(agent_id, []):
+        edge = edges_data.get((agent_id, t), {})
+        if edge.get("type") == "DEPENDS_ON":
+            deps.append({
+                "id": t,
+                "dep_type": edge.get("dependency_type", "general"),
+                "reason": edge.get("inferred_from", "")
+            })
+
+    if deps:
+        print(f"{agent_id} depends on:")
+        for d in deps:
+            reason = f'  ({d["reason"]})' if d["reason"] else ""
+            print(f"  -> {d['id']} ({d['dep_type']}){reason}")
+    else:
+        print(f"{agent_id} has no upstream dependencies")
+
+
+def cmd_rdeps(agent_id):
+    """Print downstream dependents (who depends on this agent)."""
+    if agent_id not in nodes_data:
+        print(f"Error: Agent '{agent_id}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    rdeps = []
+    for s in predecessors.get(agent_id, []):
+        edge = edges_data.get((s, agent_id), {})
+        if edge.get("type") == "DEPENDS_ON":
+            rdeps.append({
+                "id": s,
+                "dep_type": edge.get("dependency_type", "general"),
+                "reason": edge.get("inferred_from", "")
+            })
+
+    if rdeps:
+        print(f"Agents depending on {agent_id}:")
+        for d in rdeps:
+            reason = f'  ({d["reason"]})' if d["reason"] else ""
+            print(f"  <- {d['id']} ({d['dep_type']}){reason}")
+    else:
+        print(f"No agents depend on {agent_id}")
+
+
+def cmd_path(from_id, to_id):
+    """BFS shortest path between two nodes (undirected)."""
+    if from_id not in nodes_data:
+        print(f"Error: Node '{from_id}' not found", file=sys.stderr)
+        sys.exit(1)
+    if to_id not in nodes_data:
+        print(f"Error: Node '{to_id}' not found", file=sys.stderr)
+        sys.exit(1)
+    if from_id == to_id:
+        print(from_id)
+        return
+
+    visited = {from_id}
+    queue = deque([(from_id, [from_id])])
+
+    while queue:
+        current, path = queue.popleft()
+        if current == to_id:
+            # Print path with edge types
+            parts = []
+            for i, node_id in enumerate(path):
+                parts.append(node_id)
+                if i < len(path) - 1:
+                    nxt = path[i + 1]
+                    edge = edges_data.get((node_id, nxt))
+                    if edge:
+                        parts.append(f"--[{edge['type']}]-->")
+                    else:
+                        edge = edges_data.get((nxt, node_id))
+                        if edge:
+                            parts.append(f"<--[{edge['type']}]--")
+                        else:
+                            parts.append("---")
+            print(" ".join(parts))
+            return
+
+        # Explore both directions
+        neighbors = []
+        for s in successors.get(current, []):
+            if s not in visited:
+                neighbors.append(s)
+        for p in predecessors.get(current, []):
+            if p not in visited:
+                neighbors.append(p)
+
+        for neighbor in neighbors:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, path + [neighbor]))
+
+    print(f"No path from {from_id} to {to_id}")
+
+
+def cmd_register(file_path, agent_id):
+    """Register file ownership via proposals.json."""
+    if agent_id not in nodes_data:
+        print(f"Error: Agent '{agent_id}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    # Check if already owned
+    for (src, dst), edge in edges_data.items():
+        if edge.get("type") == "OWNS" and dst == file_path:
+            print(f"Error: {file_path} already owned by {src}", file=sys.stderr)
+            sys.exit(1)
+
+    proposal = {
+        "type": "register",
+        "file": file_path,
+        "agent": agent_id,
+        "proposed_at": datetime.now(timezone.utc).isoformat(),
+        "status": "pending"
+    }
+
+    proposals = []
+    if PROPOSALS_FILE.exists():
+        with open(PROPOSALS_FILE) as f:
+            proposals = json.load(f)
+
+    # Check for duplicate proposals
+    for p in proposals:
+        if p.get("file") == file_path and p.get("status") == "pending":
+            print(f"Error: Pending proposal already exists for {file_path} -> {p['agent']}", file=sys.stderr)
+            sys.exit(1)
+
+    proposals.append(proposal)
+    with open(PROPOSALS_FILE, "w") as f:
+        json.dump(proposals, f, indent=2)
+
+    print(f"Registered: {file_path} -> {agent_id} (pending review)")
+
+
+def cmd_lock(file_path, agent_id):
+    """Set advisory lock on a file."""
+    if agent_id not in nodes_data:
+        print(f"Error: Agent '{agent_id}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    locks = {}
+    if LOCKS_FILE.exists():
+        with open(LOCKS_FILE) as f:
+            locks = json.load(f)
+
+    # Check existing lock
+    if file_path in locks:
+        existing = locks[file_path]
+        print(f"Error: {file_path} already locked by {existing['agent']} at {existing['locked_at']}", file=sys.stderr)
+        sys.exit(1)
+
+    locks[file_path] = {
+        "agent": agent_id,
+        "locked_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    with open(LOCKS_FILE, "w") as f:
+        json.dump(locks, f, indent=2)
+
+    print(f"Locked: {file_path} by {agent_id} (advisory)")
+
+
+def cmd_unlock(file_path):
+    """Release advisory lock on a file."""
+    locks = {}
+    if LOCKS_FILE.exists():
+        with open(LOCKS_FILE) as f:
+            locks = json.load(f)
+
+    if file_path not in locks:
+        print(f"Warning: {file_path} is not locked", file=sys.stderr)
+        return
+
+    agent = locks[file_path]["agent"]
+    del locks[file_path]
+
+    with open(LOCKS_FILE, "w") as f:
+        json.dump(locks, f, indent=2)
+
+    print(f"Unlocked: {file_path} (was locked by {agent})")
+
+
+def cmd_transfer(file_path, new_agent):
+    """Transfer file ownership to a new agent."""
+    if new_agent not in nodes_data:
+        print(f"Error: Agent '{new_agent}' not found", file=sys.stderr)
+        sys.exit(1)
+
+    # Find current owner
+    current_owner = None
+    for (src, dst), edge in edges_data.items():
+        if edge.get("type") == "OWNS" and dst == file_path:
+            current_owner = src
+            break
+
+    proposal = {
+        "type": "transfer",
+        "file": file_path,
+        "agent": new_agent,
+        "previous_owner": current_owner,
+        "proposed_at": datetime.now(timezone.utc).isoformat(),
+        "status": "pending"
+    }
+
+    proposals = []
+    if PROPOSALS_FILE.exists():
+        with open(PROPOSALS_FILE) as f:
+            proposals = json.load(f)
+
+    proposals.append(proposal)
+    with open(PROPOSALS_FILE, "w") as f:
+        json.dump(proposals, f, indent=2)
+
+    if current_owner:
+        print(f"Transfer: {file_path} from {current_owner} -> {new_agent} (pending review)")
+    else:
+        print(f"Transfer: {file_path} -> {new_agent} (no previous owner, pending review)")
+
+
+def cmd_stats():
+    """Print node/edge counts by type."""
+    type_counts = {}
+    for node in nodes_data.values():
+        t = node.get("type", "unknown")
+        type_counts[t] = type_counts.get(t, 0) + 1
+
+    edge_type_counts = {}
+    for edge in edges_data.values():
+        t = edge.get("type", "unknown")
+        edge_type_counts[t] = edge_type_counts.get(t, 0) + 1
+
+    print(f"Nodes: {len(nodes_data)}")
+    for t, c in sorted(type_counts.items()):
+        print(f"  {t}: {c}")
+    print(f"\nEdges: {len(edges_data)}")
+    for t, c in sorted(edge_type_counts.items()):
+        print(f"  {t}: {c}")
+
+
+COMMANDS = {
+    "owner":    (cmd_owner,    1, "<file_path>",           "Find the agent that owns a file"),
+    "files":    (cmd_files,    1, "<agent_id>",            "List all files owned by an agent"),
+    "context":  (cmd_context,  1, "<agent_id>",            "Print full agent context as JSON"),
+    "search":   (cmd_search,   1, "<query>",               "Find agents by name or capability"),
+    "blast":    (cmd_blast,    1, "<node_id>",              "Print blast radius report for any node"),
+    "deps":     (cmd_deps,     1, "<agent_id>",            "Print upstream dependencies"),
+    "rdeps":    (cmd_rdeps,    1, "<agent_id>",            "Print downstream dependents"),
+    "path":     (cmd_path,     2, "<from> <to>",           "Find shortest path between two nodes"),
+    "register": (cmd_register, 2, "<file> <agent>",        "Register file ownership (writes to proposals.json)"),
+    "lock":     (cmd_lock,     2, "<file> <agent>",        "Set advisory lock on a file"),
+    "unlock":   (cmd_unlock,   1, "<file>",                "Release advisory lock"),
+    "transfer": (cmd_transfer, 2, "<file> <new_agent>",    "Transfer file ownership to new agent"),
+    "stats":    (cmd_stats,    0, "",                       "Print node/edge counts by type"),
+}
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print("ag -- Ownership Knowledge Graph CLI")
+        print()
+        print("Usage: ag <command> [args]")
+        print()
+        print("Ownership Queries:")
+        for cmd in ["owner", "files", "context", "search"]:
+            func, nargs, usage, desc = COMMANDS[cmd]
+            print(f"  ag {cmd} {usage:<25s} {desc}")
+        print()
+        print("Graph Traversal:")
+        for cmd in ["blast", "deps", "rdeps", "path"]:
+            func, nargs, usage, desc = COMMANDS[cmd]
+            print(f"  ag {cmd} {usage:<25s} {desc}")
+        print()
+        print("Management:")
+        for cmd in ["register", "lock", "unlock", "transfer"]:
+            func, nargs, usage, desc = COMMANDS[cmd]
+            print(f"  ag {cmd} {usage:<25s} {desc}")
+        print()
+        print("Stats:")
+        func, nargs, usage, desc = COMMANDS["stats"]
+        print(f"  ag stats {usage:<25s} {desc}")
+        sys.exit(0)
+
+    cmd = sys.argv[1]
+    if cmd not in COMMANDS:
+        print(f"Error: Unknown command '{cmd}'. Run 'ag help' for usage.", file=sys.stderr)
+        sys.exit(1)
+
+    func, expected_args, usage, desc = COMMANDS[cmd]
+    args = sys.argv[2:]
+
+    if len(args) < expected_args:
+        print(f"Usage: ag {cmd} {usage}", file=sys.stderr)
+        print(f"  {desc}", file=sys.stderr)
+        sys.exit(1)
+
+    load_graph()
+    func(*args[:expected_args])
+
+
+if __name__ == "__main__":
+    main()
