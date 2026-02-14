@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "ownership-graph": {
+      "command": "bash",
+      "args": [".claude/mcp/run_mcp.sh", "ownership_graph.py"],
+      "cwd": "."
+    },
+    "db-tools": {
+      "command": "bash",
+      "args": [".claude/mcp/run_mcp.sh", "db_tools.py"],
+      "cwd": "."
+    }
+  }
+}

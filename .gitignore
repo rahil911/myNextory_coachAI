@@ -19,6 +19,9 @@ Thumbs.db
 # Agent worktrees (runtime, not .claude/agents/)
 /agents/
 
+# Beads runtime state
+.beads/
+
 # Temporary
 *.flag
 *.tmp
