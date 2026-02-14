@@ -81,6 +81,35 @@ case "$ACTION" in
     fi
     # ── End KG Check ────────────────────────────────────────────────────────
 
+    # ── Deterministic Bead Closure Check ────────────────────────────────────
+    # Agent MUST close its assigned bead before merging. No silent merges.
+    if command -v bd &>/dev/null; then
+      echo "Checking bead closure for agent $NAME..."
+      OPEN_BEADS=$(bd list --status=in_progress --json 2>/dev/null | python3 -c "
+import json, sys
+try:
+    beads = json.load(sys.stdin)
+    agent = '$NAME'
+    open_ones = [b['id'] for b in beads if agent in str(b.get('assignee','')) or agent in str(b.get('title',''))]
+    print(' '.join(open_ones))
+except: pass
+" 2>/dev/null || true)
+
+      if [ -n "$OPEN_BEADS" ]; then
+        echo "WARNING: Agent $NAME has unclosed beads: $OPEN_BEADS"
+        echo "Auto-closing with merge reason..."
+        for BEAD_ID in $OPEN_BEADS; do
+          bd close "$BEAD_ID" --reason="Auto-closed by cleanup.sh merge for agent $NAME" 2>/dev/null || true
+        done
+        echo "Beads auto-closed. Proceeding with merge."
+      else
+        echo "All beads closed for $NAME"
+      fi
+    else
+      echo "Note: bd not in PATH. Skipping bead closure check."
+    fi
+    # ── End Bead Check ──────────────────────────────────────────────────────
+
     # Switch to main repo and merge
     cd "$PROJECT"
     git checkout "$MAIN_BRANCH" 2>/dev/null

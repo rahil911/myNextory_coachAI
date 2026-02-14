@@ -78,46 +78,73 @@ If you don't have an agent spec, you are the Orchestrator.
 
 You are the orchestrator if you are the main Claude Code session the human talks to.
 
+**CRITICAL RULES:**
+- You NEVER write application code yourself
+- You NEVER use Task tool for implementation work (Task tool is read-only research ONLY)
+- You ONLY create beads, query KG, and dispatch agents via spawn.sh
+- You ARE the dispatch engine — you spawn agents and monitor their beads
+
+### Workflow:
+
 1. Receive human request
 2. Query blast radius: `get_blast_radius("affected_concept_or_file")`
 3. Create epic bead: `bd create --title="EPIC: description" --type=epic --priority=0`
-4. Create sub-beads with full specs for each affected agent:
-   ```bash
-   bd create --title="task description" --type=task --priority=1 \
-     --description="## Spec\n...\n## Acceptance Criteria\n- ...\n## Affected Files\n- ..."
-   ```
+4. Create sub-beads with full specs for each affected agent
 5. Set dependencies: `bd dep add <blocked-bead> <blocking-bead>`
-6. **DO NOT dispatch** — the beads orchestrator handles spawning
-7. Report to human: "Created N beads. Dispatch is automatic."
-8. Monitor if asked: `bd list --status=in_progress`, `bd graph <epic-id>`
+6. Dispatch via spawn.sh for each unblocked bead:
+   `bash .claude/scripts/spawn.sh reactive "bd show <bead-id> && work on it" ~/Projects/baap`
+7. Monitor agent progress: `bd list --status=in_progress`
+8. When agent's bead closes: `bash .claude/scripts/cleanup.sh {agent-name} merge`
+9. Check if closure unblocked other beads → dispatch those
+10. When all beads in epic closed → close epic bead
+11. Report to human with results
 
 ---
 
-## Beads Orchestrator Protocol (dispatch layer — separate process)
+## Agent Execution Model (CRITICAL — READ THIS)
 
-The beads orchestrator is a separate process (skill or daemon) that handles all routing:
+### MANDATORY: Worktrees for ALL Implementation Work
 
-1. Watch `bd ready` for unblocked beads
-2. For each ready bead: query KG `get_file_owner` or `search_agents` → find owner
-3. Spawn owner agent: `spawn.sh reactive "bd show <id> && work on it" ~/agents/{agent}`
-4. Monitor: `bd list --status=in_progress`
-5. When bead closed: `cleanup.sh {agent} merge`
-6. Check if closure unblocked other beads → dispatch those
-7. When all beads in epic closed → close epic bead
+Every agent that writes code MUST run in a git worktree via spawn.sh. This is non-negotiable.
 
----
+```bash
+# CORRECT — always use spawn.sh for implementation work
+bash .claude/scripts/spawn.sh reactive "bd show <bead-id> && do the work" ~/Projects/baap
 
-## Spawning Sub-Agents (L1+ can do this)
+# WRONG — NEVER use Task tool for implementation
+# Task tool sub-agents share your working directory and branch.
+# Two agents editing files in the same directory = corruption.
+```
+
+### When to Use What
+
+| Mechanism | Use For | NEVER For |
+|-----------|---------|-----------|
+| `spawn.sh` + worktree | ALL code writing, file creation, implementation | — |
+| Task tool (subagent) | Read-only research, KG queries, blast radius analysis | Writing code, editing files |
+| Direct work (yourself) | Orchestration only: creating beads, querying KG | Implementation work |
+
+### Why This Matters
+
+- Worktrees give each agent its own branch and directory — filesystem isolation
+- No agent can corrupt another agent's work — exclusive ownership enforced by KG
+- If an agent fails, `cleanup.sh discard` removes it cleanly — safe rollback
+- All work enters main through `cleanup.sh merge` — single merge chokepoint
+- The merge chokepoint runs deterministic checks: KG ownership + bead closure
+
+### Spawning L2+ Sub-Agents (from within a worktree)
 
 If your task is too complex for a single session:
 
 1. Break into sub-beads: `bd create --type=task --title="sub-task" --priority=1`
 2. Set dependencies: `bd dep add <child> <parent>`
 3. Register new L2 agents in KG: `propose_ownership("file.py", "new-agent-name", "spawned for task X")`
-4. Spawn L(N+1) agents: `spawn.sh reactive "bd show <id>" ~/agents/{sub-agent}`
+4. Spawn L(N+1) agents: `bash .claude/scripts/spawn.sh reactive "bd show <id>" ~/Projects/baap`
 5. Monitor their beads: `bd list --status=in_progress`
-6. Merge their work when done: `cleanup.sh {sub-agent} merge`
+6. Merge their work when done: `bash .claude/scripts/cleanup.sh {sub-agent} merge`
 7. Close your own bead when all children complete
+
+L2 agents follow the SAME rules. They use spawn.sh for L3 agents. Same pattern at every level.
 
 ---
 
