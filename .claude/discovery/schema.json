@@ -1,0 +1,5520 @@
+{
+  "metadata": {
+    "extracted_at": "2026-02-14T04:05:54.236982+00:00",
+    "database": "baap",
+    "table_count": 38,
+    "total_columns": 472,
+    "extractor_version": "1.0"
+  },
+  "tables": [
+    {
+      "name": "activity_log",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 70875,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint(20)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "log_name",
+          "type": "varchar(255)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "description",
+          "type": "longtext",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "subject_type",
+          "type": "varchar(255)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "subject_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "causer_type",
+          "type": "varchar(255)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "causer_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "properties",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "backpacks",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 12068,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "lesson_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "lesson_slide_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "form_type",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "data",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "user_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "chatbot_documents",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 85,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "pdf",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "chatbot_histories",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 287,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "user_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "question",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "question_time",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "answer",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "answer_time",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "is_global_chat",
+          "type": "tinyint(1)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "chatbot_sessions",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "user_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "session_data",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "clients",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "employer_id",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "company_logo",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "company_name",
+          "type": "varchar(200)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "address_1",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "address_2",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "city",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "state",
+          "type": "varchar(40)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "zipcode",
+          "type": "varchar(5)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "primary_name",
+          "type": "varchar(200)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "primary_phone_number",
+          "type": "varchar(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "primary_email",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "secondary_name",
+          "type": "varchar(200)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "secondary_phone_number",
+          "type": "varchar(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "secondary_email",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "password",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "is_password_reset",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        },
+        {
+          "name": "remember_token",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 18
+        },
+        {
+          "name": "is_email_sent",
+          "type": "tinyint(1)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 19
+        },
+        {
+          "name": "status",
+          "type": "varchar(30)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 20
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 21
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 22
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 23
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "client_coach_mappings",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": null,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "client_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "coach_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        }
+      ],
+      "indexes": [],
+      "constraints": []
+    },
+    {
+      "name": "client_password_resets",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "email",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "token",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "coaches",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint(20)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "email",
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "email_verified_at",
+          "type": "varchar(80)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "username",
+          "type": "varchar(80)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "password",
+          "type": "varchar(80)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "verification_code",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "verified_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "is_profile_done",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "remember_token",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "coach_availabilities",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "coach_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "day",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "session",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "start_time",
+          "type": "time(6)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "end_time",
+          "type": "time(6)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "time_zone",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "tot_hrs_per_week",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "coach_password_resets",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "email",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "token",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "coach_profiles",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "coach_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "first_name",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "last_name",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "time_zone",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "linkdin_url",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "mobile_no",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "email",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "bio_link",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "payroll_link",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "language",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "gender",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "area_of_expertise",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "coaching_expertise",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        },
+        {
+          "name": "profile",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 18
+        },
+        {
+          "name": "rating",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 19
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "departments",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "client_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "department_title",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "documents",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 140,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "document_title",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "description",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "url",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "tag",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "document_file",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "themes",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "dynamic_sms_details",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "lesson_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "lesson_slide_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "diff_minutes",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "no_of_days",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "subject",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "message",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "message_type",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "slide_type",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "user_type",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "on_complete",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "employees",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1630,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "employee_id",
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "first_name",
+          "type": "varchar(200)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "last_name",
+          "type": "varchar(200)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "nick_name",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "dob",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "func_report",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "date_hired",
+          "type": "date",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "department_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "mobile_no",
+          "type": "varchar(15)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "address_1",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "address_2",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "state",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "city",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "zipcode",
+          "type": "varchar(8)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "status",
+          "type": "varchar(15)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        },
+        {
+          "name": "supervisor_name",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 18
+        },
+        {
+          "name": "supervisor_email_id",
+          "type": "varchar(30)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 19
+        },
+        {
+          "name": "sup_status",
+          "type": "varchar(30)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 20
+        },
+        {
+          "name": "supervisor_last_name",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 21
+        },
+        {
+          "name": "gender",
+          "type": "varchar(7)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 22
+        },
+        {
+          "name": "supervisor_address1",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 23
+        },
+        {
+          "name": "supervisor_address2",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 24
+        },
+        {
+          "name": "home_city",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 25
+        },
+        {
+          "name": "home_state",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 26
+        },
+        {
+          "name": "home_zipcode",
+          "type": "varchar(8)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 27
+        },
+        {
+          "name": "supervisor_link_url",
+          "type": "varchar(200)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 28
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 29
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 30
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 31
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "jobs",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "client_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "job_title",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "lesson_details",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "created_user_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "status",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "reason",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "lesson_slides",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 919,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "lesson_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "type",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "slide_content",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "video_library_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "priority",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "mail_communication_details",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "mail_communication_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "query_type",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "subject",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "description",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "status",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "attachment",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "from_type",
+          "type": "varchar(10)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "from_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "is_transfered",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "user_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "coach_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "client_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "admin_user_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        },
+        {
+          "name": "support",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 18
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "mail_transfers",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "mail_communication_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "from_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "from_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "to_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "to_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "comments",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "is_transfered",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "meetings",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "title",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "DATE",
+          "type": "date",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "from_time",
+          "type": "time(6)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "to_time",
+          "type": "time(6)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "description",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "type",
+          "type": "varchar(30)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "hosting_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "user_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "meeting_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "password",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "client_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "coach_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "admin_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "meeting_attendees",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "meeting_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "user_type",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "participant_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "join_time",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "notification_histories",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "notification_from",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "notification_table_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "coach_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "client_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "admin_user_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "read_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "unread_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "status",
+          "type": "smallint(6)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "nx_admin_users",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint(20)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "mobile_no",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "email",
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "email_verified_at",
+          "type": "varchar(80)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "username",
+          "type": "varchar(80)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "password",
+          "type": "varchar(80)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "verification_code",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "verified_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "is_profile_done",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "remember_token",
+          "type": "varchar(200)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "nx_chapter_details",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:04",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "chapter",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "description",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "no_of_lessons",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "no_of_total_hrs",
+          "type": "time(6)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "icon",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "total_slides",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "orders",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "is_recomended",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "has_sublesson",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "created_user_type",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "nx_journal_details",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 113,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "nx_lesson_detail_id",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "nx_lesson_slide_id",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "url",
+          "type": "varchar(250)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "page",
+          "type": "varchar(250)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "journal_detail",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "nx_journey_details",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "journey",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "journey_description",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "no_of_chapters",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "icon",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "created_user_type",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "nx_lessons",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "lesson",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "no_of_sublessons",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "total_hrs",
+          "type": "time(6)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "description",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "is_foundation",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "route_name",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "is_sublesson",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "priority",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "created_user_type",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "old_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "nx_password_resets",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "email",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "token",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "nx_users",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 4652,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint(20)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "email",
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "email_verified_at",
+          "type": "varchar(80)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "secondary_email",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "username",
+          "type": "varchar(80)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "password",
+          "type": "varchar(80)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "verification_code",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "verified_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "is_profile_done",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "remember_token",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "client_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "is_password_reset",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "is_email_sent",
+          "type": "tinyint(1)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "nx_user_onboardings",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 576,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "first_name",
+          "type": "varchar(80)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "last_name",
+          "type": "varchar(80)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "address1",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "address2",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "city",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "state",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "mobile_no",
+          "type": "varchar(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "zipcode",
+          "type": "varchar(5)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "linkdin_url",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "gender",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "why_did_you_come",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "own_reason",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "in_first_professional_job",
+          "type": "varchar(5)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "call_yourself",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "advance_your_career",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        },
+        {
+          "name": "imp_thing_career_plan",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 18
+        },
+        {
+          "name": "best_boss",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 19
+        },
+        {
+          "name": "success_look_like",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 20
+        },
+        {
+          "name": "stay_longer",
+          "type": "varchar(10)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 21
+        },
+        {
+          "name": "future_months",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 22
+        },
+        {
+          "name": "profile",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 23
+        },
+        {
+          "name": "rating",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 24
+        },
+        {
+          "name": "communication_type",
+          "type": "varchar(10)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 25
+        },
+        {
+          "name": "personal_email_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 26
+        },
+        {
+          "name": "assesment_order_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 27
+        },
+        {
+          "name": "assesment_request",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 28
+        },
+        {
+          "name": "assesment_response",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 29
+        },
+        {
+          "name": "assesment_result",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 30
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 31
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 32
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 33
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "nx_user_ratings",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 3435,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "lesson_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "lesson_slide_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "rating",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "is_chapter_completed",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "slide_index",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "user_type",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "old_ratings",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 500,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "rating",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "slide_index",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "nx_coach_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "nx_admin_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "sms_details",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 5976,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "nx_user_backpack_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "message_when",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "sms_type",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "mobile_number",
+          "type": "char(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "message",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "response",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "sms_schedules",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "sms_type",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "email_sms",
+          "type": "varchar(10)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "message_when",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "message",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "form_type",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "email_subject",
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "tasks",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 2929,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "user_type",
+          "type": "varchar(30)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "created_by",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "bigint(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "lesson_slide_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "lesson_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "form_type",
+          "type": "varchar(30)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "title",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "data",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "status",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "video_libraries",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 164,
+      "create_time": "2026-02-14 04:01:05",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 3
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "title",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 5
+        },
+        {
+          "name": "transcript",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 6
+        },
+        {
+          "name": "video",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "thumbnail",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "assets",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "job",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "locator",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "url",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "created_user_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    }
+  ]
+}

@@ -1,0 +1,6046 @@
+{
+  "metadata": {
+    "profiled_at": "2026-02-14T04:06:35.675886+00:00",
+    "database": "baap",
+    "tables_profiled": 38,
+    "total_rows": 74631,
+    "total_size_mb": 87.8429,
+    "profiler_version": "1.0"
+  },
+  "tables": [
+    {
+      "name": "activity_log",
+      "row_count": 57210,
+      "data_size_mb": 74.6094,
+      "index_size_mb": 0.0,
+      "avg_row_length": 1338,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 57210,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "100",
+            "101",
+            "102"
+          ]
+        },
+        {
+          "name": "log_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 30,
+          "cardinality_ratio": 0.0005,
+          "sample_values": [
+            "User",
+            "Logout",
+            "Login"
+          ]
+        },
+        {
+          "name": "description",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 22,
+          "cardinality_ratio": 0.0004,
+          "sample_values": [
+            "updated",
+            "web Logout.",
+            "Login Successfull"
+          ]
+        },
+        {
+          "name": "subject_type",
+          "null_count": 8308,
+          "null_rate": 0.1452,
+          "distinct_count": 24,
+          "cardinality_ratio": 0.0004,
+          "sample_values": [
+            "AppModelsUser",
+            "AppModelsUserOnboarding",
+            "AppModelsNxUserRating"
+          ]
+        },
+        {
+          "name": "subject_id",
+          "null_count": 8308,
+          "null_rate": 0.1452,
+          "distinct_count": 4055,
+          "cardinality_ratio": 0.0709,
+          "sample_values": [
+            "3",
+            "4",
+            "1"
+          ]
+        },
+        {
+          "name": "causer_type",
+          "null_count": 1498,
+          "null_rate": 0.0262,
+          "distinct_count": 6,
+          "cardinality_ratio": 0.0001,
+          "sample_values": [
+            "AppModelsUser",
+            "AppModelsAdminUser",
+            "AppModelsCoachCoach"
+          ]
+        },
+        {
+          "name": "causer_id",
+          "null_count": 1492,
+          "null_rate": 0.0261,
+          "distinct_count": 631,
+          "cardinality_ratio": 0.011,
+          "sample_values": [
+            "3",
+            "5",
+            "8"
+          ]
+        },
+        {
+          "name": "properties",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 46262,
+          "cardinality_ratio": 0.8086,
+          "sample_values": [
+            "{\"attributes\":{\"name\":null,\"email\":\"matt@thrivewealth.com\",\"client_id\":\"1\",\"password\":\"$2y$10$l10kJd3C.FR4odwOPv76nO.Hw22yPiEQUIVjC8pJ2S4ZP0LZqT/1C\",\"username\":\"matt@thrivewealth.com\",\"verification_co",
+            "{\"attributes\":{\"name\":null,\"email\":\"matt@thrivewealth.com\",\"client_id\":\"1\",\"password\":\"$2y$10$l10kJd3C.FR4odwOPv76nO.Hw22yPiEQUIVjC8pJ2S4ZP0LZqT/1C\",\"username\":\"matt@thrivewealth.com\",\"verification_co",
+            "{\"ip\":\"169.254.129.1\"}"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 36661,
+          "cardinality_ratio": 0.6408,
+          "sample_values": [
+            "2023-02-08 13:59:43",
+            "2023-02-08 13:59:48",
+            "2023-02-08 14:00:06"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 36661,
+          "cardinality_ratio": 0.6408,
+          "sample_values": [
+            "2023-02-08 13:59:43",
+            "2023-02-08 13:59:48",
+            "2023-02-08 14:00:06"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "100",
+          "log_name": "User",
+          "description": "updated",
+          "subject_type": "AppModelsUser",
+          "subject_id": "3",
+          "causer_type": "AppModelsUser",
+          "causer_id": "3",
+          "properties": "{\"attributes\":{\"name\":null,\"email\":\"matt@thrivewealth.com\",\"client_id\":\"1\",\"password\":\"$2y$10$l10kJd3C.FR4odwOPv76nO.Hw22yPiEQUIVjC8pJ2S4ZP0LZqT/1C\",\"username\":\"matt@thrivewealth.com\",\"verification_code\":\"1\",\"verified_at\":\"2023-02-08 09:47:20.000\",\"mobile_no\":null,\"secondary_email\":null},\"old\":{\"nam...(truncated)",
+          "created_at": "2023-02-08 13:59:43",
+          "updated_at": "2023-02-08 13:59:43"
+        },
+        {
+          "id": "101",
+          "log_name": "User",
+          "description": "updated",
+          "subject_type": "AppModelsUser",
+          "subject_id": "3",
+          "causer_type": "AppModelsUser",
+          "causer_id": "3",
+          "properties": "{\"attributes\":{\"name\":null,\"email\":\"matt@thrivewealth.com\",\"client_id\":\"1\",\"password\":\"$2y$10$l10kJd3C.FR4odwOPv76nO.Hw22yPiEQUIVjC8pJ2S4ZP0LZqT/1C\",\"username\":\"matt@thrivewealth.com\",\"verification_code\":\"1\",\"verified_at\":\"2023-02-08 09:47:20.000\",\"mobile_no\":null,\"secondary_email\":null},\"old\":{\"nam...(truncated)",
+          "created_at": "2023-02-08 13:59:48",
+          "updated_at": "2023-02-08 13:59:48"
+        },
+        {
+          "id": "102",
+          "log_name": "Logout",
+          "description": "web Logout.",
+          "subject_type": "NULL",
+          "subject_id": "NULL",
+          "causer_type": "AppModelsUser",
+          "causer_id": "3",
+          "properties": "{\"ip\":\"169.254.129.1\"}",
+          "created_at": "2023-02-08 13:59:48",
+          "updated_at": "2023-02-08 13:59:48"
+        }
+      ]
+    },
+    {
+      "name": "backpacks",
+      "row_count": 5833,
+      "data_size_mb": 2.5156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 456,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 5833,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "100",
+            "101",
+            "102"
+          ]
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 4,
+          "cardinality_ratio": 0.0007,
+          "sample_values": [
+            "2",
+            "13",
+            "18"
+          ]
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 32,
+          "cardinality_ratio": 0.0055,
+          "sample_values": [
+            "2",
+            "23",
+            "24"
+          ]
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 57,
+          "cardinality_ratio": 0.0098,
+          "sample_values": [
+            "12",
+            "42",
+            "6"
+          ]
+        },
+        {
+          "name": "lesson_detail_id",
+          "null_count": 4,
+          "null_rate": 0.0007,
+          "distinct_count": 57,
+          "cardinality_ratio": 0.0098,
+          "sample_values": [
+            "23",
+            "24",
+            "8"
+          ]
+        },
+        {
+          "name": "lesson_slide_id",
+          "null_count": 10,
+          "null_rate": 0.0017,
+          "distinct_count": 240,
+          "cardinality_ratio": 0.0411,
+          "sample_values": [
+            "260",
+            "261",
+            "262"
+          ]
+        },
+        {
+          "name": "form_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 50,
+          "cardinality_ratio": 0.0086,
+          "sample_values": [
+            "select-option-with-button",
+            "greetings",
+            "take-away"
+          ]
+        },
+        {
+          "name": "data",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3500,
+          "cardinality_ratio": 0.6,
+          "sample_values": [
+            "[\"Take a bite or sip of something you love.\"]",
+            "{\"greetings\":\"Gratitude works best when itu2019s genuine. If youu2019re grateful, say it. u201cFake it until you make itu201d is fine, but people will know if you donu2019t really mean it. So mean it.",
+            "{\"message\":\"Make celebration the best kind of habit. And do it every day, every week&mdash;for little things and big ones.\",\"rating\":3}"
+          ]
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 317,
+          "cardinality_ratio": 0.0543,
+          "sample_values": [
+            "1",
+            "4",
+            "62"
+          ]
+        },
+        {
+          "name": "user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 0.0005,
+          "sample_values": [
+            "User",
+            "Admin",
+            "Coach"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 5587,
+          "cardinality_ratio": 0.9578,
+          "sample_values": [
+            "2023-03-24 14:40:12",
+            "2023-03-24 14:54:58",
+            "2023-03-24 14:55:01"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 5590,
+          "cardinality_ratio": 0.9583,
+          "sample_values": [
+            "2023-03-24 14:40:12",
+            "2023-03-24 14:54:58",
+            "2023-03-24 14:55:01"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 5833,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "100",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "2",
+          "nx_lesson_id": "12",
+          "lesson_detail_id": "23",
+          "lesson_slide_id": "260",
+          "form_type": "select-option-with-button",
+          "data": "[\"Take a bite or sip of something you love.\"]",
+          "created_by": "1",
+          "user_type": "User",
+          "created_at": "2023-03-24 14:40:12",
+          "updated_at": "2023-03-24 14:40:12",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "101",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "2",
+          "nx_lesson_id": "12",
+          "lesson_detail_id": "23",
+          "lesson_slide_id": "261",
+          "form_type": "greetings",
+          "data": "{\"greetings\":\"Gratitude works best when itu2019s genuine. If youu2019re grateful, say it. u201cFake it until you make itu201d is fine, but people will know if you donu2019t really mean it. So mean it.\",\"advisor_content\":\"Your advisor at myNextory\",\"advisor_name\":\"XOXO,\"}",
+          "created_by": "1",
+          "user_type": "User",
+          "created_at": "2023-03-24 14:54:58",
+          "updated_at": "2023-03-24 14:54:58",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "102",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "2",
+          "nx_lesson_id": "12",
+          "lesson_detail_id": "23",
+          "lesson_slide_id": "262",
+          "form_type": "take-away",
+          "data": "{\"message\":\"Make celebration the best kind of habit. And do it every day, every week&mdash;for little things and big ones.\",\"rating\":3}",
+          "created_by": "1",
+          "user_type": "User",
+          "created_at": "2023-03-24 14:55:01",
+          "updated_at": "2023-03-24 14:55:01",
+          "deleted_at": "NULL"
+        }
+      ]
+    },
+    {
+      "name": "chatbot_documents",
+      "row_count": 7,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 2340,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 7,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "42",
+            "43",
+            "44"
+          ]
+        },
+        {
+          "name": "pdf",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 7,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "How To Avoid Being Overly Competitive at Work (With Tips).pdf",
+            "How to Be a More Reliable Professional.pdf",
+            "How to be a Supportive Colleague.pdf"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 7,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2025-04-28 07:09:28",
+            "2025-04-28 07:09:40",
+            "2025-04-28 07:09:55"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 7,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2025-04-28 07:09:28",
+            "2025-04-28 07:09:40",
+            "2025-04-28 07:09:55"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 7,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "42",
+          "pdf": "How To Avoid Being Overly Competitive at Work (With Tips).pdf",
+          "created_at": "2025-04-28 07:09:28",
+          "updated_at": "2025-04-28 07:09:28",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "43",
+          "pdf": "How to Be a More Reliable Professional.pdf",
+          "created_at": "2025-04-28 07:09:40",
+          "updated_at": "2025-04-28 07:09:40",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "44",
+          "pdf": "How to be a Supportive Colleague.pdf",
+          "created_at": "2025-04-28 07:09:55",
+          "updated_at": "2025-04-28 07:09:55",
+          "deleted_at": "NULL"
+        }
+      ]
+    },
+    {
+      "name": "chatbot_histories",
+      "row_count": 27,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 606,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "question_time",
+        "answer_time"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 27,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "35",
+            "47",
+            "48"
+          ]
+        },
+        {
+          "name": "user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.037,
+          "sample_values": [
+            "User"
+          ]
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 10,
+          "cardinality_ratio": 0.3704,
+          "sample_values": [
+            "297",
+            "528",
+            "1054"
+          ]
+        },
+        {
+          "name": "question",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 26,
+          "cardinality_ratio": 0.963,
+          "sample_values": [
+            "tell me about Raghupathi",
+            "Can I retake a module?",
+            "can i retake a moduel?"
+          ]
+        },
+        {
+          "name": "question_time",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 27,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2025-05-07 10:03:49",
+            "2025-05-14 16:14:11",
+            "2025-05-14 16:14:16"
+          ]
+        },
+        {
+          "name": "answer",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 7,
+          "cardinality_ratio": 0.2593,
+          "sample_values": [
+            "<p>Great question\u2014I don\u2019t have the right answer for that just yet, but I\u2019m learning more every day. If you want more on this topic, let the myNextory team know!</p>",
+            "'Great question\u2014I don\u2019t have the right answer for that just yet, but I\u2019m learning more every day. If you want more on this topic, let the myNextory team know!",
+            "Great question\u2014I don\u2019t have the right answer for that just yet, but I\u2019m learning more every day. If you want more on this topic, let the myNextory team know!"
+          ]
+        },
+        {
+          "name": "answer_time",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 27,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2025-05-07 10:03:52",
+            "2025-05-14 16:14:16",
+            "2025-05-14 16:14:20"
+          ]
+        },
+        {
+          "name": "is_global_chat",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.037,
+          "sample_values": [
+            "0"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "35",
+          "user_type": "User",
+          "created_by": "297",
+          "question": "tell me about Raghupathi",
+          "question_time": "2025-05-07 10:03:49",
+          "answer": "<p>Great question\u2014I don\u2019t have the right answer for that just yet, but I\u2019m learning more every day. If you want more on this topic, let the myNextory team know!</p>",
+          "answer_time": "2025-05-07 10:03:52",
+          "is_global_chat": "0"
+        },
+        {
+          "id": "47",
+          "user_type": "User",
+          "created_by": "528",
+          "question": "Can I retake a module?",
+          "question_time": "2025-05-14 16:14:11",
+          "answer": "<p>Great question\u2014I don\u2019t have the right answer for that just yet, but I\u2019m learning more every day. If you want more on this topic, let the myNextory team know!</p>",
+          "answer_time": "2025-05-14 16:14:16",
+          "is_global_chat": "0"
+        },
+        {
+          "id": "48",
+          "user_type": "User",
+          "created_by": "528",
+          "question": "can i retake a moduel?",
+          "question_time": "2025-05-14 16:14:16",
+          "answer": "<p>Great question\u2014I don\u2019t have the right answer for that just yet, but I\u2019m learning more every day. If you want more on this topic, let the myNextory team know!</p>",
+          "answer_time": "2025-05-14 16:14:20",
+          "is_global_chat": "0"
+        }
+      ]
+    },
+    {
+      "name": "chatbot_sessions",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "session_data",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "clients",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "deleted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "employer_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "company_logo",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "company_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "address_1",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "address_2",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "city",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "state",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "zipcode",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "primary_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "primary_phone_number",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "primary_email",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "secondary_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "secondary_phone_number",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "secondary_email",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "password",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_password_reset",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "remember_token",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_email_sent",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "client_coach_mappings",
+      "row_count": 17,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 963,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 17,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "client_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 5,
+          "cardinality_ratio": 0.2941,
+          "sample_values": [
+            "8",
+            "9",
+            "12"
+          ]
+        },
+        {
+          "name": "coach_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.1176,
+          "sample_values": [
+            "3",
+            "4"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 5,
+          "null_rate": 0.2941,
+          "distinct_count": 12,
+          "cardinality_ratio": 0.7059,
+          "sample_values": [
+            "2023-04-05 13:43:04",
+            "2024-03-12 06:55:04",
+            "2023-08-03 08:58:39"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "NULL",
+          "client_id": "8",
+          "coach_id": "3",
+          "deleted_at": "2023-04-05 13:43:04"
+        },
+        {
+          "id": "NULL",
+          "client_id": "8",
+          "coach_id": "3",
+          "deleted_at": "2024-03-12 06:55:04"
+        },
+        {
+          "id": "NULL",
+          "client_id": "9",
+          "coach_id": "3",
+          "deleted_at": "2023-08-03 08:58:39"
+        }
+      ]
+    },
+    {
+      "name": "client_password_resets",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "token",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "coaches",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "verified_at",
+        "deleted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email_verified_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "username",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "password",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "verification_code",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "verified_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_profile_done",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "remember_token",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "coach_availabilities",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "start_time",
+        "end_time",
+        "created_at",
+        "deleted_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "coach_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "day",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "session",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "start_time",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "end_time",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "time_zone",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "tot_hrs_per_week",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "coach_password_resets",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "token",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "coach_profiles",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "deleted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "coach_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "first_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "last_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "time_zone",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "linkdin_url",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "mobile_no",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "bio_link",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "payroll_link",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "language",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "gender",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "area_of_expertise",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "coaching_expertise",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "profile",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "rating",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "departments",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "client_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "department_title",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "documents",
+      "row_count": 40,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 409,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 40,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "100",
+            "101",
+            "102"
+          ]
+        },
+        {
+          "name": "document_title",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 40,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "How to Be Present: Discover the Benefits of Here and Now",
+            "How to Be Present at Work, in Relationships, and More",
+            "The Amazing Benefits of Being Present at Work"
+          ]
+        },
+        {
+          "name": "description",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 40,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "How to Be Present: Discover the Benefits of Here and Now",
+            "How to Be Present at Work, in Relationships, and More",
+            "The Amazing Benefits of Being Present at Work"
+          ]
+        },
+        {
+          "name": "url",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 39,
+          "cardinality_ratio": 0.975,
+          "sample_values": [
+            "https://www.betterup.com/blog/how-to-be-present",
+            "https://www.healthline.com/health/being-present",
+            "https://www.cornerstonedynamics.com/the-amazing-benefits-of-being-present-at-work/"
+          ]
+        },
+        {
+          "name": "tag",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 29,
+          "cardinality_ratio": 0.725,
+          "sample_values": [
+            "self-growth",
+            "mindfulness, self-growth",
+            "reliability, dependability"
+          ]
+        },
+        {
+          "name": "document_file",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 0.075,
+          "sample_values": [
+            "",
+            "Uploads/Doc382022-12-16_08-53-39.xlsx",
+            "Uploads/Doc562022-12-20_09-11-13.xlsx"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 40,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2022-12-01 17:01:15",
+            "2022-12-01 17:02:27",
+            "2022-12-01 17:03:23"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 40,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2023-06-29 13:34:18",
+            "2022-12-01 17:02:27",
+            "2022-12-01 17:03:23"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 32,
+          "null_rate": 0.8,
+          "distinct_count": 8,
+          "cardinality_ratio": 0.2,
+          "sample_values": [
+            "2023-06-29 13:34:18",
+            "2024-10-03 18:48:25",
+            "2024-10-03 18:49:05"
+          ]
+        },
+        {
+          "name": "themes",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 24,
+          "cardinality_ratio": 0.6,
+          "sample_values": [
+            "Communication,Happiness,Listening,Relationships,Self-Awareness",
+            "Drive for Results,Initiative,Happiness,Positivity,Self-Awareness",
+            "Communication,Confidence,Courage,Drive for Results,Initiative,Relationships"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "100",
+          "document_title": "How to Be Present: Discover the Benefits of Here and Now",
+          "description": "How to Be Present: Discover the Benefits of Here and Now",
+          "url": "https://www.betterup.com/blog/how-to-be-present",
+          "tag": "self-growth",
+          "document_file": "",
+          "created_at": "2022-12-01 17:01:15",
+          "updated_at": "2023-06-29 13:34:18",
+          "deleted_at": "2023-06-29 13:34:18",
+          "themes": "Communication,Happiness,Listening,Relationships,Self-Awareness"
+        },
+        {
+          "id": "101",
+          "document_title": "How to Be Present at Work, in Relationships, and More",
+          "description": "How to Be Present at Work, in Relationships, and More",
+          "url": "https://www.healthline.com/health/being-present",
+          "tag": "self-growth",
+          "document_file": "",
+          "created_at": "2022-12-01 17:02:27",
+          "updated_at": "2022-12-01 17:02:27",
+          "deleted_at": "NULL",
+          "themes": "Communication,Happiness,Listening,Relationships,Self-Awareness"
+        },
+        {
+          "id": "102",
+          "document_title": "The Amazing Benefits of Being Present at Work",
+          "description": "The Amazing Benefits of Being Present at Work",
+          "url": "https://www.cornerstonedynamics.com/the-amazing-benefits-of-being-present-at-work/",
+          "tag": "self-growth",
+          "document_file": "",
+          "created_at": "2022-12-01 17:03:23",
+          "updated_at": "2022-12-01 17:03:23",
+          "deleted_at": "NULL",
+          "themes": "Communication,Happiness,Listening,Relationships,Self-Awareness"
+        }
+      ]
+    },
+    {
+      "name": "dynamic_sms_details",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "lesson_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "lesson_slide_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "diff_minutes",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "no_of_days",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "subject",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "message",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "message_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "slide_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "on_complete",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "employees",
+      "row_count": 1467,
+      "data_size_mb": 0.1562,
+      "index_size_mb": 0.0,
+      "avg_row_length": 111,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "date_hired",
+        "deleted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1467,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "103",
+            "104",
+            "105"
+          ]
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1467,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "173",
+            "174",
+            "175"
+          ]
+        },
+        {
+          "name": "employee_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0014,
+          "sample_values": [
+            "",
+            "Test0001"
+          ]
+        },
+        {
+          "name": "first_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 824,
+          "cardinality_ratio": 0.5617,
+          "sample_values": [
+            "Lauren",
+            "Martha",
+            "Lindsay"
+          ]
+        },
+        {
+          "name": "last_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1185,
+          "cardinality_ratio": 0.8078,
+          "sample_values": [
+            "Barbour",
+            "Bligan",
+            " Evans"
+          ]
+        },
+        {
+          "name": "nick_name",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 5,
+          "cardinality_ratio": 0.0034,
+          "sample_values": [
+            "",
+            "nicolewerner",
+            "Jody"
+          ]
+        },
+        {
+          "name": "dob",
+          "null_count": 1467,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "func_report",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 8,
+          "cardinality_ratio": 0.0055,
+          "sample_values": [
+            "",
+            "Manager",
+            "Strategy Manager"
+          ]
+        },
+        {
+          "name": "date_hired",
+          "null_count": 1463,
+          "null_rate": 0.9973,
+          "distinct_count": 4,
+          "cardinality_ratio": 0.0027,
+          "sample_values": [
+            "2023-11-27",
+            "2024-02-26",
+            "2022-04-11"
+          ]
+        },
+        {
+          "name": "department_id",
+          "null_count": 96,
+          "null_rate": 0.0654,
+          "distinct_count": 82,
+          "cardinality_ratio": 0.0559,
+          "sample_values": [
+            "0",
+            "2",
+            "1"
+          ]
+        },
+        {
+          "name": "mobile_no",
+          "null_count": 1,
+          "null_rate": 0.0007,
+          "distinct_count": 447,
+          "cardinality_ratio": 0.3047,
+          "sample_values": [
+            "4079636323",
+            "6103313221",
+            "2679349462"
+          ]
+        },
+        {
+          "name": "address_1",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 3,
+          "cardinality_ratio": 0.002,
+          "sample_values": [
+            "",
+            "California1",
+            "withdrew at onset"
+          ]
+        },
+        {
+          "name": "address_2",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 5,
+          "cardinality_ratio": 0.0034,
+          "sample_values": [
+            "",
+            "California2",
+            "3128021264"
+          ]
+        },
+        {
+          "name": "state",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 7,
+          "cardinality_ratio": 0.0048,
+          "sample_values": [
+            "",
+            "California",
+            "Illinois"
+          ]
+        },
+        {
+          "name": "city",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 5,
+          "cardinality_ratio": 0.0034,
+          "sample_values": [
+            "",
+            "California city",
+            "Atlanta"
+          ]
+        },
+        {
+          "name": "zipcode",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0014,
+          "sample_values": [
+            "",
+            "51111"
+          ]
+        },
+        {
+          "name": "status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0014,
+          "sample_values": [
+            "Active",
+            "InActive"
+          ]
+        },
+        {
+          "name": "supervisor_name",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 7,
+          "cardinality_ratio": 0.0048,
+          "sample_values": [
+            "",
+            "Marcia",
+            "Kim"
+          ]
+        },
+        {
+          "name": "supervisor_email_id",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 6,
+          "cardinality_ratio": 0.0041,
+          "sample_values": [
+            "",
+            "moconnor@tocgrp.com",
+            "kbunting@tocgrp.com"
+          ]
+        },
+        {
+          "name": "sup_status",
+          "null_count": 858,
+          "null_rate": 0.5849,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0014,
+          "sample_values": [
+            "InActive",
+            "Active"
+          ]
+        },
+        {
+          "name": "supervisor_last_name",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 8,
+          "cardinality_ratio": 0.0055,
+          "sample_values": [
+            "",
+            "O'Connnor",
+            "Bunting"
+          ]
+        },
+        {
+          "name": "gender",
+          "null_count": 1467,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "supervisor_address1",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0007,
+          "sample_values": []
+        },
+        {
+          "name": "supervisor_address2",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0007,
+          "sample_values": []
+        },
+        {
+          "name": "home_city",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0007,
+          "sample_values": []
+        },
+        {
+          "name": "home_state",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0007,
+          "sample_values": []
+        },
+        {
+          "name": "home_zipcode",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0007,
+          "sample_values": []
+        },
+        {
+          "name": "supervisor_link_url",
+          "null_count": 876,
+          "null_rate": 0.5971,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0007,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 1454,
+          "null_rate": 0.9911,
+          "distinct_count": 8,
+          "cardinality_ratio": 0.0055,
+          "sample_values": [
+            "2025-03-25 09:09:11",
+            "2025-03-25 09:11:58",
+            "2025-03-25 09:14:16"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 1019,
+          "null_rate": 0.6946,
+          "distinct_count": 447,
+          "cardinality_ratio": 0.3047,
+          "sample_values": [
+            "2023-10-24 15:27:37",
+            "2023-10-24 15:28:49",
+            "2023-10-24 15:29:39"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 178,
+          "null_rate": 0.1213,
+          "distinct_count": 1257,
+          "cardinality_ratio": 0.8569,
+          "sample_values": [
+            "2024-04-17 19:19:36",
+            "2024-04-04 14:32:50",
+            "2025-07-07 11:11:52"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "103",
+          "nx_user_id": "173",
+          "employee_id": "",
+          "first_name": "Lauren",
+          "last_name": "Barbour",
+          "nick_name": "NULL",
+          "dob": "NULL",
+          "func_report": "NULL",
+          "date_hired": "NULL",
+          "department_id": "NULL",
+          "mobile_no": "4079636323",
+          "address_1": "NULL",
+          "address_2": "NULL",
+          "state": "NULL",
+          "city": "NULL",
+          "zipcode": "NULL",
+          "status": "Active",
+          "supervisor_name": "NULL",
+          "supervisor_email_id": "NULL",
+          "sup_status": "NULL",
+          "supervisor_last_name": "NULL",
+          "gender": "NULL",
+          "supervisor_address1": "NULL",
+          "supervisor_address2": "NULL",
+          "home_city": "NULL",
+          "home_state": "NULL",
+          "home_zipcode": "NULL",
+          "supervisor_link_url": "NULL",
+          "deleted_at": "NULL",
+          "created_at": "NULL",
+          "updated_at": "NULL"
+        },
+        {
+          "id": "104",
+          "nx_user_id": "174",
+          "employee_id": "",
+          "first_name": "Martha",
+          "last_name": "Bligan",
+          "nick_name": "",
+          "dob": "NULL",
+          "func_report": "",
+          "date_hired": "NULL",
+          "department_id": "0",
+          "mobile_no": "6103313221",
+          "address_1": "",
+          "address_2": "",
+          "state": "",
+          "city": "",
+          "zipcode": "",
+          "status": "InActive",
+          "supervisor_name": "",
+          "supervisor_email_id": "",
+          "sup_status": "InActive",
+          "supervisor_last_name": "",
+          "gender": "NULL",
+          "supervisor_address1": "",
+          "supervisor_address2": "",
+          "home_city": "",
+          "home_state": "",
+          "home_zipcode": "",
+          "supervisor_link_url": "",
+          "deleted_at": "NULL",
+          "created_at": "NULL",
+          "updated_at": "2024-04-17 19:19:36"
+        },
+        {
+          "id": "105",
+          "nx_user_id": "175",
+          "employee_id": "",
+          "first_name": "Lindsay",
+          "last_name": " Evans",
+          "nick_name": "NULL",
+          "dob": "NULL",
+          "func_report": "NULL",
+          "date_hired": "NULL",
+          "department_id": "NULL",
+          "mobile_no": "2679349462",
+          "address_1": "NULL",
+          "address_2": "NULL",
+          "state": "NULL",
+          "city": "NULL",
+          "zipcode": "NULL",
+          "status": "Active",
+          "supervisor_name": "NULL",
+          "supervisor_email_id": "NULL",
+          "sup_status": "NULL",
+          "supervisor_last_name": "NULL",
+          "gender": "NULL",
+          "supervisor_address1": "NULL",
+          "supervisor_address2": "NULL",
+          "home_city": "NULL",
+          "home_state": "NULL",
+          "home_zipcode": "NULL",
+          "supervisor_link_url": "NULL",
+          "deleted_at": "NULL",
+          "created_at": "NULL",
+          "updated_at": "NULL"
+        }
+      ]
+    },
+    {
+      "name": "jobs",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "updated_at",
+        "created_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "client_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "job_title",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "lesson_details",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "reason",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "lesson_slides",
+      "row_count": 521,
+      "data_size_mb": 1.5156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 3032,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 521,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "11",
+            "12",
+            "13"
+          ]
+        },
+        {
+          "name": "lesson_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 85,
+          "cardinality_ratio": 0.1631,
+          "sample_values": [
+            "8",
+            "11",
+            "15"
+          ]
+        },
+        {
+          "name": "type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 68,
+          "cardinality_ratio": 0.1305,
+          "sample_values": [
+            "image",
+            "video",
+            "question-answer"
+          ]
+        },
+        {
+          "name": "slide_content",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 464,
+          "cardinality_ratio": 0.8906,
+          "sample_values": [
+            "{\"background_image\":\"Image/20230912031906.jpg\",\"audio\":\"Audio/20250909015725.mp3\",\"slide_title\":\"Weu2019ll give you a hint: itu2019s already inside of you.",
+            "",
+            "\",\"content\":\"Here&rsquo;s where we begin!\",\"short_description\":\"By finding the one WORD that is going to define your year ahead.\",\"is_headsup\":0,\"heads_up\":null}",
+            "{\"slide_title\":\"Our first exercise is about getting more focused on what you want for your work and life.\",\"is_headsup\":1,\"heads_up\":\"In this first exercise, you&rsquo;re going to answer a series of q",
+            "{\"background_image\":\"Image/20230912032044.jpg\",\"audio\":\"Audio/20230912071529.mp3\",\"slide_title\":null,\"content\":\"&hellip;we don&rsquo;t have a clear destination.\",\"short_description\":\"This important an",
+            "<ul>",
+            "",
+            "",
+            "</ul>",
+            "\",\"is_headsup\":0,\"heads_up\":null}"
+          ]
+        },
+        {
+          "name": "video_library_id",
+          "null_count": 411,
+          "null_rate": 0.7889,
+          "distinct_count": 103,
+          "cardinality_ratio": 0.1977,
+          "sample_values": [
+            "137",
+            "145",
+            "146"
+          ]
+        },
+        {
+          "name": "priority",
+          "null_count": 358,
+          "null_rate": 0.6871,
+          "distinct_count": 14,
+          "cardinality_ratio": 0.0269,
+          "sample_values": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 521,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2023-07-26 07:27:11",
+            "2023-07-26 07:31:37",
+            "2023-07-26 07:36:57"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 412,
+          "cardinality_ratio": 0.7908,
+          "sample_values": [
+            "2025-09-09 01:57:25",
+            "2025-09-08 07:31:40",
+            "2023-09-12 07:15:29"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 450,
+          "null_rate": 0.8637,
+          "distinct_count": 44,
+          "cardinality_ratio": 0.0845,
+          "sample_values": [
+            "2023-12-04 22:43:01",
+            "2023-12-04 23:13:08",
+            "2023-12-05 12:59:38"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "11",
+          "lesson_detail_id": "8",
+          "type": "image",
+          "slide_content": "{\"background_image\":\"Image/20230912031906.jpg\",\"audio\":\"Audio/20250909015725.mp3\",\"slide_title\":\"Weu2019ll give you a hint: itu2019s already inside of you."
+        },
+        {
+          "id": ""
+        },
+        {
+          "id": "\",\"content\":\"Here&rsquo;s where we begin!\",\"short_description\":\"By finding the one WORD that is going to define your year ahead.\",\"is_headsup\":0,\"heads_up\":null}",
+          "lesson_detail_id": "NULL",
+          "type": "NULL",
+          "slide_content": "2023-07-26 07:27:11",
+          "video_library_id": "2025-09-09 01:57:25",
+          "priority": "NULL"
+        },
+        {
+          "id": "12",
+          "lesson_detail_id": "8",
+          "type": "video",
+          "slide_content": "{\"slide_title\":\"Our first exercise is about getting more focused on what you want for your work and life.\",\"is_headsup\":1,\"heads_up\":\"In this first exercise, you&rsquo;re going to answer a series of questions. Your answers will lead you to a WORD that will &ldquo;frame&rdquo; your decisions in the d...(truncated)",
+          "video_library_id": "137",
+          "priority": "NULL",
+          "created_at": "2023-07-26 07:31:37",
+          "updated_at": "2025-09-08 07:31:40",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "13",
+          "lesson_detail_id": "8",
+          "type": "image",
+          "slide_content": "{\"background_image\":\"Image/20230912032044.jpg\",\"audio\":\"Audio/20230912071529.mp3\",\"slide_title\":null,\"content\":\"&hellip;we don&rsquo;t have a clear destination.\",\"short_description\":\"This important and foundational exercise may require a bit of time to think."
+        },
+        {
+          "id": "<ul>"
+        },
+        {
+          "id": "",
+          "lesson_detail_id": "<li>Find a quiet, comfortable place.</li>"
+        },
+        {
+          "id": "",
+          "lesson_detail_id": "<li>Give yourself a few minutes just for you.</li>"
+        },
+        {
+          "id": "</ul>"
+        },
+        {
+          "id": "\",\"is_headsup\":0,\"heads_up\":null}",
+          "lesson_detail_id": "NULL",
+          "type": "NULL",
+          "slide_content": "2023-07-26 07:36:57",
+          "video_library_id": "2023-09-12 07:15:29",
+          "priority": "NULL"
+        }
+      ]
+    },
+    {
+      "name": "mail_communication_details",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "mail_communication_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "query_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "subject",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "description",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "attachment",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "from_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "from_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_transfered",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "coach_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "client_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "admin_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "support",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "mail_transfers",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "mail_communication_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "from_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "from_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "to_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "to_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "comments",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_transfered",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "meetings",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "DATE",
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "title",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "DATE",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "from_time",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "to_time",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "description",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "hosting_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "meeting_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "password",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "client_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "coach_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "admin_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "meeting_attendees",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "join_time"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "meeting_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "participant_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "join_time",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "notification_histories",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "read_at",
+        "unread_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "notification_from",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "notification_table_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "coach_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "client_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "admin_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "read_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "unread_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "nx_admin_users",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "verified_at",
+        "deleted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "mobile_no",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email_verified_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "username",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "password",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "verification_code",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "verified_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_profile_done",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "remember_token",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "nx_chapter_details",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "chapter",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "description",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "no_of_lessons",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "no_of_total_hrs",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "icon",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "total_slides",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "orders",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_recomended",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "has_sublesson",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "nx_journal_details",
+      "row_count": 13,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 1260,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "deleted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 13,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "56",
+            "62",
+            "71"
+          ]
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 4,
+          "cardinality_ratio": 0.3077,
+          "sample_values": [
+            "285",
+            "3716",
+            "4545"
+          ]
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "null_count": 3,
+          "null_rate": 0.2308,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0769,
+          "sample_values": [
+            "2"
+          ]
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 3,
+          "null_rate": 0.2308,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.1538,
+          "sample_values": [
+            "23",
+            "2"
+          ]
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 3,
+          "null_rate": 0.2308,
+          "distinct_count": 3,
+          "cardinality_ratio": 0.2308,
+          "sample_values": [
+            "42",
+            "6",
+            "7"
+          ]
+        },
+        {
+          "name": "nx_lesson_detail_id",
+          "null_count": 3,
+          "null_rate": 0.2308,
+          "distinct_count": 3,
+          "cardinality_ratio": 0.2308,
+          "sample_values": [
+            "24",
+            "8",
+            "11"
+          ]
+        },
+        {
+          "name": "nx_lesson_slide_id",
+          "null_count": 13,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "url",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 4,
+          "cardinality_ratio": 0.3077,
+          "sample_values": [
+            "lesson/attend",
+            "home/chapters",
+            "backpacks/journals"
+          ]
+        },
+        {
+          "name": "page",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 6,
+          "cardinality_ratio": 0.4615,
+          "sample_values": [
+            "The Amazing You :: The Amazing You",
+            "Foundations :: One Word",
+            "Dashboard"
+          ]
+        },
+        {
+          "name": "journal_detail",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 13,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "Meeting with Brock",
+            "Meeting with Patrick",
+            "Meeting is going well"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 13,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 13,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2025-06-02 15:47:52",
+            "2025-06-24 14:22:52",
+            "2025-07-24 10:49:13"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 13,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2025-06-02 15:47:52",
+            "2025-06-24 14:22:52",
+            "2025-07-24 10:49:13"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "56",
+          "nx_user_id": "285",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "23",
+          "nx_lesson_id": "42",
+          "nx_lesson_detail_id": "24",
+          "nx_lesson_slide_id": "NULL",
+          "url": "lesson/attend",
+          "page": "The Amazing You :: The Amazing You",
+          "journal_detail": "Meeting with Brock",
+          "deleted_at": "NULL",
+          "created_at": "2025-06-02 15:47:52",
+          "updated_at": "2025-06-02 15:47:52"
+        },
+        {
+          "id": "62",
+          "nx_user_id": "285",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "23",
+          "nx_lesson_id": "42",
+          "nx_lesson_detail_id": "24",
+          "nx_lesson_slide_id": "NULL",
+          "url": "lesson/attend",
+          "page": "The Amazing You :: The Amazing You",
+          "journal_detail": "Meeting with Patrick",
+          "deleted_at": "NULL",
+          "created_at": "2025-06-24 14:22:52",
+          "updated_at": "2025-06-24 14:22:52"
+        },
+        {
+          "id": "71",
+          "nx_user_id": "285",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "23",
+          "nx_lesson_id": "42",
+          "nx_lesson_detail_id": "24",
+          "nx_lesson_slide_id": "NULL",
+          "url": "lesson/attend",
+          "page": "The Amazing You :: The Amazing You",
+          "journal_detail": "Meeting is going well",
+          "deleted_at": "NULL",
+          "created_at": "2025-07-24 10:49:13",
+          "updated_at": "2025-07-24 10:49:13"
+        }
+      ]
+    },
+    {
+      "name": "nx_journey_details",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "journey",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "journey_description",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "no_of_chapters",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "icon",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "nx_lessons",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "lesson",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "no_of_sublessons",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "total_hrs",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "description",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_foundation",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "route_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_sublesson",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "priority",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "old_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "nx_password_resets",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "token",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "nx_users",
+      "row_count": 1464,
+      "data_size_mb": 1.5156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 1072,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "verified_at",
+        "deleted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1464,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "174",
+            "175",
+            "176"
+          ]
+        },
+        {
+          "name": "email",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1450,
+          "cardinality_ratio": 0.9904,
+          "sample_values": [
+            "lbligan@tocgrp.com",
+            "levans@tocgrp.com",
+            "lthomas@tocgrp.com"
+          ]
+        },
+        {
+          "name": "email_verified_at",
+          "null_count": 1464,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "secondary_email",
+          "null_count": 834,
+          "null_rate": 0.5697,
+          "distinct_count": 252,
+          "cardinality_ratio": 0.1721,
+          "sample_values": [
+            "",
+            "lizt725@gmail.com",
+            "mindylansing@gmail.com"
+          ]
+        },
+        {
+          "name": "username",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1449,
+          "cardinality_ratio": 0.9898,
+          "sample_values": [
+            "lbligan@tocgrp.com",
+            "levans@tocgrp.com",
+            "lthomas@tocgrp.com"
+          ]
+        },
+        {
+          "name": "password",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1464,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "$2y$10$ni7jICZlh743ocKO.l7xD.hP1j.yVgoRfNc4x5lE7VOB4wK0ymxMK",
+            "$2y$10$aqzpGmG5KgF5LDsHeI0tzOF1AgOeLBeeZpcIrXt.d1tAGZwVG51UW",
+            "$2y$10$Ejw/b3OpQe0ZPiUB5F40cutjODbXhEcQgG064DEQUwXSOLnV7pCOK"
+          ]
+        },
+        {
+          "name": "verification_code",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0007,
+          "sample_values": [
+            "1"
+          ]
+        },
+        {
+          "name": "verified_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 703,
+          "cardinality_ratio": 0.4802,
+          "sample_values": [
+            "2023-10-16 13:07:38",
+            "2023-10-16 13:07:40",
+            "2023-10-16 13:07:41"
+          ]
+        },
+        {
+          "name": "is_profile_done",
+          "null_count": 992,
+          "null_rate": 0.6776,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0007,
+          "sample_values": [
+            "1"
+          ]
+        },
+        {
+          "name": "remember_token",
+          "null_count": 950,
+          "null_rate": 0.6489,
+          "distinct_count": 514,
+          "cardinality_ratio": 0.3511,
+          "sample_values": [
+            "PMmT316444ngKeIiRaElsZsyIzvGWgzZED1q703aKpakCGU8Pvu7dhqXKHQy",
+            "qUxnfr05JIVrOyz15Wi1sCj99V04fTegNmw5BcjEhW5CoJ7LYWvlSEUiQqFA",
+            "3CCoFdG7KhDejUmLaoQiPf6iSEelXBg55cBcdg53g4qncqVCfD07FsvbvCmq"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 1449,
+          "null_rate": 0.9898,
+          "distinct_count": 10,
+          "cardinality_ratio": 0.0068,
+          "sample_values": [
+            "2024-02-21 05:25:06",
+            "2025-03-25 06:06:20",
+            "2025-03-25 09:09:10"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 702,
+          "cardinality_ratio": 0.4795,
+          "sample_values": [
+            "2023-10-16 13:07:38",
+            "2023-10-16 13:07:40",
+            "2023-10-16 13:07:41"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1455,
+          "cardinality_ratio": 0.9939,
+          "sample_values": [
+            "2024-04-17 19:19:36",
+            "2023-10-16 13:07:40",
+            "2023-11-06 17:48:03"
+          ]
+        },
+        {
+          "name": "client_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 23,
+          "cardinality_ratio": 0.0157,
+          "sample_values": [
+            "24",
+            "26",
+            "28"
+          ]
+        },
+        {
+          "name": "is_password_reset",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0014,
+          "sample_values": [
+            "1",
+            "0"
+          ]
+        },
+        {
+          "name": "is_email_sent",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0014,
+          "sample_values": [
+            "1",
+            "0"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "174",
+          "email": "lbligan@tocgrp.com",
+          "email_verified_at": "NULL",
+          "secondary_email": "",
+          "username": "lbligan@tocgrp.com",
+          "password": "$2y$10$ni7jICZlh743ocKO.l7xD.hP1j.yVgoRfNc4x5lE7VOB4wK0ymxMK",
+          "verification_code": "1",
+          "verified_at": "2023-10-16 13:07:38",
+          "is_profile_done": "NULL",
+          "remember_token": "PMmT316444ngKeIiRaElsZsyIzvGWgzZED1q703aKpakCGU8Pvu7dhqXKHQy",
+          "deleted_at": "NULL",
+          "created_at": "2023-10-16 13:07:38",
+          "updated_at": "2024-04-17 19:19:36",
+          "client_id": "24",
+          "is_password_reset": "1",
+          "is_email_sent": "1"
+        },
+        {
+          "id": "175",
+          "email": "levans@tocgrp.com",
+          "email_verified_at": "NULL",
+          "secondary_email": "NULL",
+          "username": "levans@tocgrp.com",
+          "password": "$2y$10$aqzpGmG5KgF5LDsHeI0tzOF1AgOeLBeeZpcIrXt.d1tAGZwVG51UW",
+          "verification_code": "1",
+          "verified_at": "2023-10-16 13:07:40",
+          "is_profile_done": "NULL",
+          "remember_token": "NULL",
+          "deleted_at": "NULL",
+          "created_at": "2023-10-16 13:07:40",
+          "updated_at": "2023-10-16 13:07:40",
+          "client_id": "24",
+          "is_password_reset": "0",
+          "is_email_sent": "1"
+        },
+        {
+          "id": "176",
+          "email": "lthomas@tocgrp.com",
+          "email_verified_at": "NULL",
+          "secondary_email": "lizt725@gmail.com",
+          "username": "lthomas@tocgrp.com",
+          "password": "$2y$10$Ejw/b3OpQe0ZPiUB5F40cutjODbXhEcQgG064DEQUwXSOLnV7pCOK",
+          "verification_code": "1",
+          "verified_at": "2023-10-16 13:07:40",
+          "is_profile_done": "1",
+          "remember_token": "qUxnfr05JIVrOyz15Wi1sCj99V04fTegNmw5BcjEhW5CoJ7LYWvlSEUiQqFA",
+          "deleted_at": "NULL",
+          "created_at": "2023-10-16 13:07:40",
+          "updated_at": "2023-11-06 17:48:03",
+          "client_id": "24",
+          "is_password_reset": "1",
+          "is_email_sent": "1"
+        }
+      ]
+    },
+    {
+      "name": "nx_user_onboardings",
+      "row_count": 220,
+      "data_size_mb": 1.5156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 8637,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 220,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "7",
+            "16",
+            "18"
+          ]
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 219,
+          "cardinality_ratio": 0.9955,
+          "sample_values": [
+            "1",
+            "59",
+            "71"
+          ]
+        },
+        {
+          "name": "first_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 179,
+          "cardinality_ratio": 0.8136,
+          "sample_values": [
+            "Jack",
+            "Jen",
+            "Jim"
+          ]
+        },
+        {
+          "name": "last_name",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 210,
+          "cardinality_ratio": 0.9545,
+          "sample_values": [
+            "Green",
+            "Nelson",
+            "Lennox"
+          ]
+        },
+        {
+          "name": "address1",
+          "null_count": 9,
+          "null_rate": 0.0409,
+          "distinct_count": 152,
+          "cardinality_ratio": 0.6909,
+          "sample_values": [
+            "",
+            "12866 Caminito De Las Olas",
+            "8545 TIMBER TRL"
+          ]
+        },
+        {
+          "name": "address2",
+          "null_count": 9,
+          "null_rate": 0.0409,
+          "distinct_count": 21,
+          "cardinality_ratio": 0.0955,
+          "sample_values": [
+            "",
+            "2C",
+            "California2"
+          ]
+        },
+        {
+          "name": "city",
+          "null_count": 9,
+          "null_rate": 0.0409,
+          "distinct_count": 112,
+          "cardinality_ratio": 0.5091,
+          "sample_values": [
+            "",
+            "Monee",
+            "Oak Point"
+          ]
+        },
+        {
+          "name": "state",
+          "null_count": 9,
+          "null_rate": 0.0409,
+          "distinct_count": 21,
+          "cardinality_ratio": 0.0955,
+          "sample_values": [
+            "",
+            "Illinois",
+            "Texas"
+          ]
+        },
+        {
+          "name": "mobile_no",
+          "null_count": 9,
+          "null_rate": 0.0409,
+          "distinct_count": 209,
+          "cardinality_ratio": 0.95,
+          "sample_values": [
+            "6106139939",
+            "7708468497",
+            "4848896436"
+          ]
+        },
+        {
+          "name": "zipcode",
+          "null_count": 9,
+          "null_rate": 0.0409,
+          "distinct_count": 126,
+          "cardinality_ratio": 0.5727,
+          "sample_values": [
+            "",
+            "60449",
+            "75068"
+          ]
+        },
+        {
+          "name": "linkdin_url",
+          "null_count": 9,
+          "null_rate": 0.0409,
+          "distinct_count": 59,
+          "cardinality_ratio": 0.2682,
+          "sample_values": [
+            "",
+            "linkedin.com/in/jen-nelson-77198218",
+            "https://www.linkedin.com/in/erin-cimino/"
+          ]
+        },
+        {
+          "name": "gender",
+          "null_count": 5,
+          "null_rate": 0.0227,
+          "distinct_count": 3,
+          "cardinality_ratio": 0.0136,
+          "sample_values": [
+            "Man",
+            "Woman",
+            "Prefer not to say"
+          ]
+        },
+        {
+          "name": "why_did_you_come",
+          "null_count": 24,
+          "null_rate": 0.1091,
+          "distinct_count": 28,
+          "cardinality_ratio": 0.1273,
+          "sample_values": [
+            "[\"I want to get better at my current job and grow my career\"]",
+            "[\"I want to build my professional brand by telling my story in the   most effective ways\"]",
+            "[\"I want to find a new job inside my company\",\"I want to build my professional brand by telling my story in the   most effective ways\"]"
+          ]
+        },
+        {
+          "name": "own_reason",
+          "null_count": 6,
+          "null_rate": 0.0273,
+          "distinct_count": 79,
+          "cardinality_ratio": 0.3591,
+          "sample_values": [
+            "",
+            "Excited to help evaluate this new platform.",
+            "I have never seen improvement in my roles when it comes to position and role. I have been in different types of manager roles but I have never seen my career ladder and see how I can be a director or "
+          ]
+        },
+        {
+          "name": "in_first_professional_job",
+          "null_count": 8,
+          "null_rate": 0.0364,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0091,
+          "sample_values": [
+            "No",
+            "Yes"
+          ]
+        },
+        {
+          "name": "call_yourself",
+          "null_count": 8,
+          "null_rate": 0.0364,
+          "distinct_count": 12,
+          "cardinality_ratio": 0.0545,
+          "sample_values": [
+            "[\"Advanced Beginner\",\"Some Experience\"]",
+            "[\"Been There - Done That\"]",
+            "[\"Lots of Experience\"]"
+          ]
+        },
+        {
+          "name": "advance_your_career",
+          "null_count": 14,
+          "null_rate": 0.0636,
+          "distinct_count": 11,
+          "cardinality_ratio": 0.05,
+          "sample_values": [
+            "[\"I am fully motivated and ready to get started.\"]",
+            "[\"Iu2019m curious, but not sure Iu2019m ready to commit the time to make major changes\"]",
+            "[\"Iu2019m intrigued and want Win at Work to motivate me to want to continue.\"]"
+          ]
+        },
+        {
+          "name": "imp_thing_career_plan",
+          "null_count": 8,
+          "null_rate": 0.0364,
+          "distinct_count": 104,
+          "cardinality_ratio": 0.4727,
+          "sample_values": [
+            "[\"Compensation\",\"Grow and Learn\",\"Work/Life Balance\"]",
+            "[\"Interesting Work\",\"Working on a Good Team\",\"Compensation\"]",
+            "[\"Mission or Purpose\",\"Compensation\",\"Work/Life Balance\"]"
+          ]
+        },
+        {
+          "name": "best_boss",
+          "null_count": 11,
+          "null_rate": 0.05,
+          "distinct_count": 53,
+          "cardinality_ratio": 0.2409,
+          "sample_values": [
+            "[\"Gave me praise and encouragement\",\"Is my current boss\"]",
+            "[\"Is someone Iu2019m still close to\",\"Trusted me and left me alone to do my job\",\"Asked my opinion and empowered me to come up with solutions\"]",
+            "[\"Spent time with me, coaching and guiding me\",\"Trusted me and left me alone to do my job\",\"Asked my opinion and empowered me to come up with solutions\"]"
+          ]
+        },
+        {
+          "name": "success_look_like",
+          "null_count": 13,
+          "null_rate": 0.0591,
+          "distinct_count": 64,
+          "cardinality_ratio": 0.2909,
+          "sample_values": [
+            "[\"Make a lot of money as I define u201ca lotu201d\",\"My boss appreciates me\",\"My colleagues appreciate me\",\"I am confident in my position\",\"I am growing and learning\",\"I am heard in my company when I s",
+            "[\"My boss appreciates me\",\"I am growing and learning\",\"I am heard in my company when I share ideas\"]",
+            "[\"Make a lot of money as I define u201ca lotu201d\",\"I am confident in my position\",\"I am growing and learning\"]"
+          ]
+        },
+        {
+          "name": "stay_longer",
+          "null_count": 13,
+          "null_rate": 0.0591,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0091,
+          "sample_values": [
+            "Yes",
+            "No"
+          ]
+        },
+        {
+          "name": "future_months",
+          "null_count": 8,
+          "null_rate": 0.0364,
+          "distinct_count": 12,
+          "cardinality_ratio": 0.0545,
+          "sample_values": [
+            "7",
+            "9",
+            "10"
+          ]
+        },
+        {
+          "name": "profile",
+          "null_count": 204,
+          "null_rate": 0.9273,
+          "distinct_count": 14,
+          "cardinality_ratio": 0.0636,
+          "sample_values": [
+            "Profile//2023051211344779.jpg",
+            "undefined",
+            "Profile//20250318142120899.jpg"
+          ]
+        },
+        {
+          "name": "rating",
+          "null_count": 8,
+          "null_rate": 0.0364,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0045,
+          "sample_values": [
+            "0"
+          ]
+        },
+        {
+          "name": "communication_type",
+          "null_count": 220,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "personal_email_id",
+          "null_count": 9,
+          "null_rate": 0.0409,
+          "distinct_count": 129,
+          "cardinality_ratio": 0.5864,
+          "sample_values": [
+            "",
+            "etcimino@gmail.com",
+            "rohit231189@gmail.com"
+          ]
+        },
+        {
+          "name": "assesment_order_id",
+          "null_count": 7,
+          "null_rate": 0.0318,
+          "distinct_count": 213,
+          "cardinality_ratio": 0.9682,
+          "sample_values": [
+            "myNx0001230210024218",
+            "myNx0059230324093616",
+            "myNx0071230404014349"
+          ]
+        },
+        {
+          "name": "assesment_request",
+          "null_count": 7,
+          "null_rate": 0.0318,
+          "distinct_count": 213,
+          "cardinality_ratio": 0.9682,
+          "sample_values": [
+            "{\"packageId\":{\"value\":\"JB-MMCT55O1F\"},\"orderId\":{\"value\":\"myNx0001230210024218\"},\"candidate\":{\"first\":\"Jack\",\"last\":\"Green\",\"email\":\"jack@thrivewealth.com\"}}",
+            "{\"packageId\":{\"value\":\"JB-MMCT55O1F\"},\"orderId\":{\"value\":\"myNx0059230324093616\"},\"candidate\":{\"first\":\"Jen\",\"last\":\"Nelson\",\"email\":\"jnelson@copado.com\"}}",
+            "{\"packageId\":{\"value\":\"JB-MMCT55O1F\"},\"orderId\":{\"value\":\"myNx0071230404014349\"},\"candidate\":{\"first\":\"Jim\",\"last\":\"Lennox\",\"email\":\"jlennox@topstackgroup.com\"}}"
+          ]
+        },
+        {
+          "name": "assesment_response",
+          "null_count": 7,
+          "null_rate": 0.0318,
+          "distinct_count": 213,
+          "cardinality_ratio": 0.9682,
+          "sample_values": [
+            "{\"assessmentAccessURL\":{\"uri\":\"https://www.ondemandassessment.com/verify/index/MYNDQNX82UDEZP1r\"}}",
+            "{\"assessmentAccessURL\":{\"uri\":\"https://www.ondemandassessment.com/verify/index/MYNAQpCSW97YJCkq\"}}",
+            "{\"assessmentAccessURL\":{\"uri\":\"https://www.ondemandassessment.com/verify/index/MYNXTU5bkEqMkNX7\"}}"
+          ]
+        },
+        {
+          "name": "assesment_result",
+          "null_count": 23,
+          "null_rate": 0.1045,
+          "distinct_count": 197,
+          "cardinality_ratio": 0.8955,
+          "sample_values": [
+            "{\"orderId\":\"myNx0001230210024218\",\"externalId\":null,\"candidate\":{\"first\":\"Jack\",\"last\":\"Green\",\"email\":\"jack@thrivewealth.com\",\"date\":\"2023-02-10 11:52:58\",\"eventId\":\"MYNDQNX82UDEZP1r\",\"testTakerId\":3",
+            "{\"orderId\":\"myNx0059230324093616\",\"externalId\":null,\"candidate\":{\"first\":\"Jen\",\"last\":\"Nelson\",\"email\":\"jnelson@copado.com\",\"date\":\"2023-03-24 18:48:14\",\"eventId\":\"MYNAQpCSW97YJCkq\",\"testTakerId\":3384",
+            "{\"orderId\":\"myNx0071230404014349\",\"externalId\":null,\"candidate\":{\"first\":\"Jim\",\"last\":\"Lennox\",\"email\":\"jlennox@topstackgroup.com\",\"date\":\"2023-04-14 10:20:26\",\"eventId\":\"MYNXTU5bkEqMkNX7\",\"testTakerI"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 219,
+          "cardinality_ratio": 0.9955,
+          "sample_values": [
+            "2023-02-10 14:36:22",
+            "2023-03-24 21:32:50",
+            "2023-04-04 13:39:36"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 220,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2023-02-10 14:52:59",
+            "2023-03-24 21:48:16",
+            "2023-04-14 13:20:28"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 219,
+          "null_rate": 0.9955,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0045,
+          "sample_values": [
+            "2024-04-11 06:36:16"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "7",
+          "nx_user_id": "1",
+          "first_name": "Jack",
+          "last_name": "Green",
+          "address1": "",
+          "address2": "",
+          "city": "",
+          "state": "",
+          "mobile_no": "6106139939",
+          "zipcode": "",
+          "linkdin_url": "",
+          "gender": "Man",
+          "why_did_you_come": "[\"I want to get better at my current job and grow my career\"]",
+          "own_reason": "",
+          "in_first_professional_job": "No",
+          "call_yourself": "[\"Advanced Beginner\",\"Some Experience\"]",
+          "advance_your_career": "[\"I am fully motivated and ready to get started.\"]",
+          "imp_thing_career_plan": "[\"Compensation\",\"Grow and Learn\",\"Work/Life Balance\"]",
+          "best_boss": "[\"Gave me praise and encouragement\",\"Is my current boss\"]",
+          "success_look_like": "[\"Make a lot of money as I define u201ca lotu201d\",\"My boss appreciates me\",\"My colleagues appreciate me\",\"I am confident in my position\",\"I am growing and learning\",\"I am heard in my company when I share ideas\"]",
+          "stay_longer": "Yes",
+          "future_months": "7",
+          "profile": "NULL",
+          "rating": "0",
+          "communication_type": "NULL",
+          "personal_email_id": "",
+          "assesment_order_id": "myNx0001230210024218",
+          "assesment_request": "{\"packageId\":{\"value\":\"JB-MMCT55O1F\"},\"orderId\":{\"value\":\"myNx0001230210024218\"},\"candidate\":{\"first\":\"Jack\",\"last\":\"Green\",\"email\":\"jack@thrivewealth.com\"}}",
+          "assesment_response": "{\"assessmentAccessURL\":{\"uri\":\"https://www.ondemandassessment.com/verify/index/MYNDQNX82UDEZP1r\"}}",
+          "assesment_result": "{\"orderId\":\"myNx0001230210024218\",\"externalId\":null,\"candidate\":{\"first\":\"Jack\",\"last\":\"Green\",\"email\":\"jack@thrivewealth.com\",\"date\":\"2023-02-10 11:52:58\",\"eventId\":\"MYNDQNX82UDEZP1r\",\"testTakerId\":32886273},\"scores\":{\"EPPPercentMatch\":null,\"EPPAchievement\":14,\"EPPMotivation\":64,\"EPPCompetitiveness...(truncated)",
+          "created_at": "2023-02-10 14:36:22",
+          "updated_at": "2023-02-10 14:52:59",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "16",
+          "nx_user_id": "59",
+          "first_name": "Jen",
+          "last_name": "Nelson",
+          "address1": "",
+          "address2": "",
+          "city": "Monee",
+          "state": "Illinois",
+          "mobile_no": "7708468497",
+          "zipcode": "60449",
+          "linkdin_url": "linkedin.com/in/jen-nelson-77198218",
+          "gender": "Woman",
+          "why_did_you_come": "[\"I want to build my professional brand by telling my story in the   most effective ways\"]",
+          "own_reason": "Excited to help evaluate this new platform.",
+          "in_first_professional_job": "No",
+          "call_yourself": "[\"Been There - Done That\"]",
+          "advance_your_career": "[\"Iu2019m curious, but not sure Iu2019m ready to commit the time to make major changes\"]",
+          "imp_thing_career_plan": "[\"Interesting Work\",\"Working on a Good Team\",\"Compensation\"]",
+          "best_boss": "[\"Is someone Iu2019m still close to\",\"Trusted me and left me alone to do my job\",\"Asked my opinion and empowered me to come up with solutions\"]",
+          "success_look_like": "[\"My boss appreciates me\",\"I am growing and learning\",\"I am heard in my company when I share ideas\"]",
+          "stay_longer": "Yes",
+          "future_months": "9",
+          "profile": "NULL",
+          "rating": "0",
+          "communication_type": "NULL",
+          "personal_email_id": "",
+          "assesment_order_id": "myNx0059230324093616",
+          "assesment_request": "{\"packageId\":{\"value\":\"JB-MMCT55O1F\"},\"orderId\":{\"value\":\"myNx0059230324093616\"},\"candidate\":{\"first\":\"Jen\",\"last\":\"Nelson\",\"email\":\"jnelson@copado.com\"}}",
+          "assesment_response": "{\"assessmentAccessURL\":{\"uri\":\"https://www.ondemandassessment.com/verify/index/MYNAQpCSW97YJCkq\"}}",
+          "assesment_result": "{\"orderId\":\"myNx0059230324093616\",\"externalId\":null,\"candidate\":{\"first\":\"Jen\",\"last\":\"Nelson\",\"email\":\"jnelson@copado.com\",\"date\":\"2023-03-24 18:48:14\",\"eventId\":\"MYNAQpCSW97YJCkq\",\"testTakerId\":33841063},\"scores\":{\"EPPPercentMatch\":null,\"EPPAchievement\":75,\"EPPMotivation\":64,\"EPPCompetitiveness\":3...(truncated)",
+          "created_at": "2023-03-24 21:32:50",
+          "updated_at": "2023-03-24 21:48:16",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "18",
+          "nx_user_id": "71",
+          "first_name": "Jim",
+          "last_name": "Lennox",
+          "address1": "",
+          "address2": "",
+          "city": "",
+          "state": "",
+          "mobile_no": "4848896436",
+          "zipcode": "",
+          "linkdin_url": "",
+          "gender": "Man",
+          "why_did_you_come": "[\"I want to get better at my current job and grow my career\"]",
+          "own_reason": "",
+          "in_first_professional_job": "No",
+          "call_yourself": "[\"Lots of Experience\"]",
+          "advance_your_career": "[\"I am fully motivated and ready to get started.\"]",
+          "imp_thing_career_plan": "[\"Mission or Purpose\",\"Compensation\",\"Work/Life Balance\"]",
+          "best_boss": "[\"Spent time with me, coaching and guiding me\",\"Trusted me and left me alone to do my job\",\"Asked my opinion and empowered me to come up with solutions\"]",
+          "success_look_like": "[\"Make a lot of money as I define u201ca lotu201d\",\"I am confident in my position\",\"I am growing and learning\"]",
+          "stay_longer": "Yes",
+          "future_months": "9",
+          "profile": "NULL",
+          "rating": "0",
+          "communication_type": "NULL",
+          "personal_email_id": "",
+          "assesment_order_id": "myNx0071230404014349",
+          "assesment_request": "{\"packageId\":{\"value\":\"JB-MMCT55O1F\"},\"orderId\":{\"value\":\"myNx0071230404014349\"},\"candidate\":{\"first\":\"Jim\",\"last\":\"Lennox\",\"email\":\"jlennox@topstackgroup.com\"}}",
+          "assesment_response": "{\"assessmentAccessURL\":{\"uri\":\"https://www.ondemandassessment.com/verify/index/MYNXTU5bkEqMkNX7\"}}",
+          "assesment_result": "{\"orderId\":\"myNx0071230404014349\",\"externalId\":null,\"candidate\":{\"first\":\"Jim\",\"last\":\"Lennox\",\"email\":\"jlennox@topstackgroup.com\",\"date\":\"2023-04-14 10:20:26\",\"eventId\":\"MYNXTU5bkEqMkNX7\",\"testTakerId\":34034739},\"scores\":{\"EPPPercentMatch\":null,\"EPPAchievement\":54,\"EPPMotivation\":64,\"EPPCompetitive...(truncated)",
+          "created_at": "2023-04-04 13:39:36",
+          "updated_at": "2023-04-14 13:20:28",
+          "deleted_at": "NULL"
+        }
+      ]
+    },
+    {
+      "name": "nx_user_ratings",
+      "row_count": 3257,
+      "data_size_mb": 0.5,
+      "index_size_mb": 0.0,
+      "avg_row_length": 149,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3257,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "16",
+            "26",
+            "28"
+          ]
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 8,
+          "cardinality_ratio": 0.0025,
+          "sample_values": [
+            "2",
+            "13",
+            "14"
+          ]
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 35,
+          "cardinality_ratio": 0.0107,
+          "sample_values": [
+            "23",
+            "2",
+            "24"
+          ]
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 73,
+          "cardinality_ratio": 0.0224,
+          "sample_values": [
+            "42",
+            "11",
+            "5"
+          ]
+        },
+        {
+          "name": "lesson_detail_id",
+          "null_count": 1,
+          "null_rate": 0.0003,
+          "distinct_count": 72,
+          "cardinality_ratio": 0.0221,
+          "sample_values": [
+            "24",
+            "22",
+            "7"
+          ]
+        },
+        {
+          "name": "lesson_slide_id",
+          "null_count": 3,
+          "null_rate": 0.0009,
+          "distinct_count": 211,
+          "cardinality_ratio": 0.0648,
+          "sample_values": [
+            "274",
+            "245",
+            "10"
+          ]
+        },
+        {
+          "name": "rating",
+          "null_count": 1211,
+          "null_rate": 0.3718,
+          "distinct_count": 6,
+          "cardinality_ratio": 0.0018,
+          "sample_values": [
+            "5",
+            "3",
+            "1"
+          ]
+        },
+        {
+          "name": "is_chapter_completed",
+          "null_count": 412,
+          "null_rate": 0.1265,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0006,
+          "sample_values": [
+            "1",
+            "0"
+          ]
+        },
+        {
+          "name": "slide_index",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0006,
+          "sample_values": [
+            "1",
+            "0"
+          ]
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 348,
+          "cardinality_ratio": 0.1068,
+          "sample_values": [
+            "2",
+            "1",
+            "3"
+          ]
+        },
+        {
+          "name": "user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 0.0009,
+          "sample_values": [
+            "User",
+            "Coach",
+            "Admin"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 8,
+          "null_rate": 0.0025,
+          "distinct_count": 3246,
+          "cardinality_ratio": 0.9966,
+          "sample_values": [
+            "2023-06-01 12:54:23",
+            "2023-03-24 14:38:18",
+            "2023-02-10 14:45:04"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 7,
+          "null_rate": 0.0021,
+          "distinct_count": 3247,
+          "cardinality_ratio": 0.9969,
+          "sample_values": [
+            "2023-06-01 12:54:23",
+            "2023-03-24 14:38:18",
+            "2023-02-10 14:45:04"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 3257,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "16",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "23",
+          "nx_lesson_id": "42",
+          "lesson_detail_id": "24",
+          "lesson_slide_id": "274",
+          "rating": "5",
+          "is_chapter_completed": "1",
+          "slide_index": "1",
+          "created_by": "2",
+          "user_type": "User",
+          "created_at": "2023-06-01 12:54:23",
+          "updated_at": "2023-06-01 12:54:23",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "26",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "2",
+          "nx_lesson_id": "11",
+          "lesson_detail_id": "22",
+          "lesson_slide_id": "245",
+          "rating": "3",
+          "is_chapter_completed": "NULL",
+          "slide_index": "1",
+          "created_by": "1",
+          "user_type": "User",
+          "created_at": "2023-03-24 14:38:18",
+          "updated_at": "2023-03-24 14:38:18",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "28",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "2",
+          "nx_lesson_id": "5",
+          "lesson_detail_id": "7",
+          "lesson_slide_id": "10",
+          "rating": "1",
+          "is_chapter_completed": "NULL",
+          "slide_index": "1",
+          "created_by": "3",
+          "user_type": "User",
+          "created_at": "2023-02-10 14:45:04",
+          "updated_at": "2023-02-10 14:45:04",
+          "deleted_at": "NULL"
+        }
+      ]
+    },
+    {
+      "name": "old_ratings",
+      "row_count": 400,
+      "data_size_mb": 0.0469,
+      "index_size_mb": 0.0,
+      "avg_row_length": 122,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 400,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "11",
+            "12",
+            "17"
+          ]
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 14,
+          "null_rate": 0.035,
+          "distinct_count": 46,
+          "cardinality_ratio": 0.115,
+          "sample_values": [
+            "8",
+            "2",
+            "5"
+          ]
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.005,
+          "sample_values": [
+            "1",
+            "0"
+          ]
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 10,
+          "cardinality_ratio": 0.025,
+          "sample_values": [
+            "1",
+            "4",
+            "6"
+          ]
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 46,
+          "cardinality_ratio": 0.115,
+          "sample_values": [
+            "1",
+            "2",
+            "8"
+          ]
+        },
+        {
+          "name": "rating",
+          "null_count": 152,
+          "null_rate": 0.38,
+          "distinct_count": 6,
+          "cardinality_ratio": 0.015,
+          "sample_values": [
+            "0",
+            "5",
+            "4"
+          ]
+        },
+        {
+          "name": "slide_index",
+          "null_count": 221,
+          "null_rate": 0.5525,
+          "distinct_count": 18,
+          "cardinality_ratio": 0.045,
+          "sample_values": [
+            "0",
+            "12",
+            "1"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 399,
+          "cardinality_ratio": 0.9975,
+          "sample_values": [
+            "2023-03-07 14:17:22",
+            "2023-03-07 14:34:22",
+            "2023-03-07 16:12:18"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 400,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2023-03-07 14:17:22",
+            "2023-03-07 14:34:22",
+            "2023-03-07 16:12:18"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 400,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_coach_id",
+          "null_count": 399,
+          "null_rate": 0.9975,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0025,
+          "sample_values": [
+            "3"
+          ]
+        },
+        {
+          "name": "nx_admin_id",
+          "null_count": 387,
+          "null_rate": 0.9675,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.0025,
+          "sample_values": [
+            "1"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "11",
+          "nx_user_id": "8",
+          "nx_journey_detail_id": "1",
+          "nx_chapter_detail_id": "1",
+          "nx_lesson_id": "1",
+          "rating": "0",
+          "slide_index": "NULL",
+          "created_at": "2023-03-07 14:17:22",
+          "updated_at": "2023-03-07 14:17:22",
+          "deleted_at": "NULL",
+          "nx_coach_id": "NULL",
+          "nx_admin_id": "NULL"
+        },
+        {
+          "id": "12",
+          "nx_user_id": "8",
+          "nx_journey_detail_id": "1",
+          "nx_chapter_detail_id": "1",
+          "nx_lesson_id": "2",
+          "rating": "5",
+          "slide_index": "NULL",
+          "created_at": "2023-03-07 14:34:22",
+          "updated_at": "2023-03-07 14:34:22",
+          "deleted_at": "NULL",
+          "nx_coach_id": "NULL",
+          "nx_admin_id": "NULL"
+        },
+        {
+          "id": "17",
+          "nx_user_id": "8",
+          "nx_journey_detail_id": "1",
+          "nx_chapter_detail_id": "1",
+          "nx_lesson_id": "8",
+          "rating": "5",
+          "slide_index": "NULL",
+          "created_at": "2023-03-07 16:12:18",
+          "updated_at": "2023-03-07 16:12:18",
+          "deleted_at": "NULL",
+          "nx_coach_id": "NULL",
+          "nx_admin_id": "NULL"
+        }
+      ]
+    },
+    {
+      "name": "sms_details",
+      "row_count": 1323,
+      "data_size_mb": 2.5156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 2105,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1323,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "8",
+            "9",
+            "23"
+          ]
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 473,
+          "cardinality_ratio": 0.3575,
+          "sample_values": [
+            "8",
+            "2",
+            "7"
+          ]
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 372,
+          "null_rate": 0.2812,
+          "distinct_count": 19,
+          "cardinality_ratio": 0.0144,
+          "sample_values": [
+            "1",
+            "2",
+            "27"
+          ]
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 372,
+          "null_rate": 0.2812,
+          "distinct_count": 33,
+          "cardinality_ratio": 0.0249,
+          "sample_values": [
+            "2",
+            "9",
+            "8"
+          ]
+        },
+        {
+          "name": "nx_user_backpack_detail_id",
+          "null_count": 886,
+          "null_rate": 0.6697,
+          "distinct_count": 285,
+          "cardinality_ratio": 0.2154,
+          "sample_values": [
+            "30",
+            "32",
+            "72"
+          ]
+        },
+        {
+          "name": "message_when",
+          "null_count": 372,
+          "null_rate": 0.2812,
+          "distinct_count": 9,
+          "cardinality_ratio": 0.0068,
+          "sample_values": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "sms_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 32,
+          "cardinality_ratio": 0.0242,
+          "sample_values": [
+            "Find Your Word",
+            "Jump-starting Your Word",
+            "SMS H"
+          ]
+        },
+        {
+          "name": "mobile_number",
+          "null_count": 18,
+          "null_rate": 0.0136,
+          "distinct_count": 623,
+          "cardinality_ratio": 0.4709,
+          "sample_values": [
+            "2674493416",
+            "amanda@thrivewealth.com",
+            "2158807558"
+          ]
+        },
+        {
+          "name": "message",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 279,
+          "cardinality_ratio": 0.2109,
+          "sample_values": [
+            "You\u2019re on the road to  Courage ! We\u2019ll see you back at myNextory to keep the momentum going!\u201d",
+            "<p style=\"margin:0px\">Remember to </p><ul><li>Change your screensaver or home screen to Courage</li><li>Put a sticky note with Courage on your bathroom or rear view mirror.</li><li>Start a journal to ",
+            "Are you making decisions using  Confident as your frame? Has it impacted the way you`re making decisions in new and interesting ways?"
+          ]
+        },
+        {
+          "name": "response",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 38,
+          "cardinality_ratio": 0.0287,
+          "sample_values": [
+            "{\"total_price\":0.0946,\"total_count\":1,\"queued_count\":0,\"messages\":[{\"to\":\"+912674493416\",\"body\":\"You're on the road to Courage ! We'll see you back at myNextory to keep the momentum going!\"\",\"from\":\"+",
+            "success",
+            "{\"total_price\":0,\"total_count\":1,\"queued_count\":0,\"messages\":[{\"to\":\"2158807558\",\"body\":\"Are you making decisions using Confident as your frame? Has it impacted the way you`re making decisions in new "
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1293,
+          "cardinality_ratio": 0.9773,
+          "sample_values": [
+            "2023-03-07 14:33:03",
+            "2023-03-07 14:34:05",
+            "2023-03-10 01:00:20"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "8",
+          "nx_user_id": "8",
+          "nx_chapter_detail_id": "1",
+          "nx_lesson_id": "2",
+          "nx_user_backpack_detail_id": "30",
+          "message_when": "1",
+          "sms_type": "Find Your Word",
+          "mobile_number": "2674493416",
+          "message": "You\u2019re on the road to  Courage ! We\u2019ll see you back at myNextory to keep the momentum going!\u201d",
+          "response": "{\"total_price\":0.0946,\"total_count\":1,\"queued_count\":0,\"messages\":[{\"to\":\"+912674493416\",\"body\":\"You're on the road to Courage ! We'll see you back at myNextory to keep the momentum going!\"\",\"from\":\"+61447254068\",\"schedule\":\"\",\"message_id\":\"3C1FE73A-38A0-4181-ABC5-C2870F1AF721\",\"message_parts\":1,\"me...(truncated)",
+          "created_at": "2023-03-07 14:33:03"
+        },
+        {
+          "id": "9",
+          "nx_user_id": "8",
+          "nx_chapter_detail_id": "1",
+          "nx_lesson_id": "2",
+          "nx_user_backpack_detail_id": "32",
+          "message_when": "1",
+          "sms_type": "Jump-starting Your Word",
+          "mobile_number": "amanda@thrivewealth.com",
+          "message": "<p style=\"margin:0px\">Remember to </p><ul><li>Change your screensaver or home screen to Courage</li><li>Put a sticky note with Courage on your bathroom or rear view mirror.</li><li>Start a journal to track how your choices and decisions are influenced by re-framing them with the word Courage</li><li...(truncated)",
+          "response": "success",
+          "created_at": "2023-03-07 14:34:05"
+        },
+        {
+          "id": "23",
+          "nx_user_id": "2",
+          "nx_chapter_detail_id": "1",
+          "nx_lesson_id": "2",
+          "nx_user_backpack_detail_id": "72",
+          "message_when": "2",
+          "sms_type": "Find Your Word",
+          "mobile_number": "2158807558",
+          "message": "Are you making decisions using  Confident as your frame? Has it impacted the way you`re making decisions in new and interesting ways?",
+          "response": "{\"total_price\":0,\"total_count\":1,\"queued_count\":0,\"messages\":[{\"to\":\"2158807558\",\"body\":\"Are you making decisions using Confident as your frame? Has it impacted the way you`re making decisions in new and interesting ways?\",\"from\":\"+18332687764\",\"schedule\":\"\",\"message_id\":\"94A110B0-BD40-4524-933F-E7F...(truncated)",
+          "created_at": "2023-03-10 01:00:20"
+        }
+      ]
+    },
+    {
+      "name": "sms_schedules",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": false,
+      "timestamp_columns": [],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "sms_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email_sms",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "message_when",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "message",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "form_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "email_subject",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "tasks",
+      "row_count": 2829,
+      "data_size_mb": 2.5156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 1025,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2829,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "user_type",
+          "null_count": 42,
+          "null_rate": 0.0148,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0007,
+          "sample_values": [
+            "User",
+            "Coach"
+          ]
+        },
+        {
+          "name": "created_by",
+          "null_count": 42,
+          "null_rate": 0.0148,
+          "distinct_count": 310,
+          "cardinality_ratio": 0.1096,
+          "sample_values": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 4,
+          "cardinality_ratio": 0.0014,
+          "sample_values": [
+            "2",
+            "13",
+            "18"
+          ]
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 16,
+          "cardinality_ratio": 0.0057,
+          "sample_values": [
+            "2",
+            "40",
+            "41"
+          ]
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 21,
+          "cardinality_ratio": 0.0074,
+          "sample_values": [
+            "6",
+            "7",
+            "9"
+          ]
+        },
+        {
+          "name": "lesson_slide_id",
+          "null_count": 42,
+          "null_rate": 0.0148,
+          "distinct_count": 49,
+          "cardinality_ratio": 0.0173,
+          "sample_values": [
+            "25",
+            "74",
+            "181"
+          ]
+        },
+        {
+          "name": "lesson_detail_id",
+          "null_count": 42,
+          "null_rate": 0.0148,
+          "distinct_count": 20,
+          "cardinality_ratio": 0.0071,
+          "sample_values": [
+            "8",
+            "11",
+            "18"
+          ]
+        },
+        {
+          "name": "form_type",
+          "null_count": 42,
+          "null_rate": 0.0148,
+          "distinct_count": 16,
+          "cardinality_ratio": 0.0057,
+          "sample_values": [
+            "one-word-select-option",
+            "question-with-example",
+            "stakeholder-question-answer"
+          ]
+        },
+        {
+          "name": "title",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 41,
+          "cardinality_ratio": 0.0145,
+          "sample_values": [
+            "Jump start DYNAMIC_WORD by doing this: ",
+            "This is what I will SAY, DO and BE to live within my Principles.",
+            "You\u2019re doing a great job and meeting your goals with minimal supervision from me. We can count on you to collaborate with the team and make the people around you better."
+          ]
+        },
+        {
+          "name": "data",
+          "null_count": 42,
+          "null_rate": 0.0148,
+          "distinct_count": 2599,
+          "cardinality_ratio": 0.9187,
+          "sample_values": [
+            "{\"slide_title\":\"Itu2019s all about taking action. Select at least one thing you can and will do right now to have <span class=\"finalOptionSelected\">Growth</span> begin to impact your life in new and m",
+            "[\"Why not me?\",\"exercise \",\"myself\"]",
+            "[\"They are my surroundings. I am influenced by my surroundings. So if I am around successful people, that will help with my success and vice versa\",\"determined, purposeful, motivated\"]"
+          ]
+        },
+        {
+          "name": "status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.0007,
+          "sample_values": [
+            "Pending",
+            "Complete"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 2,
+          "null_rate": 0.0007,
+          "distinct_count": 2628,
+          "cardinality_ratio": 0.929,
+          "sample_values": [
+            "2023-03-06 15:09:25",
+            "2023-03-06 15:36:41",
+            "2023-03-23 11:19:47"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 1,
+          "null_rate": 0.0004,
+          "distinct_count": 2625,
+          "cardinality_ratio": 0.9279,
+          "sample_values": [
+            "2023-03-06 15:09:25",
+            "2023-03-06 15:36:41",
+            "2023-03-23 11:19:47"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 2829,
+          "null_rate": 1.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "1",
+          "user_type": "User",
+          "created_by": "1",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "2",
+          "nx_lesson_id": "6",
+          "lesson_slide_id": "25",
+          "lesson_detail_id": "8",
+          "form_type": "one-word-select-option",
+          "title": "Jump start DYNAMIC_WORD by doing this: ",
+          "data": "{\"slide_title\":\"Itu2019s all about taking action. Select at least one thing you can and will do right now to have <span class=\"finalOptionSelected\">Growth</span> begin to impact your life in new and meaningful ways.\",\"options\":{\"3\":\"Have a bracelet made with <span class='finalOptionSelected'>Growth<...(truncated)",
+          "status": "Pending",
+          "created_at": "2023-03-06 15:09:25",
+          "updated_at": "2023-03-06 15:09:25",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "2",
+          "user_type": "User",
+          "created_by": "1",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "2",
+          "nx_lesson_id": "7",
+          "lesson_slide_id": "74",
+          "lesson_detail_id": "11",
+          "form_type": "question-with-example",
+          "title": "This is what I will SAY, DO and BE to live within my Principles.",
+          "data": "[\"Why not me?\",\"exercise \",\"myself\"]",
+          "status": "Pending",
+          "created_at": "2023-03-06 15:36:41",
+          "updated_at": "2023-03-06 15:36:41",
+          "deleted_at": "NULL"
+        },
+        {
+          "id": "3",
+          "user_type": "User",
+          "created_by": "1",
+          "nx_journey_detail_id": "2",
+          "nx_chapter_detail_id": "2",
+          "nx_lesson_id": "9",
+          "lesson_slide_id": "181",
+          "lesson_detail_id": "18",
+          "form_type": "stakeholder-question-answer",
+          "title": "You\u2019re doing a great job and meeting your goals with minimal supervision from me. We can count on you to collaborate with the team and make the people around you better.",
+          "data": "[\"They are my surroundings. I am influenced by my surroundings. So if I am around successful people, that will help with my success and vice versa\",\"determined, purposeful, motivated\"]",
+          "status": "Pending",
+          "created_at": "2023-03-23 11:19:47",
+          "updated_at": "2023-03-23 11:19:47",
+          "deleted_at": "NULL"
+        }
+      ]
+    },
+    {
+      "name": "video_libraries",
+      "row_count": 3,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0,
+      "avg_row_length": 5461,
+      "is_empty": false,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "110",
+            "152",
+            "163"
+          ]
+        },
+        {
+          "name": "nx_journey_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.3333,
+          "sample_values": [
+            "13"
+          ]
+        },
+        {
+          "name": "nx_chapter_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.6667,
+          "sample_values": [
+            "40",
+            "59"
+          ]
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.6667,
+          "sample_values": [
+            "80",
+            "99"
+          ]
+        },
+        {
+          "name": "title",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "tet",
+            "videotest",
+            "Reading the Room Video 2"
+          ]
+        },
+        {
+          "name": "transcript",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "testtt",
+            "",
+            "The next week, Micah waited before speaking. He noticed the tone of the room and chose to follow up later with a one-on-one message and a proposal. This time, the idea gained traction&mdash;and his ma"
+          ]
+        },
+        {
+          "name": "video",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "Video/6/productiontet-20240830014436.mp4",
+            "Video/6/productionvideotest-20250905140912.mp4",
+            "Video/6/productionreading-th-20250912133424.mp4"
+          ]
+        },
+        {
+          "name": "thumbnail",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "Video/Thumbnail/Thumbnail-6-20240830014439.PNG",
+            "Video/Thumbnail/Thumbnail-6-20250905140912.png",
+            "Video/Thumbnail/Thumbnail-6-20250912133425.png"
+          ]
+        },
+        {
+          "name": "assets",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "{\"name\":\"productiontet-20240830014436-output\",\"id\":\"/subscriptions/211a4436-865d-4f3b-a428-1a654645c64c/resourceGroups/default/providers/Microsoft.Media/mediaservices/mediakindfrnextory/assets/product",
+            "null",
+            "{\"name\":\"productionreading-th-20250912133424-output\",\"id\":\"/api/v1/projects/mediakindfrnextory/media/assets/productionreading-th-20250912133424-output\",\"type\":\"Microsoft.Media/mediaservices/assets\",\"p"
+          ]
+        },
+        {
+          "name": "job",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "{\"name\":\"productiontet-20240830014436-job\",\"id\":\"/subscriptions/211a4436-865d-4f3b-a428-1a654645c64c/resourceGroups/default/providers/Microsoft.Media/mediaservices/mediakindfrnextory/transforms/myNext",
+            "null",
+            "{\"name\":\"productionreading-th-20250912133424-job\",\"id\":\"/api/v1/projects/mediakindfrnextory/media/transforms/myNextoryTransform/jobs/productionreading-th-20250912133424-job\",\"type\":\"Microsoft.Media/me"
+          ]
+        },
+        {
+          "name": "locator",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "{\"name\":\"productiontet-20240830014436-locator\",\"id\":\"/subscriptions/211a4436-865d-4f3b-a428-1a654645c64c/resourceGroups/default/providers/Microsoft.Media/mediaservices/mediakindfrnextory/streamingLoca",
+            "null",
+            "{\"name\":\"productionreading-th-20250912133424-locator\",\"id\":\"/api/v1/projects/mediakindfrnextory/media/streamingLocators/productionreading-th-20250912133424-locator\",\"type\":\"Microsoft.Media/mediaservic"
+          ]
+        },
+        {
+          "name": "url",
+          "null_count": 1,
+          "null_rate": 0.3333,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.6667,
+          "sample_values": [
+            "{\"streamingPaths\":[{\"streamingProtocol\":\"Dash\",\"encryptionScheme\":\"NoEncryption\",\"paths\":[\"/ab37977e-00e3-4641-85dd-39cc843bf74b/productiontet-20240830014436.ism/manifest(format=mpd-time-cmaf)\"]},{\"st",
+            "{\"streamingPaths\":[{\"streamingProtocol\":\"Hls\",\"encryptionScheme\":\"NoEncryption\",\"paths\":[\"/8a04e2d4-9e2e-4e42-ae3a-8c42c0241c01/productionreading-th-20250912133.ism/manifest(format=m3u8-cmaf)\"]},{\"str"
+          ]
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.3333,
+          "sample_values": [
+            "6"
+          ]
+        },
+        {
+          "name": "created_user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 1,
+          "cardinality_ratio": 0.3333,
+          "sample_values": [
+            "Coach"
+          ]
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2024-08-30 01:44:39",
+            "2025-09-05 14:09:12",
+            "2025-09-12 13:34:25"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 3,
+          "cardinality_ratio": 1.0,
+          "sample_values": [
+            "2024-08-30 01:49:03",
+            "2025-09-11 19:02:51",
+            "2025-09-12 13:35:06"
+          ]
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 1,
+          "null_rate": 0.3333,
+          "distinct_count": 2,
+          "cardinality_ratio": 0.6667,
+          "sample_values": [
+            "2024-08-30 01:49:03",
+            "2025-09-11 19:02:51"
+          ]
+        }
+      ],
+      "sample_rows": [
+        {
+          "id": "110",
+          "nx_journey_detail_id": "13",
+          "nx_chapter_detail_id": "40",
+          "nx_lesson_id": "80",
+          "title": "tet",
+          "transcript": "testtt",
+          "video": "Video/6/productiontet-20240830014436.mp4",
+          "thumbnail": "Video/Thumbnail/Thumbnail-6-20240830014439.PNG",
+          "assets": "{\"name\":\"productiontet-20240830014436-output\",\"id\":\"/subscriptions/211a4436-865d-4f3b-a428-1a654645c64c/resourceGroups/default/providers/Microsoft.Media/mediaservices/mediakindfrnextory/assets/productiontet-20240830014436-output\",\"type\":\"Microsoft.Media/mediaservices/assets\",\"properties\":{\"assetId\":...(truncated)",
+          "job": "{\"name\":\"productiontet-20240830014436-job\",\"id\":\"/subscriptions/211a4436-865d-4f3b-a428-1a654645c64c/resourceGroups/default/providers/Microsoft.Media/mediaservices/mediakindfrnextory/transforms/myNextoryTransform/jobs/productiontet-20240830014436-job\",\"type\":\"Microsoft.Media/mediaservices/transforms...(truncated)",
+          "locator": "{\"name\":\"productiontet-20240830014436-locator\",\"id\":\"/subscriptions/211a4436-865d-4f3b-a428-1a654645c64c/resourceGroups/default/providers/Microsoft.Media/mediaservices/mediakindfrnextory/streamingLocators/productiontet-20240830014436-locator\",\"type\":\"Microsoft.Media/mediaservices/streamingLocators\",...(truncated)",
+          "url": "{\"streamingPaths\":[{\"streamingProtocol\":\"Dash\",\"encryptionScheme\":\"NoEncryption\",\"paths\":[\"/ab37977e-00e3-4641-85dd-39cc843bf74b/productiontet-20240830014436.ism/manifest(format=mpd-time-cmaf)\"]},{\"streamingProtocol\":\"Hls\",\"encryptionScheme\":\"NoEncryption\",\"paths\":[\"/ab37977e-00e3-4641-85dd-39cc843b...(truncated)",
+          "created_by": "6",
+          "created_user_type": "Coach",
+          "created_at": "2024-08-30 01:44:39",
+          "updated_at": "2024-08-30 01:49:03",
+          "deleted_at": "2024-08-30 01:49:03"
+        },
+        {
+          "id": "152",
+          "nx_journey_detail_id": "13",
+          "nx_chapter_detail_id": "59",
+          "nx_lesson_id": "99",
+          "title": "videotest",
+          "transcript": "",
+          "video": "Video/6/productionvideotest-20250905140912.mp4",
+          "thumbnail": "Video/Thumbnail/Thumbnail-6-20250905140912.png",
+          "assets": "null",
+          "job": "null",
+          "locator": "null",
+          "url": "NULL",
+          "created_by": "6",
+          "created_user_type": "Coach",
+          "created_at": "2025-09-05 14:09:12",
+          "updated_at": "2025-09-11 19:02:51",
+          "deleted_at": "2025-09-11 19:02:51"
+        },
+        {
+          "id": "163",
+          "nx_journey_detail_id": "13",
+          "nx_chapter_detail_id": "59",
+          "nx_lesson_id": "99",
+          "title": "Reading the Room Video 2",
+          "transcript": "The next week, Micah waited before speaking. He noticed the tone of the room and chose to follow up later with a one-on-one message and a proposal. This time, the idea gained traction&mdash;and his manager even brought it up in the next planning session. He realized: it wasn&rsquo;t just about being...(truncated)",
+          "video": "Video/6/productionreading-th-20250912133424.mp4",
+          "thumbnail": "Video/Thumbnail/Thumbnail-6-20250912133425.png",
+          "assets": "{\"name\":\"productionreading-th-20250912133424-output\",\"id\":\"/api/v1/projects/mediakindfrnextory/media/assets/productionreading-th-20250912133424-output\",\"type\":\"Microsoft.Media/mediaservices/assets\",\"properties\":{\"assetId\":\"61e05825-f4d1-41b2-8829-67cd0f631e29\",\"created\":\"2025-09-12T17:34:24.888527Z\"...(truncated)",
+          "job": "{\"name\":\"productionreading-th-20250912133424-job\",\"id\":\"/api/v1/projects/mediakindfrnextory/media/transforms/myNextoryTransform/jobs/productionreading-th-20250912133424-job\",\"type\":\"Microsoft.Media/mediaservices/transforms/jobs\",\"properties\":{\"created\":\"2025-09-12T17:34:25.155502Z\",\"description\":nul...(truncated)",
+          "locator": "{\"name\":\"productionreading-th-20250912133424-locator\",\"id\":\"/api/v1/projects/mediakindfrnextory/media/streamingLocators/productionreading-th-20250912133424-locator\",\"type\":\"Microsoft.Media/mediaservices/streamingLocators\",\"properties\":{\"assetName\":\"productionreading-th-20250912133424-output\",\"create...(truncated)",
+          "url": "{\"streamingPaths\":[{\"streamingProtocol\":\"Hls\",\"encryptionScheme\":\"NoEncryption\",\"paths\":[\"/8a04e2d4-9e2e-4e42-ae3a-8c42c0241c01/productionreading-th-20250912133.ism/manifest(format=m3u8-cmaf)\"]},{\"streamingProtocol\":\"Dash\",\"encryptionScheme\":\"NoEncryption\",\"paths\":[\"/8a04e2d4-9e2e-4e42-ae3a-8c42c024...(truncated)",
+          "created_by": "6",
+          "created_user_type": "Coach",
+          "created_at": "2025-09-12 13:34:25",
+          "updated_at": "2025-09-12 13:35:06",
+          "deleted_at": "NULL"
+        }
+      ]
+    }
+  ],
+  "size_distribution": {
+    "empty_tables": 22,
+    "small_tables": 9,
+    "medium_tables": 7,
+    "large_tables": 0,
+    "huge_tables": 0
+  },
+  "top_tables_by_rows": [
+    {
+      "name": "activity_log",
+      "row_count": 57210
+    },
+    {
+      "name": "backpacks",
+      "row_count": 5833
+    },
+    {
+      "name": "nx_user_ratings",
+      "row_count": 3257
+    },
+    {
+      "name": "tasks",
+      "row_count": 2829
+    },
+    {
+      "name": "employees",
+      "row_count": 1467
+    },
+    {
+      "name": "nx_users",
+      "row_count": 1464
+    },
+    {
+      "name": "sms_details",
+      "row_count": 1323
+    },
+    {
+      "name": "lesson_slides",
+      "row_count": 521
+    },
+    {
+      "name": "old_ratings",
+      "row_count": 400
+    },
+    {
+      "name": "nx_user_onboardings",
+      "row_count": 220
+    }
+  ]
+}

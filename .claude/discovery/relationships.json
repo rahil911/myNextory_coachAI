@@ -1,0 +1,876 @@
+{
+  "metadata": {
+    "extracted_at": "2026-02-14T04:06:39.883966+00:00",
+    "database": "baap",
+    "table_count": 38,
+    "explicit_fk_count": 0,
+    "inferred_count": 72,
+    "total_relationships": 72,
+    "naming_patterns_detected": [
+      "detail_id_pattern",
+      "nx_prefix_id",
+      "polymorphic_created_by",
+      "polymorphic_participant",
+      "polymorphic_user_ref",
+      "slide_id_pattern",
+      "standard_id_fk"
+    ],
+    "mapper_version": "1.0"
+  },
+  "relationships": [
+    {
+      "from_table": "backpacks",
+      "from_column": "nx_journey_detail_id",
+      "to_table": "nx_journey_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "backpacks",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "backpacks",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "backpacks",
+      "from_column": "lesson_detail_id",
+      "to_table": "lesson_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "detail_id_pattern"
+    },
+    {
+      "from_table": "backpacks",
+      "from_column": "lesson_slide_id",
+      "to_table": "lesson_slides",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "slide_id_pattern"
+    },
+    {
+      "from_table": "backpacks",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_created_by"
+    },
+    {
+      "from_table": "chatbot_histories",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_created_by"
+    },
+    {
+      "from_table": "chatbot_sessions",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_created_by"
+    },
+    {
+      "from_table": "client_coach_mappings",
+      "from_column": "client_id",
+      "to_table": "clients",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "client_coach_mappings",
+      "from_column": "coach_id",
+      "to_table": "coaches",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "coach_availabilities",
+      "from_column": "coach_id",
+      "to_table": "coaches",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "coach_profiles",
+      "from_column": "coach_id",
+      "to_table": "coaches",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "departments",
+      "from_column": "client_id",
+      "to_table": "clients",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "dynamic_sms_details",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "dynamic_sms_details",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "dynamic_sms_details",
+      "from_column": "lesson_detail_id",
+      "to_table": "lesson_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "detail_id_pattern"
+    },
+    {
+      "from_table": "dynamic_sms_details",
+      "from_column": "lesson_slide_id",
+      "to_table": "lesson_slides",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "slide_id_pattern"
+    },
+    {
+      "from_table": "dynamic_sms_details",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_created_by"
+    },
+    {
+      "from_table": "employees",
+      "from_column": "nx_user_id",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "employees",
+      "from_column": "department_id",
+      "to_table": "departments",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "jobs",
+      "from_column": "client_id",
+      "to_table": "clients",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "lesson_details",
+      "from_column": "nx_journey_detail_id",
+      "to_table": "nx_journey_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "lesson_details",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "lesson_details",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "lesson_details",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_user_ref"
+    },
+    {
+      "from_table": "lesson_slides",
+      "from_column": "lesson_detail_id",
+      "to_table": "lesson_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "detail_id_pattern"
+    },
+    {
+      "from_table": "lesson_slides",
+      "from_column": "video_library_id",
+      "to_table": "video_libraries",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "mail_communication_details",
+      "from_column": "mail_communication_detail_id",
+      "to_table": "mail_communication_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "detail_id_pattern"
+    },
+    {
+      "from_table": "mail_transfers",
+      "from_column": "mail_communication_detail_id",
+      "to_table": "mail_communication_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "detail_id_pattern"
+    },
+    {
+      "from_table": "meeting_attendees",
+      "from_column": "meeting_id",
+      "to_table": "meetings",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "meeting_attendees",
+      "from_column": "participant_id",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.5,
+      "pattern": "polymorphic_participant"
+    },
+    {
+      "from_table": "meetings",
+      "from_column": "hosting_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_user_ref"
+    },
+    {
+      "from_table": "notification_histories",
+      "from_column": "nx_user_id",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "notification_histories",
+      "from_column": "coach_id",
+      "to_table": "coaches",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "notification_histories",
+      "from_column": "client_id",
+      "to_table": "clients",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "nx_chapter_details",
+      "from_column": "nx_journey_detail_id",
+      "to_table": "nx_journey_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_chapter_details",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_user_ref"
+    },
+    {
+      "from_table": "nx_journal_details",
+      "from_column": "nx_user_id",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_journal_details",
+      "from_column": "nx_journey_detail_id",
+      "to_table": "nx_journey_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_journal_details",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_journal_details",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_journey_details",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_user_ref"
+    },
+    {
+      "from_table": "nx_lessons",
+      "from_column": "nx_journey_detail_id",
+      "to_table": "nx_journey_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_lessons",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_lessons",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_user_ref"
+    },
+    {
+      "from_table": "nx_user_onboardings",
+      "from_column": "nx_user_id",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_user_ratings",
+      "from_column": "nx_journey_detail_id",
+      "to_table": "nx_journey_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_user_ratings",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_user_ratings",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "nx_user_ratings",
+      "from_column": "lesson_detail_id",
+      "to_table": "lesson_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "detail_id_pattern"
+    },
+    {
+      "from_table": "nx_user_ratings",
+      "from_column": "lesson_slide_id",
+      "to_table": "lesson_slides",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "slide_id_pattern"
+    },
+    {
+      "from_table": "nx_user_ratings",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_created_by"
+    },
+    {
+      "from_table": "nx_users",
+      "from_column": "client_id",
+      "to_table": "clients",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.9,
+      "pattern": "standard_id_fk"
+    },
+    {
+      "from_table": "old_ratings",
+      "from_column": "nx_user_id",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "old_ratings",
+      "from_column": "nx_journey_detail_id",
+      "to_table": "nx_journey_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "old_ratings",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "old_ratings",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "sms_details",
+      "from_column": "nx_user_id",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "sms_details",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "sms_details",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "sms_schedules",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "sms_schedules",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "tasks",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_created_by"
+    },
+    {
+      "from_table": "tasks",
+      "from_column": "nx_journey_detail_id",
+      "to_table": "nx_journey_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "tasks",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "tasks",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "tasks",
+      "from_column": "lesson_slide_id",
+      "to_table": "lesson_slides",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "slide_id_pattern"
+    },
+    {
+      "from_table": "tasks",
+      "from_column": "lesson_detail_id",
+      "to_table": "lesson_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "detail_id_pattern"
+    },
+    {
+      "from_table": "video_libraries",
+      "from_column": "nx_journey_detail_id",
+      "to_table": "nx_journey_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "video_libraries",
+      "from_column": "nx_chapter_detail_id",
+      "to_table": "nx_chapter_details",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "video_libraries",
+      "from_column": "nx_lesson_id",
+      "to_table": "nx_lessons",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.95,
+      "pattern": "nx_prefix_id"
+    },
+    {
+      "from_table": "video_libraries",
+      "from_column": "created_by",
+      "to_table": "nx_users",
+      "to_column": "id",
+      "type": "inferred_naming",
+      "confidence": 0.6,
+      "pattern": "polymorphic_user_ref"
+    }
+  ],
+  "naming_patterns": {
+    "nx_prefix_id": 36,
+    "detail_id_pattern": 7,
+    "slide_id_pattern": 4,
+    "polymorphic_created_by": 6,
+    "standard_id_fk": 12,
+    "polymorphic_user_ref": 6,
+    "polymorphic_participant": 1
+  },
+  "orphan_tables": [
+    "activity_log",
+    "chatbot_documents",
+    "client_password_resets",
+    "coach_password_resets",
+    "documents",
+    "nx_admin_users",
+    "nx_password_resets"
+  ],
+  "hub_tables": [
+    {
+      "table": "nx_users",
+      "incoming_references": 19,
+      "outgoing_references": 1,
+      "total_references": 20
+    },
+    {
+      "table": "nx_chapter_details",
+      "incoming_references": 11,
+      "outgoing_references": 2,
+      "total_references": 13
+    },
+    {
+      "table": "nx_lessons",
+      "incoming_references": 10,
+      "outgoing_references": 3,
+      "total_references": 13
+    },
+    {
+      "table": "nx_journey_details",
+      "incoming_references": 9,
+      "outgoing_references": 1,
+      "total_references": 10
+    },
+    {
+      "table": "lesson_details",
+      "incoming_references": 5,
+      "outgoing_references": 4,
+      "total_references": 9
+    },
+    {
+      "table": "backpacks",
+      "incoming_references": 0,
+      "outgoing_references": 6,
+      "total_references": 6
+    },
+    {
+      "table": "lesson_slides",
+      "incoming_references": 4,
+      "outgoing_references": 2,
+      "total_references": 6
+    },
+    {
+      "table": "nx_user_ratings",
+      "incoming_references": 0,
+      "outgoing_references": 6,
+      "total_references": 6
+    },
+    {
+      "table": "tasks",
+      "incoming_references": 0,
+      "outgoing_references": 6,
+      "total_references": 6
+    },
+    {
+      "table": "clients",
+      "incoming_references": 5,
+      "outgoing_references": 0,
+      "total_references": 5
+    },
+    {
+      "table": "dynamic_sms_details",
+      "incoming_references": 0,
+      "outgoing_references": 5,
+      "total_references": 5
+    },
+    {
+      "table": "video_libraries",
+      "incoming_references": 1,
+      "outgoing_references": 4,
+      "total_references": 5
+    },
+    {
+      "table": "coaches",
+      "incoming_references": 4,
+      "outgoing_references": 0,
+      "total_references": 4
+    },
+    {
+      "table": "nx_journal_details",
+      "incoming_references": 0,
+      "outgoing_references": 4,
+      "total_references": 4
+    },
+    {
+      "table": "old_ratings",
+      "incoming_references": 0,
+      "outgoing_references": 4,
+      "total_references": 4
+    },
+    {
+      "table": "mail_communication_details",
+      "incoming_references": 2,
+      "outgoing_references": 1,
+      "total_references": 3
+    },
+    {
+      "table": "notification_histories",
+      "incoming_references": 0,
+      "outgoing_references": 3,
+      "total_references": 3
+    },
+    {
+      "table": "sms_details",
+      "incoming_references": 0,
+      "outgoing_references": 3,
+      "total_references": 3
+    },
+    {
+      "table": "client_coach_mappings",
+      "incoming_references": 0,
+      "outgoing_references": 2,
+      "total_references": 2
+    },
+    {
+      "table": "departments",
+      "incoming_references": 1,
+      "outgoing_references": 1,
+      "total_references": 2
+    },
+    {
+      "table": "employees",
+      "incoming_references": 0,
+      "outgoing_references": 2,
+      "total_references": 2
+    },
+    {
+      "table": "meeting_attendees",
+      "incoming_references": 0,
+      "outgoing_references": 2,
+      "total_references": 2
+    },
+    {
+      "table": "meetings",
+      "incoming_references": 1,
+      "outgoing_references": 1,
+      "total_references": 2
+    },
+    {
+      "table": "sms_schedules",
+      "incoming_references": 0,
+      "outgoing_references": 2,
+      "total_references": 2
+    },
+    {
+      "table": "chatbot_histories",
+      "incoming_references": 0,
+      "outgoing_references": 1,
+      "total_references": 1
+    },
+    {
+      "table": "chatbot_sessions",
+      "incoming_references": 0,
+      "outgoing_references": 1,
+      "total_references": 1
+    },
+    {
+      "table": "coach_availabilities",
+      "incoming_references": 0,
+      "outgoing_references": 1,
+      "total_references": 1
+    },
+    {
+      "table": "coach_profiles",
+      "incoming_references": 0,
+      "outgoing_references": 1,
+      "total_references": 1
+    },
+    {
+      "table": "jobs",
+      "incoming_references": 0,
+      "outgoing_references": 1,
+      "total_references": 1
+    },
+    {
+      "table": "mail_transfers",
+      "incoming_references": 0,
+      "outgoing_references": 1,
+      "total_references": 1
+    },
+    {
+      "table": "nx_user_onboardings",
+      "incoming_references": 0,
+      "outgoing_references": 1,
+      "total_references": 1
+    }
+  ]
+}
