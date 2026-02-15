@@ -67,8 +67,12 @@ If asked about beads/tasks, suggest using /beads command."""
 
 # Patterns that trigger audio reply from text input
 AUDIO_TRIGGER_RE = re.compile(
-    r'\b(reply in audio|audio reply|voice reply|voice mein|audio mein|'
-    r'bol ke bata|bolke bata|awaaz mein|send voice|speak to me|bolo)\b',
+    r'\b(?:(?:reply|explain|respond|answer|tell)\s+in\s+(?:\w+\s+)?audio|'
+    r'in\s+(?:english\s+|hindi\s+|kannada\s+)?audio|'
+    r'audio\s+(?:reply|explain|message|mein)|'
+    r'voice\s+(?:reply|message|mein)|'
+    r'bol\s*ke\s*bata|bolke\s*bata|awaaz\s+mein|'
+    r'send\s+(?:voice|audio)|speak\s+to\s+me|bolo)\b',
     re.IGNORECASE
 )
 
