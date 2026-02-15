@@ -50,13 +50,14 @@ TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 POLL_INTERVAL = 2  # seconds between getUpdates calls
 CLAUDE_BIN = "claude"  # uses your subscription via OAuth
-CLAUDE_MODEL = "haiku"  # fast + cheap for chat replies
+CLAUDE_MODEL = "sonnet"  # capable enough for DB queries + contextual answers
 
 # Sarvam AI (voice: STT + TTS)
 SARVAM_API_KEY = "sk_lwifrj09_hX85mAePWRYrEcXyOpl4mbHP"
 SARVAM_STT_URL = "https://api.sarvam.ai/speech-to-text"
 SARVAM_TTS_URL = "https://api.sarvam.ai/text-to-speech"
-SARVAM_VOICE = "kavya"  # female voice
+SARVAM_VOICE = "priya"  # female voice
+SARVAM_PACE = 1.5  # 1.5x speed
 SARVAM_DEFAULT_LANG = "en-IN"
 
 SYSTEM_PROMPT = """You are Baap Bot, the Telegram interface to the Baap agent swarm platform.
@@ -250,9 +251,38 @@ async def sarvam_stt(client: "httpx.AsyncClient", audio_bytes: bytes,
         return full_transcript, detected_lang
 
 
+def strip_markdown_for_speech(text: str) -> str:
+    """Strip markdown formatting so TTS reads clean text, not syntax."""
+    # Links: [text](url) → text
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+    # Bold/italic: ***text***, **text**, *text* → text
+    text = re.sub(r'\*{1,3}([^*]+)\*{1,3}', r'\1', text)
+    # Headings: ## Heading → Heading
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    # Bullet/list markers at line start: - item, * item, + item → item
+    text = re.sub(r'^[\-\*\+]\s+', '', text, flags=re.MULTILINE)
+    # Numbered lists: 1. item → item
+    text = re.sub(r'^\d+\.\s+', '', text, flags=re.MULTILINE)
+    # Inline code: `code` → code
+    text = re.sub(r'`([^`]+)`', r'\1', text)
+    # Code blocks: ```...``` → (contents)
+    text = re.sub(r'```[\s\S]*?```', '', text)
+    # Horizontal rules
+    text = re.sub(r'^-{3,}$', '', text, flags=re.MULTILINE)
+    # HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Collapse multiple newlines/spaces
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = re.sub(r'  +', ' ', text)
+    return text.strip()
+
+
 async def sarvam_tts(client: "httpx.AsyncClient", text: str,
                      lang: str = "en-IN") -> bytes | None:
     """Convert text to speech via Sarvam AI. Returns MP3 bytes."""
+    # Clean markdown so TTS doesn't read ** as "times times" etc.
+    text = strip_markdown_for_speech(text)
+
     headers = {
         "api-subscription-key": SARVAM_API_KEY,
         "Content-Type": "application/json",
@@ -265,7 +295,7 @@ async def sarvam_tts(client: "httpx.AsyncClient", text: str,
         "target_language_code": lang,
         "model": "bulbul:v3",
         "speaker": SARVAM_VOICE,
-        "pace": 1.0,
+        "pace": SARVAM_PACE,
         "speech_sample_rate": 24000,
         "output_audio_codec": "mp3",
     }
