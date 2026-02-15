@@ -28,6 +28,7 @@ import re
 import sys
 import tempfile
 import time
+import uuid
 from pathlib import Path
 
 try:
@@ -406,29 +407,54 @@ async def handle_help(client: "httpx.AsyncClient", chat_id: str):
     await send_message(client, text, chat_id)
 
 
-# ── Claude ────────────────────────────────────────────────────────────────────
+# ── Claude (with session memory) ──────────────────────────────────────────────
 
-async def ask_claude(prompt: str) -> str:
-    """Send a prompt to Claude via `claude -p` using your subscription."""
+# Namespace UUID for generating deterministic session IDs from chat IDs
+_SESSION_NS = uuid.UUID("b4a7c0d1-2e3f-4a5b-8c6d-7e8f9a0b1c2d")
+# Track whether a session has been started (first call uses --session-id, subsequent use --resume)
+_active_sessions: dict[str, bool] = {}
+
+
+def _session_id_for_chat(chat_id: str) -> str:
+    """Generate a deterministic UUID session ID from a Telegram chat ID."""
+    return str(uuid.uuid5(_SESSION_NS, f"tg-{chat_id}"))
+
+
+async def ask_claude(prompt: str, chat_id: str = CHAT_ID) -> str:
+    """Send a prompt to Claude via `claude -p` with session memory."""
+    session_id = _session_id_for_chat(chat_id)
+    is_resumed = _active_sessions.get(session_id, False)
+
+    args = [CLAUDE_BIN, "-p", prompt, "--model", CLAUDE_MODEL]
+    if is_resumed:
+        args += ["--resume", session_id]
+    else:
+        args += ["--session-id", session_id,
+                 "--system-prompt", SYSTEM_PROMPT]
+
     try:
         proc = await asyncio.create_subprocess_exec(
-            CLAUDE_BIN, "-p", prompt,
-            "--model", CLAUDE_MODEL,
-            "--append-system-prompt", SYSTEM_PROMPT,
+            *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=str(PROJECT_ROOT),
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=60)
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=90)
         if proc.returncode == 0:
             reply = stdout.decode().strip()
             if reply:
+                _active_sessions[session_id] = True
                 return reply
         err = stderr.decode().strip()
         logger.warning(f"claude -p failed (rc={proc.returncode}): {err[:200]}")
+        # If resume failed, retry with fresh session
+        if is_resumed and proc.returncode != 0:
+            logger.info("Resume failed, retrying with fresh session")
+            _active_sessions[session_id] = False
+            return await ask_claude(prompt, chat_id)
         return f"(Claude is unavailable right now: {err[:100]})"
     except asyncio.TimeoutError:
-        return "(Claude timed out after 60s \u2014 try a shorter question)"
+        return "(Claude timed out after 90s \u2014 try a shorter question)"
     except FileNotFoundError:
         return "(claude CLI not found \u2014 is Claude Code installed?)"
     except Exception as e:
@@ -472,7 +498,7 @@ async def handle_voice(client: "httpx.AsyncClient", chat_id: str,
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} | {from_user} | [VOICE:{lang}] {transcript}\n")
 
     # Always reply in English regardless of input language
-    reply = await ask_claude(transcript)
+    reply = await ask_claude(transcript, chat_id)
 
     # Send text reply with transcript
     text_msg = f"\U0001f3a4 \"{transcript}\"\n\n{reply}"
@@ -508,7 +534,7 @@ async def handle_text(client: "httpx.AsyncClient", chat_id: str, text: str, from
     await tg_request(client, "sendChatAction", chat_id=chat_id, action="typing")
 
     # Ask Claude
-    reply = await ask_claude(prompt_text)
+    reply = await ask_claude(prompt_text, chat_id)
 
     # Always send text reply
     await send_message(client, reply, chat_id, parse_mode="")
