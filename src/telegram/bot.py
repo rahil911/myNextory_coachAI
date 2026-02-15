@@ -23,8 +23,10 @@ import asyncio
 import base64
 import json
 import logging
+import os
 import re
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -127,10 +129,53 @@ async def send_voice_msg(client: "httpx.AsyncClient", chat_id: str,
 
 # ── Sarvam AI helpers ─────────────────────────────────────────────────────────
 
-async def sarvam_stt(client: "httpx.AsyncClient", audio_bytes: bytes,
-                     filename: str = "voice.ogg") -> tuple[str | None, str | None]:
-    """Transcribe audio via Sarvam AI. Returns (transcript, language_code)."""
-    headers = {"api-subscription-key": SARVAM_API_KEY}
+CHUNK_DURATION = 25  # seconds per chunk (Sarvam limit is 30s, use 25 for safety)
+
+
+async def _get_audio_duration(path: str) -> float:
+    """Get audio duration in seconds via ffprobe."""
+    proc = await asyncio.create_subprocess_exec(
+        "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+        "-of", "csv=p=0", path,
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await proc.communicate()
+    try:
+        return float(stdout.decode().strip())
+    except ValueError:
+        return 0.0
+
+
+async def _split_audio(path: str, chunk_sec: int = CHUNK_DURATION) -> list[str]:
+    """Split audio file into chunks of chunk_sec seconds. Returns list of chunk paths."""
+    duration = await _get_audio_duration(path)
+    if duration <= chunk_sec:
+        return [path]
+
+    chunks = []
+    offset = 0.0
+    idx = 0
+    base, ext = os.path.splitext(path)
+    while offset < duration:
+        chunk_path = f"{base}_chunk{idx}.ogg"
+        proc = await asyncio.create_subprocess_exec(
+            "ffmpeg", "-y", "-i", path,
+            "-ss", str(offset), "-t", str(chunk_sec),
+            "-c:a", "libopus", "-b:a", "48k", chunk_path,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        )
+        await proc.communicate()
+        if os.path.exists(chunk_path) and os.path.getsize(chunk_path) > 0:
+            chunks.append(chunk_path)
+        offset += chunk_sec
+        idx += 1
+
+    return chunks
+
+
+async def _stt_single(client: "httpx.AsyncClient", audio_bytes: bytes,
+                      filename: str, headers: dict) -> tuple[str | None, str | None]:
+    """Transcribe a single audio chunk (must be <= 30s)."""
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "ogg"
     ct_map = {
         "ogg": "audio/ogg", "oga": "audio/ogg", "mp3": "audio/mpeg",
@@ -138,25 +183,71 @@ async def sarvam_stt(client: "httpx.AsyncClient", audio_bytes: bytes,
         "webm": "audio/webm", "aac": "audio/aac", "amr": "audio/amr",
     }
     content_type = ct_map.get(ext, "audio/ogg")
-
     files = {"file": (filename, audio_bytes, content_type)}
     form_data = {"model": "saaras:v3", "language_code": "unknown"}
 
-    try:
-        resp = await client.post(
-            SARVAM_STT_URL, headers=headers,
-            files=files, data=form_data, timeout=30
-        )
-        if resp.status_code == 200:
-            result = resp.json()
-            transcript = result.get("transcript", "")
-            lang = result.get("language_code", "en-IN")
-            logger.info(f"STT ok: lang={lang}, len={len(transcript)}")
-            return transcript, lang
-        logger.error(f"Sarvam STT {resp.status_code}: {resp.text[:300]}")
-    except Exception as e:
-        logger.error(f"Sarvam STT error: {e}")
+    resp = await client.post(
+        SARVAM_STT_URL, headers=headers,
+        files=files, data=form_data, timeout=30
+    )
+    if resp.status_code == 200:
+        result = resp.json()
+        return result.get("transcript", ""), result.get("language_code", "en-IN")
+    logger.error(f"Sarvam STT {resp.status_code}: {resp.text[:300]}")
     return None, None
+
+
+async def sarvam_stt(client: "httpx.AsyncClient", audio_bytes: bytes,
+                     filename: str = "voice.ogg") -> tuple[str | None, str | None]:
+    """Transcribe audio via Sarvam AI. Splits long audio into chunks automatically."""
+    headers = {"api-subscription-key": SARVAM_API_KEY}
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Write audio to temp file
+        src_path = os.path.join(tmpdir, filename)
+        with open(src_path, "wb") as f:
+            f.write(audio_bytes)
+
+        duration = await _get_audio_duration(src_path)
+        logger.info(f"Audio duration: {duration:.1f}s")
+
+        if duration <= 30:
+            # Short audio — transcribe directly
+            transcript, lang = await _stt_single(client, audio_bytes, filename, headers)
+            if transcript:
+                logger.info(f"STT ok: lang={lang}, len={len(transcript)}")
+            return transcript, lang
+
+        # Long audio — split into chunks and transcribe each
+        logger.info(f"Audio > 30s ({duration:.0f}s), splitting into {CHUNK_DURATION}s chunks")
+        chunks = await _split_audio(src_path)
+        logger.info(f"Split into {len(chunks)} chunks")
+
+        transcripts = []
+        detected_lang = "en-IN"
+        lang_votes = {}
+
+        for i, chunk_path in enumerate(chunks):
+            with open(chunk_path, "rb") as cf:
+                chunk_bytes = cf.read()
+            chunk_name = os.path.basename(chunk_path)
+            t, l = await _stt_single(client, chunk_bytes, chunk_name, headers)
+            if t:
+                transcripts.append(t)
+                if l:
+                    lang_votes[l] = lang_votes.get(l, 0) + 1
+                logger.info(f"Chunk {i+1}/{len(chunks)}: lang={l}, len={len(t)}")
+
+        if not transcripts:
+            return None, None
+
+        # Pick most common detected language
+        if lang_votes:
+            detected_lang = max(lang_votes, key=lang_votes.get)
+
+        full_transcript = " ".join(transcripts)
+        logger.info(f"STT ok (chunked): lang={detected_lang}, total_len={len(full_transcript)}")
+        return full_transcript, detected_lang
 
 
 async def sarvam_tts(client: "httpx.AsyncClient", text: str,
@@ -350,26 +441,18 @@ async def handle_voice(client: "httpx.AsyncClient", chat_id: str,
     with open(log_path, "a") as f:
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} | {from_user} | [VOICE:{lang}] {transcript}\n")
 
-    # Claude reply — hint language for non-English so it replies in same mix
-    if lang and lang != "en-IN":
-        prompt = f"[User spoke in {lang}. Reply naturally in the same language/mix.]\n\n{transcript}"
-    else:
-        prompt = transcript
+    # Always reply in English regardless of input language
+    reply = await ask_claude(transcript)
 
-    reply = await ask_claude(prompt)
-
-    # Always send text reply with transcript
+    # Send text reply with transcript
     text_msg = f"\U0001f3a4 \"{transcript}\"\n\n{reply}"
     await send_message(client, text_msg, chat_id, parse_mode="")
 
-    # If non-English, also send voice reply in that language
-    if lang and lang != "en-IN":
-        await tg_request(client, "sendChatAction", chat_id=chat_id, action="record_voice")
-        tts_lang = lang if lang in ("hi-IN", "kn-IN", "ta-IN", "te-IN", "bn-IN",
-                                     "mr-IN", "gu-IN", "ml-IN", "pa-IN") else SARVAM_DEFAULT_LANG
-        audio_reply = await sarvam_tts(client, reply, tts_lang)
-        if audio_reply:
-            await send_voice_msg(client, chat_id, audio_reply)
+    # Also send voice reply in English for voice inputs
+    await tg_request(client, "sendChatAction", chat_id=chat_id, action="record_voice")
+    audio_reply = await sarvam_tts(client, reply, "en-IN")
+    if audio_reply:
+        await send_voice_msg(client, chat_id, audio_reply)
 
 
 # ── Text handler ──────────────────────────────────────────────────────────────
@@ -400,11 +483,10 @@ async def handle_text(client: "httpx.AsyncClient", chat_id: str, text: str, from
     # Always send text reply
     await send_message(client, reply, chat_id, parse_mode="")
 
-    # If audio requested, also send voice
+    # If audio requested, also send voice (always English)
     if audio_requested:
-        lang = detect_script_language(prompt_text)
         await tg_request(client, "sendChatAction", chat_id=chat_id, action="record_voice")
-        audio_reply = await sarvam_tts(client, reply, lang)
+        audio_reply = await sarvam_tts(client, reply, "en-IN")
         if audio_reply:
             await send_voice_msg(client, chat_id, audio_reply)
         else:
