@@ -1,7 +1,9 @@
 """
-Notification Router — Routes agent events to Telegram and Slack.
+Notification Router — Routes agent events via OpenClaw Gateway.
 
-Sends directly to Telegram Bot API and Slack webhook (no gateway dependency).
+Primary path: OpenClaw Gateway CLI (handles Telegram, Slack, etc.)
+Fallback: Direct Telegram Bot API (one-way only)
+
 Channels are defined in config/notifications.yaml.
 
 Usage:
@@ -9,11 +11,13 @@ Usage:
     await router.route("Agent Failed", "identity-agent crashed", priority=3)
 """
 
+import asyncio
+import json
 import logging
+import shutil
 import yaml
 from pathlib import Path
 from typing import List, Optional
-from urllib.parse import quote
 
 try:
     import httpx
@@ -24,6 +28,7 @@ logger = logging.getLogger("baap.notifications")
 
 TELEGRAM_API = "https://api.telegram.org"
 DASHBOARD_URL = "https://rahil911.duckdns.org:8002"
+OPENCLAW_BIN = "/home/rahil/.npm-global/bin/openclaw"
 
 
 class NotificationRoute:
@@ -52,10 +57,13 @@ class NotificationRoute:
 
 
 class NotificationRouter:
-    """Routes notifications directly to Telegram Bot API and Slack webhooks.
+    """Routes notifications via OpenClaw Gateway (primary) or direct API (fallback).
 
-    Falls back to log-only mode when httpx is not installed or no
-    credentials are configured.
+    Primary: `openclaw message send` CLI — supports two-way chat, session
+    management, and all channels the gateway handles.
+
+    Fallback: Direct Telegram Bot API — one-way notifications only, used
+    when the gateway is down or openclaw binary is not found.
     """
 
     def __init__(self, routes: Optional[List[NotificationRoute]] = None,
@@ -63,22 +71,17 @@ class NotificationRouter:
                  telegram_token: Optional[str] = None,
                  telegram_chat_id: Optional[str] = None,
                  slack_webhook_url: Optional[str] = None,
-                 dashboard_url: str = DASHBOARD_URL):
+                 dashboard_url: str = DASHBOARD_URL,
+                 openclaw_bin: str = OPENCLAW_BIN):
         self.routes = routes or []
         self.enabled = enabled
         self.telegram_token = telegram_token
         self.telegram_chat_id = telegram_chat_id
         self.slack_webhook_url = slack_webhook_url
         self.dashboard_url = dashboard_url
+        self.openclaw_bin = openclaw_bin
         self._client: Optional[object] = None
-        self._fallback_mode = False
-
-        if not httpx:
-            logger.warning("httpx not installed — notification router in log-only mode")
-            self._fallback_mode = True
-        elif not telegram_token and not slack_webhook_url:
-            logger.info("No Telegram/Slack credentials — notification router in log-only mode")
-            self._fallback_mode = True
+        self._gateway_available: Optional[bool] = None  # lazy-checked
 
     @classmethod
     def from_config(cls, config_path: str = "config/notifications.yaml") -> "NotificationRouter":
@@ -94,12 +97,12 @@ class NotificationRouter:
         notif_cfg = cfg.get("notifications", {})
         enabled = notif_cfg.get("enabled", True)
 
-        # Credentials
         creds = notif_cfg.get("credentials", {})
         telegram_token = creds.get("telegram_bot_token")
         telegram_chat_id = str(creds.get("telegram_chat_id", ""))
         slack_webhook_url = creds.get("slack_webhook_url")
         dashboard_url = notif_cfg.get("dashboard_url", DASHBOARD_URL)
+        openclaw_bin = notif_cfg.get("openclaw_bin", OPENCLAW_BIN)
 
         routes = []
         for route_cfg in notif_cfg.get("routes", []):
@@ -117,18 +120,59 @@ class NotificationRouter:
             telegram_chat_id=telegram_chat_id,
             slack_webhook_url=slack_webhook_url,
             dashboard_url=dashboard_url,
+            openclaw_bin=openclaw_bin,
         )
 
+    def _check_gateway(self) -> bool:
+        """Check if OpenClaw Gateway CLI is available (cached)."""
+        if self._gateway_available is not None:
+            return self._gateway_available
+        self._gateway_available = Path(self.openclaw_bin).exists()
+        if self._gateway_available:
+            logger.info(f"OpenClaw Gateway CLI found at {self.openclaw_bin}")
+        else:
+            logger.warning(f"OpenClaw CLI not found at {self.openclaw_bin} — using direct API fallback")
+        return self._gateway_available
+
+    async def _send_via_gateway(self, channel: str, target: str, text: str) -> bool:
+        """Send a message via OpenClaw Gateway CLI."""
+        if not self._check_gateway():
+            return False
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                self.openclaw_bin, "message", "send",
+                "--channel", channel,
+                "--target", target,
+                "--message", text,
+                "--json",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=15)
+            if proc.returncode == 0:
+                result = json.loads(stdout.decode())
+                logger.info(f"[NOTIFY] Gateway sent to {channel}:{target} (msgId={result.get('payload', {}).get('messageId')})")
+                return True
+            else:
+                logger.warning(f"[NOTIFY] Gateway send failed: {stderr.decode()[:200]}")
+                return False
+        except asyncio.TimeoutError:
+            logger.warning("[NOTIFY] Gateway send timed out (15s)")
+            return False
+        except Exception as e:
+            logger.warning(f"[NOTIFY] Gateway send error: {e}")
+            return False
+
     async def _get_client(self):
-        """Lazy-init httpx client."""
-        if self._fallback_mode or not httpx:
+        """Lazy-init httpx client for direct API fallback."""
+        if not httpx:
             return None
         if self._client is None:
             self._client = httpx.AsyncClient(timeout=10.0)
         return self._client
 
-    async def _send_telegram(self, text: str, chat_id: Optional[str] = None) -> bool:
-        """Send a message via Telegram Bot API."""
+    async def _send_telegram_direct(self, text: str, chat_id: Optional[str] = None) -> bool:
+        """Fallback: Send directly to Telegram Bot API."""
         if not self.telegram_token:
             return False
         client = await self._get_client()
@@ -148,45 +192,48 @@ class NotificationRouter:
                 },
             )
             if resp.status_code == 200:
+                logger.info(f"[NOTIFY] Direct Telegram send OK to {target_chat}")
                 return True
-            logger.warning(f"Telegram API returned {resp.status_code}: {resp.text[:200]}")
+            logger.warning(f"[NOTIFY] Direct Telegram API returned {resp.status_code}")
             return False
         except Exception as e:
-            logger.warning(f"Telegram send failed: {e}")
+            logger.warning(f"[NOTIFY] Direct Telegram send failed: {e}")
             return False
 
-    async def _send_slack(self, text: str) -> bool:
-        """Send a message via Slack webhook."""
-        if not self.slack_webhook_url:
-            return False
-        client = await self._get_client()
-        if not client:
-            return False
-        try:
-            resp = await client.post(
-                self.slack_webhook_url,
-                json={"text": text},
-            )
-            return resp.status_code == 200
-        except Exception as e:
-            logger.warning(f"Slack send failed: {e}")
-            return False
+    def _format_message(self, title: str, body: str, html: bool = False) -> str:
+        """Format notification message."""
+        if html:
+            lines = [f"<b>{title}</b>"]
+            if body:
+                lines.append(body)
+            lines.append(f'\n<a href="{self.dashboard_url}">Open Command Center</a>')
+            return "\n".join(lines)
+        else:
+            lines = [f"**{title}**"]
+            if body:
+                lines.append(body)
+            lines.append(f"\n{self.dashboard_url}")
+            return "\n".join(lines)
 
-    def _format_telegram(self, title: str, body: str) -> str:
-        """Format message for Telegram (HTML)."""
-        lines = [f"<b>{title}</b>"]
-        if body:
-            lines.append(body)
-        lines.append(f'\n<a href="{self.dashboard_url}">Open Command Center</a>')
-        return "\n".join(lines)
+    async def _send_to_channel(self, channel: str, target: str, title: str, body: str) -> bool:
+        """Send to a single channel:target, trying gateway first then fallback."""
+        text = self._format_message(title, body, html=False)
 
-    def _format_slack(self, title: str, body: str) -> str:
-        """Format message for Slack (mrkdwn)."""
-        lines = [f"*{title}*"]
-        if body:
-            lines.append(body)
-        lines.append(f"<{self.dashboard_url}|Open Command Center>")
-        return "\n".join(lines)
+        # Primary: OpenClaw Gateway
+        ok = await self._send_via_gateway(channel, target, text)
+        if ok:
+            return True
+
+        # Fallback: Direct API (Telegram only)
+        if channel == "telegram":
+            html_text = self._format_message(title, body, html=True)
+            chat_id = target if target.lstrip("-").isdigit() else self.telegram_chat_id
+            ok = await self._send_telegram_direct(html_text, chat_id)
+            if ok:
+                logger.info(f"[NOTIFY] Used direct Telegram fallback for {target}")
+                return True
+
+        return False
 
     async def route(self, title: str, body: str,
                     priority: Optional[int] = None,
@@ -195,7 +242,6 @@ class NotificationRouter:
         if not self.enabled:
             return {"sent": 0, "logged": True, "skipped_reason": "disabled"}
 
-        # Find matching routes
         matching_channels: List[str] = []
         for r in self.routes:
             if r.matches(priority=priority, event_type=event_type):
@@ -207,14 +253,8 @@ class NotificationRouter:
             logger.info(f"[NOTIFY] No matching routes for: {title} (priority={priority}, type={event_type})")
             return {"sent": 0, "logged": True, "skipped_reason": "no_matching_routes"}
 
-        # Log always
         logger.info(f"[NOTIFY] {title} -> {matching_channels}")
 
-        if self._fallback_mode:
-            logger.info(f"[NOTIFY] (log-only) {title}: {body[:200]}")
-            return {"sent": 0, "logged": True, "channels": matching_channels, "mode": "log-only"}
-
-        # Send to each channel
         sent = 0
         errors = []
         for channel_target in matching_channels:
@@ -224,34 +264,17 @@ class NotificationRouter:
                 continue
 
             channel, target = parts
-
-            if channel == "telegram":
-                text = self._format_telegram(title, body)
-                # Use target as chat_id if it's numeric, otherwise use default
-                chat_id = target if target.lstrip("-").isdigit() else self.telegram_chat_id
-                ok = await self._send_telegram(text, chat_id)
-                if ok:
-                    sent += 1
-                else:
-                    errors.append(f"telegram:{target}: send failed")
-
-            elif channel == "slack":
-                text = self._format_slack(title, body)
-                ok = await self._send_slack(text)
-                if ok:
-                    sent += 1
-                else:
-                    errors.append(f"slack:{target}: send failed (no webhook configured)")
-
+            ok = await self._send_to_channel(channel, target, title, body)
+            if ok:
+                sent += 1
             else:
-                logger.info(f"[NOTIFY] Unknown channel type '{channel}' — logged only")
-                errors.append(f"{channel}:{target}: unknown channel type")
+                errors.append(f"{channel}:{target}: all transports failed")
 
         return {
             "sent": sent,
             "total_channels": len(matching_channels),
             "errors": errors if errors else None,
-            "mode": "direct",
+            "mode": "gateway" if self._check_gateway() else "direct-fallback",
         }
 
     async def notify_agent_event(self, agent: str, event: str, detail: str = "") -> dict:
@@ -270,7 +293,7 @@ class NotificationRouter:
         """Send a test notification to all configured channels."""
         return await self.route(
             title="Baap Test Notification",
-            body="This is a test from the Baap Command Center notification system.",
+            body="Notification system online. Gateway + direct fallback configured.",
             priority=3,
             event_type="test",
         )
