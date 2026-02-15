@@ -8,8 +8,12 @@ Usage:
 import asyncio
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from config import PORT
 from services.event_bus import event_bus
@@ -124,11 +128,24 @@ app.include_router(epics.router)
 app.include_router(websocket.router)
 
 
-@app.get("/")
-async def root():
-    return {
-        "name": "Baap Command Center API",
-        "version": "2.0.0",
-        "docs": "/docs",
-        "websocket": "/ws",
-    }
+# ── Serve frontend static files ──────────────────────────────────────────────
+
+FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+
+if FRONTEND_DIR.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR / "assets")), name="assets")
+    app.mount("/css", StaticFiles(directory=str(FRONTEND_DIR / "css")), name="css")
+    app.mount("/js", StaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
+
+    @app.get("/")
+    async def root():
+        return FileResponse(str(FRONTEND_DIR / "index.html"))
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "name": "Baap Command Center API",
+            "version": "2.0.0",
+            "docs": "/docs",
+            "websocket": "/ws",
+        }

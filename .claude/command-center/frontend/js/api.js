@@ -30,30 +30,30 @@ export const api = {
   // Dashboard
   getDashboard:   () => request('GET', '/api/dashboard'),
 
-  // Agents
-  getAgents:      () => request('GET', '/api/agents'),
+  // Agents — backend returns {"agents": [...], "count": N}
+  getAgents:      () => request('GET', '/api/agents').then(r => r.agents || []),
   getAgent:       (id) => request('GET', `/api/agents/${id}`),
   killAgent:      (id) => request('POST', `/api/agents/${id}/kill`),
   retryAgent:     (id) => request('POST', `/api/agents/${id}/retry`),
 
   // Beads (Kanban)
   getKanban:      () => request('GET', '/api/kanban'),
-  getBeads:       () => request('GET', '/api/beads'),
+  getBeads:       () => request('GET', '/api/beads').then(r => Array.isArray(r) ? r : r.beads || []),
   getBead:        (id) => request('GET', `/api/beads/${id}`),
   moveBead:       (id, column) => request('PATCH', `/api/beads/${id}/move`, { column }),
   updateBead:     (id, data) => request('PATCH', `/api/beads/${id}`, data),
   commentBead:    (id, text) => request('POST', `/api/beads/${id}/comment`, { text }),
 
-  // Think Tank
-  createSession:  (data) => request('POST', '/api/thinktank/start', data),
+  // Think Tank — backend expects {topic: ...}
+  createSession:  (data) => request('POST', '/api/thinktank/start', { topic: data.topic || data.name || 'New Session', context: data.context }),
   getSession:     () => request('GET', '/api/thinktank/session'),
   sendMessage:    (sessionId, msg) => request('POST', '/api/thinktank/message', msg),
   sendAction:     (sessionId, action) => request('POST', '/api/thinktank/action', action),
   approveSpec:    (sessionId) => request('POST', '/api/thinktank/approve'),
   getHistory:     () => request('GET', '/api/thinktank/history'),
 
-  // Epics
-  getEpics:       () => request('GET', '/api/epics'),
+  // Epics — backend returns {"epics": [...], "count": N}
+  getEpics:       () => request('GET', '/api/epics').then(r => r.epics || []),
 
   // Commands
   executeCommand: (cmd) => request('POST', '/api/commands/execute', cmd),
@@ -70,10 +70,10 @@ export const api = {
     return res.json();
   },
 
-  // Events (timeline)
+  // Events (timeline) — backend returns {"events": [...]}
   getEvents:      (params = {}) => {
     const qs = new URLSearchParams(params).toString();
-    return request('GET', `/api/dashboard/timeline${qs ? '?' + qs : ''}`);
+    return request('GET', `/api/dashboard/timeline${qs ? '?' + qs : ''}`).then(r => r.events || []);
   },
 };
 
