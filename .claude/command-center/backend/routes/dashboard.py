@@ -77,3 +77,14 @@ async def get_timeline(limit: int = 50):
 async def health():
     """Health check."""
     return {"status": "ok", "ts": datetime.now(timezone.utc).isoformat()}
+
+
+@router.post("/test-notification")
+async def test_notification():
+    """Send a test notification to all configured channels."""
+    from services.notification_bridge import get_notification_router
+    router = get_notification_router()
+    if not router:
+        return {"success": False, "message": "Notification router not available"}
+    result = await router.send_test()
+    return {"success": result.get("sent", 0) > 0, "result": result}

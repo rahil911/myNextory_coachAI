@@ -130,6 +130,19 @@ app.include_router(epics.router)
 app.include_router(websocket.router)
 
 
+# ── Convenience endpoint ─────────────────────────────────────────────────────
+
+@app.post("/api/test-notification")
+async def test_notification():
+    """Send a test notification to all configured channels."""
+    from services.notification_bridge import get_notification_router
+    nr = get_notification_router()
+    if not nr:
+        return {"success": False, "message": "Notification router not available"}
+    result = await nr.send_test()
+    return {"success": result.get("sent", 0) > 0, "result": result}
+
+
 # ── Serve frontend static files ──────────────────────────────────────────────
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"

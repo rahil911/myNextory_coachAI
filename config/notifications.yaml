@@ -1,25 +1,23 @@
 # Notification Routing Configuration
 #
-# Routes agent/bead events to Slack channels and Telegram DMs
-# via OpenClaw Gateway. When no gateway is running, falls back
-# to log-only mode (all notifications logged to stdout).
-#
-# To enable live notifications:
-# 1. Install and start OpenClaw Gateway on port 18789
-# 2. Configure Slack/Telegram tokens in ~/.openclaw/openclaw.json
-# 3. Set enabled: true below
+# Routes agent/bead events to Telegram and Slack.
+# Sends directly to APIs (no gateway dependency).
 
 notifications:
   enabled: true
-  openclaw_gateway: "http://localhost:18789"
+  dashboard_url: "https://rahil911.duckdns.org:8002"
+
+  credentials:
+    telegram_bot_token: "8595926634:AAHWQ-ee7JYrR4WOgBfUKZRPEYpvyLab6M0"
+    telegram_chat_id: "8288652266"
+    # slack_webhook_url: "https://hooks.slack.com/services/T.../B.../xxx"  # Add when ready
 
   routes:
-    # Critical alerts — high-priority capsules and agent failures
+    # Critical alerts — high-priority events
     - name: critical-alerts
       priority: [3]
       channels:
-        - "telegram:@rahil_dev"
-        - "slack:C_ENGINEERING"
+        - "telegram:8288652266"
 
     # Agent lifecycle — spawn, complete, fail events
     - name: agent-status
@@ -29,7 +27,7 @@ notifications:
         - agent_fail
         - agent_gone
       channels:
-        - "slack:C_BAAP_STATUS"
+        - "telegram:8288652266"
 
     # Bead transitions — when beads move between states
     - name: bead-transitions
@@ -37,4 +35,11 @@ notifications:
         - bead_blocked
         - bead_closed
       channels:
-        - "slack:C_BAAP_STATUS"
+        - "telegram:8288652266"
+
+    # Test notifications
+    - name: test
+      event_types:
+        - test
+      channels:
+        - "telegram:8288652266"
