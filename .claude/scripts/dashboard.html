@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baap Agent Swarm</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --dim: #8b949e; --green: #3fb950;
+    --yellow: #d29922; --red: #f85149; --blue: #58a6ff; --purple: #bc8cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, 'SF Mono', 'Consolas', monospace; font-size: 14px; padding: 20px; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+  .header-right { font-size: 12px; color: var(--dim); }
+  .pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 12px; }
+  .full-width { grid-column: 1 / -1; }
+
+  /* Agent cards */
+  .agent-card { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; background: var(--bg); }
+  .agent-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .agent-dot.working { background: var(--green); }
+  .agent-dot.spawning { background: var(--yellow); }
+  .agent-dot.stopped { background: var(--dim); }
+  .agent-dot.stuck { background: var(--red); animation: pulse 1s infinite; }
+  .agent-name { font-weight: 600; min-width: 160px; }
+  .agent-level { color: var(--purple); font-size: 12px; min-width: 30px; }
+  .agent-action { color: var(--dim); font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .agent-hb { font-size: 11px; min-width: 70px; text-align: right; }
+  .agent-hb.stale { color: var(--red); font-weight: 700; }
+
+  /* Epic progress */
+  .epic-row { margin-bottom: 10px; }
+  .epic-header { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; }
+  .epic-bar-bg { height: 20px; background: var(--bg); border-radius: 4px; overflow: hidden; display: flex; }
+  .epic-bar-fill { height: 100%; transition: width 0.5s ease; }
+  .epic-bar-done { background: var(--green); }
+  .epic-bar-wip { background: var(--yellow); }
+  .epic-bar-blocked { background: var(--red); }
+  .epic-stats { font-size: 11px; color: var(--dim); margin-top: 2px; }
+
+  /* Beads table */
+  .bead-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .bead-table th { text-align: left; color: var(--dim); font-weight: 400; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+  .bead-table td { padding: 4px 8px; border-bottom: 1px solid var(--bg); }
+  .bead-status { padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+  .bead-status.closed { background: #1a3a2a; color: var(--green); }
+  .bead-status.in_progress { background: #3a2a0a; color: var(--yellow); }
+  .bead-status.blocked { background: #3a1a1a; color: var(--red); }
+  .bead-status.open { background: #1a2a3a; color: var(--blue); }
+
+  /* Timeline */
+  .event { display: flex; gap: 10px; padding: 4px 0; font-size: 12px; border-bottom: 1px solid var(--bg); }
+  .event-time { color: var(--dim); min-width: 80px; flex-shrink: 0; }
+  .event-type { min-width: 110px; flex-shrink: 0; }
+  .event-type.agent_spawned { color: var(--green); }
+  .event-type.status_change { color: var(--yellow); }
+  .event-type.agent_gone { color: var(--red); }
+  .event-agent { color: var(--blue); min-width: 140px; flex-shrink: 0; }
+  .event-detail { color: var(--dim); }
+
+  /* Alerts */
+  .alerts { margin-bottom: 16px; }
+  .alert { padding: 8px 14px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .alert-warn { background: #3a2a0a; border: 1px solid var(--yellow); color: var(--yellow); }
+  .alert-crit { background: #3a1a1a; border: 1px solid var(--red); color: var(--red); }
+
+  .empty { color: var(--dim); font-style: italic; padding: 12px 0; }
+  .count-badge { background: var(--border); padding: 1px 6px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1><span class="pulse"></span>Baap Agent Swarm</h1>
+  </div>
+  <div class="header-right">
+    <span id="lastUpdate">—</span> | refreshing every 10s
+  </div>
+</div>
+
+<div class="alerts" id="alerts"></div>
+
+<div class="grid">
+  <!-- Agent Swimlanes -->
+  <div class="panel">
+    <div class="panel-title">Agents <span class="count-badge" id="agentCount">0</span></div>
+    <div id="agentList"><div class="empty">No agents running</div></div>
+  </div>
+
+  <!-- Epic Progress -->
+  <div class="panel">
+    <div class="panel-title">Epic Progress <span class="count-badge" id="epicCount">0</span></div>
+    <div id="epicList"><div class="empty">No epics found</div></div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="panel full-width">
+    <div class="panel-title">Event Timeline <span class="count-badge" id="eventCount">0</span></div>
+    <div id="timeline"><div class="empty">No events yet — waiting for first poll</div></div>
+  </div>
+
+  <!-- Beads -->
+  <div class="panel full-width">
+    <div class="panel-title">Beads <span class="count-badge" id="beadCount">0</span></div>
+    <div id="beadList" style="max-height: 400px; overflow-y: auto;">
+      <div class="empty">No beads loaded</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const POLL_MS = 10000;
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch { return '—'; }
+}
+
+function fmtHb(age, stale) {
+  if (age === null || age === undefined) return '<span class="agent-hb">no hb</span>';
+  const cls = stale ? 'agent-hb stale' : 'agent-hb';
+  const label = stale ? `STALE ${age}s` : `${age}s ago`;
+  return `<span class="${cls}">${label}</span>`;
+}
+
+function dotClass(status, stale) {
+  if (stale) return 'stuck';
+  const s = (status || '').toLowerCase();
+  if (s === 'working' || s === 'running') return 'working';
+  if (s === 'spawning') return 'spawning';
+  return 'stopped';
+}
+
+function statusClass(s) {
+  s = (s || '').toLowerCase().replace('-', '_');
+  if (['closed', 'done', 'completed', 'resolved'].includes(s)) return 'closed';
+  if (['in_progress', 'active'].includes(s)) return 'in_progress';
+  if (s === 'blocked') return 'blocked';
+  return 'open';
+}
+
+// ── Render functions ──────────────────────────────────────────────────────────
+
+function renderAgents(data) {
+  const el = document.getElementById('agentList');
+  document.getElementById('agentCount').textContent = data.count;
+  if (!data.agents.length) { el.innerHTML = '<div class="empty">No agents running</div>'; return; }
+
+  el.innerHTML = data.agents.map(a => `
+    <div class="agent-card">
+      <div class="agent-dot ${dotClass(a.status, a.heartbeat_stale)}"></div>
+      <span class="agent-name">${a.agent}</span>
+      <span class="agent-level">L${a.level}</span>
+      <span class="agent-action" title="${(a.current_action || '—').replace(/"/g, '&quot;')}">${a.current_action || '—'}</span>
+      ${fmtHb(a.heartbeat_age_s, a.heartbeat_stale)}
+    </div>
+  `).join('');
+}
+
+function renderEpics(data) {
+  const el = document.getElementById('epicList');
+  document.getElementById('epicCount').textContent = data.count;
+  if (!data.epics.length) { el.innerHTML = '<div class="empty">No epics found</div>'; return; }
+
+  el.innerHTML = data.epics.map(e => {
+    const doneW = e.total > 0 ? (e.completed / e.total * 100) : 0;
+    const wipW = e.total > 0 ? (e.in_progress / e.total * 100) : 0;
+    const blockW = e.total > 0 ? (e.blocked / e.total * 100) : 0;
+    return `
+      <div class="epic-row">
+        <div class="epic-header">
+          <span>${e.epic}</span>
+          <span>${e.progress_pct}%</span>
+        </div>
+        <div class="epic-bar-bg">
+          <div class="epic-bar-fill epic-bar-done" style="width:${doneW}%"></div>
+          <div class="epic-bar-fill epic-bar-wip" style="width:${wipW}%"></div>
+          <div class="epic-bar-fill epic-bar-blocked" style="width:${blockW}%"></div>
+        </div>
+        <div class="epic-stats">${e.completed} done / ${e.in_progress} wip / ${e.blocked} blocked / ${e.open} open</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderBeads(data) {
+  const el = document.getElementById('beadList');
+  document.getElementById('beadCount').textContent = data.count;
+  if (!data.beads.length) { el.innerHTML = '<div class="empty">No beads found</div>'; return; }
+
+  const rows = data.beads.map(b => {
+    const sc = statusClass(b.status);
+    const deps = (b.dependencies || b.deps || []).join(', ') || '—';
+    return `<tr>
+      <td>${b.id || '?'}</td>
+      <td><span class="bead-status ${sc}">${b.status || '?'}</span></td>
+      <td>${b.title || b.description || '—'}</td>
+      <td>${b.assignee || '—'}</td>
+      <td>${deps}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `<table class="bead-table">
+    <thead><tr><th>ID</th><th>Status</th><th>Title</th><th>Assignee</th><th>Deps</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function renderTimeline(data) {
+  const el = document.getElementById('timeline');
+  document.getElementById('eventCount').textContent = data.events.length;
+  if (!data.events.length) { el.innerHTML = '<div class="empty">No events yet</div>'; return; }
+
+  el.innerHTML = data.events.map(ev => `
+    <div class="event">
+      <span class="event-time">${fmtTime(ev.ts)}</span>
+      <span class="event-type ${ev.type}">${ev.type}</span>
+      <span class="event-agent">${ev.agent}</span>
+      <span class="event-detail">${ev.detail}</span>
+    </div>
+  `).join('');
+}
+
+function renderAlerts(agents) {
+  const el = document.getElementById('alerts');
+  const alerts = [];
+
+  (agents.agents || []).forEach(a => {
+    if (a.heartbeat_stale) {
+      alerts.push({ level: 'crit', msg: `Agent "${a.agent}" heartbeat stale (${a.heartbeat_age_s}s) — may be frozen` });
+    }
+    if ((a.status || '').toLowerCase() === 'stopped' || (a.status || '').toLowerCase() === 'failed') {
+      alerts.push({ level: 'warn', msg: `Agent "${a.agent}" status: ${a.status}` });
+    }
+    if ((a.errors || 0) > 0) {
+      alerts.push({ level: 'warn', msg: `Agent "${a.agent}" has ${a.errors} error(s)` });
+    }
+  });
+
+  if (!alerts.length) { el.innerHTML = ''; return; }
+  el.innerHTML = alerts.map(a =>
+    `<div class="alert alert-${a.level}">${a.level === 'crit' ? '&#9888;' : '&#9432;'} ${a.msg}</div>`
+  ).join('');
+}
+
+// ── Polling loop ──────────────────────────────────────────────────────────────
+
+async function fetchJSON(path) {
+  try {
+    const r = await fetch(API + path);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+async function poll() {
+  const [agents, epics, beads, timeline] = await Promise.all([
+    fetchJSON('/api/dashboard/agents'),
+    fetchJSON('/api/dashboard/epics'),
+    fetchJSON('/api/dashboard/beads'),
+    fetchJSON('/api/dashboard/timeline'),
+  ]);
+
+  if (agents) { renderAgents(agents); renderAlerts(agents); }
+  if (epics) renderEpics(epics);
+  if (beads) renderBeads(beads);
+  if (timeline) renderTimeline(timeline);
+
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
+}
+
+// Initial poll, then every 10s
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

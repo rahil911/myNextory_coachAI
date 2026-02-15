@@ -113,6 +113,75 @@ except: pass
     fi
     # ── End Bead Check ────────────────────────────────────────────────────────
 
+    # ── PRE-MERGE GATE 1: Security Scan ──────────────────────────────────────
+    # Runs scan-security.sh (created by 03g) on the agent's diff.
+    # Exit codes: 0=clean, 1=CRITICAL (block), 2=WARNING (allow with note)
+    SCAN_SCRIPT="$PROJECT/.claude/scripts/scan-security.sh"
+    SKIP_SECURITY="${SKIP_SECURITY:-false}"
+
+    if [ "$SKIP_SECURITY" = "true" ]; then
+      echo "[gate:security] Skipping security scan (SKIP_SECURITY=true)"
+    elif [ -x "$SCAN_SCRIPT" ]; then
+      echo "[gate:security] Running security scan..."
+      scan_exit=0
+      "$SCAN_SCRIPT" --diff "$MAIN_BRANCH" "$BRANCH" || scan_exit=$?
+      case $scan_exit in
+        0) echo "[gate:security] CLEAN — no issues found" ;;
+        1) echo "[gate:security] CRITICAL issues found. Merge BLOCKED." >&2; exit 1 ;;
+        2) echo "[gate:security] Warnings found. Proceeding (review recommended)." ;;
+        *) echo "[gate:security] Scan error (exit $scan_exit). Merge BLOCKED." >&2; exit 1 ;;
+      esac
+    else
+      echo "[gate:security] scan-security.sh not found. Skipping. (Install via Phase 3g)"
+    fi
+    # ── End Security Gate ────────────────────────────────────────────────────
+
+    # ── PRE-MERGE GATE 2: Test Gate ──────────────────────────────────────────
+    # Runs test-gate.sh (created by 03b) on the agent's worktree.
+    # Exit codes: 0=passed, 1=failed, 2=timeout
+    TEST_GATE_SCRIPT="$PROJECT/.claude/scripts/test-gate.sh"
+    SKIP_TESTS="${SKIP_TESTS:-false}"
+
+    if [ "$SKIP_TESTS" = "true" ]; then
+      echo "[gate:test] Skipping test gate (SKIP_TESTS=true)"
+    elif [ -x "$TEST_GATE_SCRIPT" ]; then
+      echo "[gate:test] Running test gate..."
+      test_exit=0
+      "$TEST_GATE_SCRIPT" "$WORKTREE" || test_exit=$?
+      case $test_exit in
+        0) echo "[gate:test] PASSED — all tests green" ;;
+        1) echo "[gate:test] FAILED — tests did not pass. Merge BLOCKED." >&2; exit 1 ;;
+        2) echo "[gate:test] TIMEOUT — tests exceeded time limit. Merge BLOCKED." >&2; exit 1 ;;
+        *) echo "[gate:test] Error (exit $test_exit). Merge BLOCKED." >&2; exit 1 ;;
+      esac
+    else
+      echo "[gate:test] test-gate.sh not found. Skipping. (Install via Phase 3b)"
+    fi
+    # ── End Test Gate ────────────────────────────────────────────────────────
+
+    # ── PRE-MERGE GATE 3: Review Gate ────────────────────────────────────────
+    # Runs review-agent.sh (created by 03a) — spawns fresh-context reviewer.
+    # Exit codes: 0=APPROVED, 1=CHANGES_REQUESTED, 2=REJECTED, 3=ERROR
+    REVIEW_SCRIPT="$PROJECT/.claude/scripts/review-agent.sh"
+    SKIP_REVIEW="${SKIP_REVIEW:-false}"
+
+    if [ "$SKIP_REVIEW" = "true" ]; then
+      echo "[gate:review] Skipping review gate (SKIP_REVIEW=true)"
+    elif [ -x "$REVIEW_SCRIPT" ]; then
+      echo "[gate:review] Running review gate..."
+      review_exit=0
+      "$REVIEW_SCRIPT" "$NAME" "$WORKTREE" || review_exit=$?
+      case $review_exit in
+        0) echo "[gate:review] APPROVED — review passed" ;;
+        1) echo "[gate:review] CHANGES REQUESTED. Merge BLOCKED." >&2; exit 1 ;;
+        2) echo "[gate:review] REJECTED. Merge BLOCKED. Escalating to human." >&2; exit 2 ;;
+        *) echo "[gate:review] Error (exit $review_exit). Merge BLOCKED." >&2; exit 1 ;;
+      esac
+    else
+      echo "[gate:review] review-agent.sh not found. Skipping. (Install via Phase 3a)"
+    fi
+    # ── End Review Gate ──────────────────────────────────────────────────────
+
     # ── LOCKED MERGE SECTION ──────────────────────────────────────────────────
     (
       flock -w 300 200 || { echo "ERROR: Could not acquire merge lock after 5 minutes" >&2; exit 1; }

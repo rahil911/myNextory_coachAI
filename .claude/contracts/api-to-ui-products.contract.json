@@ -1,0 +1,43 @@
+{
+  "contract_id": "api-to-ui-products",
+  "version": "1.0.0",
+  "producer": {
+    "agent_id": "api-agent",
+    "files": ["backend/app/models/product.py", "backend/app/routers/products.py"],
+    "extraction": {
+      "language": "python",
+      "method": "pydantic_model",
+      "target": "ProductResponse"
+    }
+  },
+  "consumers": [
+    {
+      "agent_id": "ui-agent",
+      "files": ["ui/src/types/product.ts", "ui/src/hooks/useProducts.ts", "ui/src/components/ProductCard.tsx"],
+      "usage": "Fetches GET /api/products, expects ProductResponse JSON, renders in ProductCard"
+    }
+  ],
+  "boundary_type": "api_response",
+  "schema": {
+    "type": "object",
+    "required": ["id", "name", "category", "price", "in_stock"],
+    "properties": {
+      "id": { "type": "string" },
+      "name": { "type": "string" },
+      "category": { "type": "string" },
+      "subcategory": { "type": ["string", "null"] },
+      "price": { "type": "number" },
+      "in_stock": { "type": "boolean" },
+      "variant_sku": { "type": ["string", "null"] },
+      "updated_at": { "type": "string" }
+    },
+    "additionalProperties": false
+  },
+  "strict": true,
+  "validation_mode": "block_merge",
+  "metadata": {
+    "created_at": "2026-02-14T00:00:00Z",
+    "created_by": "generate-contract.sh",
+    "description": "Ensures API response shape matches what ui-agent's TypeScript types expect"
+  }
+}

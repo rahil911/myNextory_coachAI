@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://baap.dev/schemas/contract.json",
+  "title": "Cross-Agent Contract",
+  "description": "Defines the interface contract between a producer agent and one or more consumer agents",
+  "type": "object",
+  "required": ["contract_id", "version", "producer", "consumers", "schema", "boundary_type"],
+  "properties": {
+    "contract_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique identifier, matches filename without extension"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the contract"
+    },
+    "previous_versions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "version": { "type": "string" },
+          "deprecated_at": { "type": "string", "format": "date-time" },
+          "migration_notes": { "type": "string" }
+        }
+      },
+      "description": "History of breaking changes for audit trail"
+    },
+    "producer": {
+      "type": "object",
+      "required": ["agent_id", "files"],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "description": "Agent that produces/owns this interface"
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Source files that define the interface (globs allowed)"
+        },
+        "extraction": {
+          "type": "object",
+          "properties": {
+            "language": { "enum": ["python", "typescript", "sql"] },
+            "method": { "enum": ["pydantic_model", "function_signature", "typescript_interface", "sql_table", "json_schema_literal"] },
+            "target": {
+              "type": "string",
+              "description": "Class name, function name, table name, or interface name to extract"
+            }
+          },
+          "description": "How to auto-extract the schema from source code"
+        }
+      }
+    },
+    "consumers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["agent_id"],
+        "properties": {
+          "agent_id": { "type": "string" },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Consumer files that depend on this contract"
+          },
+          "usage": {
+            "type": "string",
+            "description": "How the consumer uses this interface"
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "boundary_type": {
+      "enum": ["api_response", "db_schema", "file_format", "function_call", "event_payload", "config"],
+      "description": "What kind of boundary this contract covers"
+    },
+    "schema": {
+      "type": "object",
+      "description": "The actual JSON Schema that the producer's output must conform to. This is the contract payload -- a standard JSON Schema object."
+    },
+    "strict": {
+      "type": "boolean",
+      "default": true,
+      "description": "If true, additionalProperties not in schema cause failure. If false, only required fields are checked."
+    },
+    "validation_mode": {
+      "enum": ["block_merge", "warn_only", "notify_consumers"],
+      "default": "block_merge",
+      "description": "What happens when contract validation fails"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "created_at": { "type": "string", "format": "date-time" },
+        "created_by": { "type": "string" },
+        "last_validated": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "related_beads": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

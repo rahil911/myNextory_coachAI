@@ -1,0 +1,43 @@
+{
+  "contract_id": "db-to-api-products",
+  "version": "1.0.0",
+  "producer": {
+    "agent_id": "db-agent",
+    "files": ["dbt/models/staging/stg_products.sql", "dbt/models/marts/dim_products.sql"],
+    "extraction": {
+      "language": "sql",
+      "method": "sql_table",
+      "target": "DIM_PRODUCTS"
+    }
+  },
+  "consumers": [
+    {
+      "agent_id": "api-agent",
+      "files": ["backend/app/models/product.py", "backend/app/routers/products.py"],
+      "usage": "Reads DIM_PRODUCTS via Snowflake connector, maps to ProductResponse Pydantic model"
+    }
+  ],
+  "boundary_type": "db_schema",
+  "schema": {
+    "type": "object",
+    "required": ["PRODUCT_ID", "PRODUCT_NAME", "CATEGORY", "PRICE", "IN_STOCK", "UPDATED_AT"],
+    "properties": {
+      "PRODUCT_ID": { "type": "string", "description": "Primary key, VARCHAR" },
+      "PRODUCT_NAME": { "type": "string" },
+      "CATEGORY": { "type": "string" },
+      "SUBCATEGORY": { "type": ["string", "null"] },
+      "PRICE": { "type": "number", "minimum": 0 },
+      "IN_STOCK": { "type": "boolean" },
+      "VARIANT_SKU": { "type": ["string", "null"], "description": "Added in v1.0.0" },
+      "UPDATED_AT": { "type": "string", "format": "date-time" }
+    },
+    "additionalProperties": false
+  },
+  "strict": true,
+  "validation_mode": "block_merge",
+  "metadata": {
+    "created_at": "2026-02-14T00:00:00Z",
+    "created_by": "generate-contract.sh",
+    "description": "Ensures DIM_PRODUCTS table schema matches what api-agent's Pydantic models expect"
+  }
+}

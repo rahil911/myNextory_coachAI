@@ -1,0 +1,129 @@
+/* ==========================================================================
+   ANIMATIONS.CSS — Keyframes, Micro-Interactions, Phase Animations
+   ========================================================================== */
+
+/* ── Pulse (status dots) ────────────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Phase Stepper Pulse ────────────────────────────────────────────────── */
+@keyframes phase-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+}
+
+/* ── Phase Check Pop ────────────────────────────────────────────────────── */
+@keyframes phase-check-pop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* ── Phase Line Flow ────────────────────────────────────────────────────── */
+@keyframes phase-line-flow {
+  0% { left: -40%; }
+  100% { left: 100%; }
+}
+
+/* ── Toast Enter/Exit ───────────────────────────────────────────────────── */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(100px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(100px) scale(0.95); }
+}
+
+/* ── Message Fade In ────────────────────────────────────────────────────── */
+@keyframes message-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Chip Fade In (staggered) ───────────────────────────────────────────── */
+@keyframes chip-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Typing Bounce ──────────────────────────────────────────────────────── */
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+/* ── Shimmer ────────────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Highlight Fade (spec-kit new content) ──────────────────────────────── */
+@keyframes highlight-fade {
+  0% { background: rgba(34, 197, 94, 0.12); }
+  100% { background: transparent; border-left-color: transparent; }
+}
+
+/* ── Pulse Border (critical approval) ───────────────────────────────────── */
+@keyframes pulse-border-red {
+  0%, 100% { border-left-color: var(--red); }
+  50% { border-left-color: #fca5a5; }
+}
+
+/* ── Card Hover Lift ────────────────────────────────────────────────────── */
+@keyframes card-appear {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Slide Down (section reveal) ────────────────────────────────────────── */
+@keyframes slide-down {
+  from { max-height: 0; opacity: 0; }
+  to   { max-height: 500px; opacity: 1; }
+}
+
+/* ── Spin (loading) ─────────────────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ── Fade In/Out Utility ────────────────────────────────────────────────── */
+.fade-enter {
+  animation: fade-in var(--duration-normal) var(--ease-out) forwards;
+}
+
+.fade-exit {
+  animation: fade-out var(--duration-normal) var(--ease-out) forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ── Confetti / Success burst (approval gate) ───────────────────────────── */
+@keyframes approval-burst {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.97); }
+  60% { transform: scale(1); background: #065f46; }
+  100% { transform: scale(1); background: #065f46; }
+}

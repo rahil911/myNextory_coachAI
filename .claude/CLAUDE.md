@@ -465,3 +465,191 @@ BROADCAST (orchestrator → all):
 - Merge via `cleanup.sh {agent-name} merge`
 - Push after merge: `git push`
 - Sync beads: `bd sync`
+
+---
+
+## Checkpoint Protocol
+
+**MANDATORY**: Every agent MUST checkpoint progress to survive context window limits and session timeouts.
+
+### When to Checkpoint
+
+Checkpoint after each of these events:
+- Completing a major subtask (finished a function, created a file, resolved an issue)
+- Reaching a natural break point (moving from investigation to recommendation)
+- Every ~15 minutes of continuous work (set a mental timer)
+- Before starting a risky or expensive operation (large refactor, bulk API calls)
+
+### How to Checkpoint
+
+Write a checkpoint block to your memory file at `.claude/agents/{your-agent-name}/memory/MEMORY.md`:
+
+```
+## Checkpoint {YYYY-MM-DD HH:MM:SS}
+- **Bead**: {bead_id}
+- **Status**: {in_progress|blocked|nearly_done}
+- **Completed**:
+  - {what you finished, be specific}
+  - {include key findings/decisions}
+- **Next**:
+  - {what remains to be done}
+  - {in priority order}
+- **Files modified**:
+  - {path/to/file1.py} - {what changed}
+  - {path/to/file2.ts} - {what changed}
+- **Decisions made**:
+  - {decision}: {reasoning}
+- **Key data**:
+  - {any values/results the next session needs to know}
+```
+
+Then update the bead with a condensed version:
+
+```bash
+bd update {bead_id} --notes="Checkpoint: {one-line summary}. Completed: {list}. Next: {list}. Files: {list}."
+```
+
+Then commit your in-progress work:
+
+```bash
+cd {worktree_path}
+git add -A
+git commit -m "checkpoint: {summary}" --no-verify
+```
+
+### On Session Start (Retry Recovery)
+
+If your prompt includes a `CHECKPOINT CONTEXT` section, you are a retry of a previous session. Follow these rules:
+1. **Read the checkpoint carefully** -- it tells you what was already done
+2. **Do NOT redo completed work** -- the files are already modified and committed
+3. **Verify the checkpoint** -- quickly check that mentioned files exist and look correct
+4. **Continue from "Next"** -- pick up exactly where the previous session left off
+5. **Write your own checkpoint** after making progress -- the chain continues
+
+---
+
+## Retry & Recovery
+
+### Retry a Failed Agent
+
+When an agent times out or errors, retry it with checkpoint context:
+
+```bash
+# Retry with automatic resume/fresh decision
+bash .claude/scripts/retry-agent.sh ~/agents/reactive-20260210_143000
+
+# Force a fresh session (skip --resume attempt)
+bash .claude/scripts/retry-agent.sh ~/agents/reactive-20260210_143000 --force-fresh
+```
+
+The retry script:
+1. Reads the agent's exit code (124=timeout, 1=error, 137=killed)
+2. Finds the latest checkpoint from the agent's memory file
+3. For timeouts with valid checkpoints: tries `--resume` first, falls back to fresh
+4. For errors: always starts fresh with checkpoint context injected
+5. For kills: starts fresh, marks checkpoint as potentially stale
+6. Caps at 2 retries per agent to prevent infinite loops
+
+### Manual Checkpoint
+
+Force a checkpoint commit from outside the agent:
+
+```bash
+bash .claude/scripts/checkpoint.sh ~/agents/reactive-20260210_143000 "Finished API integration" BC-a7x
+```
+
+### Resume vs Fresh Decision
+
+| Exit Code | Meaning | Checkpoint? | Action |
+|-----------|---------|-------------|--------|
+| 0 | Success | N/A | No retry needed |
+| 124 | Timeout | Valid (<2h) | Try `--resume`, fall back to fresh |
+| 124 | Timeout | Stale (>2h) | Fresh with stale warning |
+| 124 | Timeout | None | Fresh with original prompt |
+| 1 | Error | Any | Fresh (never resume error state) |
+| 137 | Killed | Any | Fresh, checkpoint marked stale |
+
+---
+
+## Web Dashboard
+
+| Command | Purpose |
+|---------|---------|
+| `bash .claude/scripts/start-dashboard.sh` | Start web dashboard on port 8002 |
+| `http://100.78.153.91:8002` | Access from Mac via Tailscale |
+| `http://localhost:8002` | Access from India directly |
+| `http://100.78.153.91:8002/api/dashboard/agents` | Raw JSON: agent status |
+| `http://100.78.153.91:8002/api/dashboard/epics` | Raw JSON: epic progress |
+| `http://100.78.153.91:8002/api/dashboard/beads` | Raw JSON: all beads |
+| `http://100.78.153.91:8002/api/dashboard/timeline` | Raw JSON: event timeline |
+
+The dashboard auto-refreshes every 10 seconds. Alerts surface stale heartbeats (>2min),
+failed agents, and error counts as banners at the top of the page.
+
+---
+
+## Shared Knowledge (Agent Learning Network)
+
+### On Session Start
+
+Read the shared patterns file before starting work:
+- `@.claude/knowledge/patterns.md` — Patterns discovered by all agents
+
+Weight patterns by confidence:
+- **established**: Treat as project convention. Follow unless explicitly overridden.
+- **validated**: Strong guidance. Follow unless you have a specific reason not to.
+- **hypothesis**: Informational. Try it, but verify independently.
+
+### Contributing Patterns
+
+When you discover something reusable during your work — an API behavior, a library quirk, a testing approach, a schema convention — contribute it to the shared knowledge:
+
+#### Step 1: Write to your own MEMORY.md (always)
+```
+Add to .claude/agents/{your-name}/memory/MEMORY.md
+```
+
+#### Step 2: Append to shared patterns (if reusable across agents)
+
+Append a new pattern entry to `.claude/knowledge/patterns.md` under the correct category heading. Follow the format in `.claude/knowledge/SCHEMA.md` exactly.
+
+**Only contribute patterns that are genuinely reusable.** Ask yourself:
+- Would another agent benefit from knowing this?
+- Is this specific enough to be actionable?
+- Can I articulate both the pattern AND the anti-pattern?
+
+If any answer is no, keep it in your MEMORY.md only.
+
+#### Step 3: Create a bead for discovery tracking
+```bash
+bd create "Pattern: [pattern-name] ([category])" \
+  --label pattern-discovered \
+  --label "category:[coding-patterns|db-patterns|api-patterns|testing-patterns|security-patterns|infra-patterns]" \
+  --label "confidence:hypothesis" \
+  --priority 3
+```
+
+#### Step 4: Validate existing patterns
+
+If during your work you independently confirm an existing pattern works:
+1. Update `Validation count` (+1) and `Last validated` date in that pattern's entry
+2. If validation count reaches 2, upgrade confidence from `hypothesis` to `validated`
+3. If validation count reaches 5, upgrade confidence from `validated` to `established`
+4. Do NOT create a new bead for validation — just update the pattern entry
+
+If you find an existing pattern is WRONG:
+1. Add `(DISPUTED)` to the pattern name
+2. Add a line: `- **Dispute**: [your-agent-name] on [date]: [explanation of why it's wrong]`
+3. Create a bead: `bd create "Pattern dispute: [pattern-name]" --label pattern-disputed --priority 2`
+4. Do NOT delete the pattern — let the curation script handle it
+
+### Pattern Categories
+
+| Category | What goes here |
+|----------|---------------|
+| `coding-patterns` | Language idioms, library usage, code structure, import conventions |
+| `db-patterns` | Query patterns, schema handling, connection management, migration gotchas |
+| `api-patterns` | API calling conventions, response handling, retry logic, authentication |
+| `testing-patterns` | Test structure, fixtures, mocking strategies, CI configuration |
+| `security-patterns` | Credential handling, input validation, access control, secret management |
+| `infra-patterns` | Deployment, configuration, environment setup, Docker, CI/CD |

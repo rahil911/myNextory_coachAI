@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+
+  <symbol id="icon-check" viewBox="0 0 16 16">
+    <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="icon-x" viewBox="0 0 16 16">
+    <path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="icon-search" viewBox="0 0 16 16">
+    <path d="M11.5 7a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm-.82 4.74a6 6 0 111.06-1.06l3.04 3.04a.75.75 0 11-1.06 1.06l-3.04-3.04z" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="icon-arrow-right" viewBox="0 0 16 16">
+    <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="icon-alert" viewBox="0 0 16 16">
+    <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM7.25 5a.75.75 0 011.5 0v3a.75.75 0 01-1.5 0V5zm.75 6.5a1 1 0 100-2 1 1 0 000 2z" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="icon-play" viewBox="0 0 16 16">
+    <path d="M4 2.5v11a.5.5 0 00.757.429l9-5.5a.5.5 0 000-.858l-9-5.5A.5.5 0 004 2.5z" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="icon-stop" viewBox="0 0 16 16">
+    <rect x="3" y="3" width="10" height="10" rx="1" fill="currentColor"/>
+  </symbol>
+
+</svg>

@@ -1,0 +1,163 @@
+/* ==========================================================================
+   TIMELINE.CSS — AgentOps-Style Waterfall, Event Rows, Detail Panel
+   ========================================================================== */
+
+.timeline-container {
+  display: flex;
+  height: calc(100vh - 180px);
+  gap: 0;
+}
+
+.timeline-list {
+  flex: 0 0 60%;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+
+.timeline-detail {
+  flex: 0 0 40%;
+  overflow-y: auto;
+  padding: var(--space-6);
+  background: var(--bg-1);
+}
+
+.timeline-detail-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* ── Timeline Header ───────────────────────────────────────────────────── */
+.timeline-header-row {
+  display: grid;
+  grid-template-columns: 200px 100px 1fr 80px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-base);
+  z-index: 2;
+}
+
+/* ── Event Row ──────────────────────────────────────────────────────────── */
+.timeline-event {
+  display: grid;
+  grid-template-columns: 200px 100px 1fr 80px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+  align-items: center;
+}
+
+.timeline-event:hover {
+  background: var(--bg-card-hover);
+}
+
+.timeline-event.selected {
+  background: var(--accent-dim);
+}
+
+.timeline-event-name {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.timeline-event-type {
+  font-size: var(--font-size-xs);
+}
+
+/* Waterfall bar */
+.timeline-bar-container {
+  position: relative;
+  height: 20px;
+}
+
+.timeline-bar {
+  position: absolute;
+  top: 4px;
+  height: 12px;
+  border-radius: 3px;
+  min-width: 4px;
+  transition: opacity var(--duration-fast);
+}
+
+.timeline-bar.type-agent-spawn { background: var(--purple); }
+.timeline-bar.type-tool-call   { background: var(--blue); }
+.timeline-bar.type-status      { background: var(--green); }
+.timeline-bar.type-bead        { background: var(--yellow); }
+.timeline-bar.type-error       { background: var(--red); }
+.timeline-bar.type-approval    { background: var(--phase-listen); }
+
+.timeline-event-duration {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  text-align: right;
+}
+
+/* ── Detail Panel Content ───────────────────────────────────────────────── */
+.timeline-detail-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: var(--space-4);
+}
+
+.timeline-detail-section {
+  margin-bottom: var(--space-5);
+}
+
+.timeline-detail-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
+}
+
+.timeline-detail-value {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+.timeline-detail-code {
+  background: var(--bg-3);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .timeline-container {
+    flex-direction: column;
+  }
+  .timeline-list {
+    flex: 1;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .timeline-detail {
+    flex: 0 0 300px;
+  }
+}
