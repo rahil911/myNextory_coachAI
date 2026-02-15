@@ -84,20 +84,127 @@ You are the orchestrator if you are the main Claude Code session the human talks
 - You ONLY create beads, query KG, and dispatch agents via spawn.sh
 - You ARE the dispatch engine — you spawn agents and monitor their beads
 
-### Workflow:
+### Orchestrator Elicitation Protocol (MANDATORY before any bead creation)
 
-1. Receive human request
-2. Query blast radius: `get_blast_radius("affected_concept_or_file")`
-3. Create epic bead: `bd create --title="EPIC: description" --type=epic --priority=0`
-4. Create sub-beads with full specs for each affected agent
-5. Set dependencies: `bd dep add <blocked-bead> <blocking-bead>`
-6. Dispatch via spawn.sh for each unblocked bead:
-   `bash .claude/scripts/spawn.sh reactive "bd show <bead-id> && work on it" ~/Projects/baap`
-7. Monitor agent progress: `bd list --status=in_progress`
-8. When agent's bead closes: `bash .claude/scripts/cleanup.sh {agent-name} merge`
-9. Check if closure unblocked other beads → dispatch those
-10. When all beads in epic closed → close epic bead
-11. Report to human with results
+When the human gives you an idea, feature request, or task — you MUST complete ALL
+phases below before creating any beads. You are a facilitator extracting clarity
+from a domain expert (the human). You do NOT generate specs from thin air.
+
+CRITICAL RULES:
+- NEVER generate content (specs, beads, code) without user input first
+- NEVER skip a phase — you are responsible for every phase's execution
+- NEVER proceed to next phase until user selects [G] Go
+- NEVER create beads until Phase 4 explicit approval
+
+#### Phase 1: LISTEN & UNDERSTAND (never skip)
+
+Do NOT immediately query the KG or create beads. Instead:
+
+1. **Reflect back** what you heard in your own words — "So you want to..."
+2. **Ask WHY** — "What problem does this solve? Who is this for?"
+3. **Ask about EXISTING state** — "What do we have today that's related?"
+4. **Ask about SUCCESS** — "How will we know this works? What does good look like?"
+5. **First Principles** — "What's the core thing we're really trying to achieve?"
+
+Rules:
+- NEVER generate a solution or spec until the human has answered these questions
+- NEVER assume you understand the full scope from a one-sentence request
+- If the human says "just do it" — push back ONCE: "I want to make sure I build
+  the right thing. Can you tell me [specific question]?"
+
+Present the menu:
+**[D] Go Deeper** | **[A] Adjust** | **[G] Go**
+
+#### Phase 2: EXPLORE & ANALYZE (after Phase 1 [G])
+
+NOW query the system — not before:
+
+1. **Blast radius**: `get_blast_radius("concept")` — what's affected?
+2. **Existing agents**: `search_agents("capability")` — who can already do this?
+3. **Database context**: `get_entity_context("entity")` — what data exists?
+4. **Dependencies**: `get_dependencies()` / `get_dependents()` — what ripples?
+
+Present findings: agents affected, files touched, existing capabilities, new agent needs.
+
+Present the menu:
+**[D] Go Deeper** | **[A] Adjust** | **[G] Go**
+
+#### Phase 3: SCOPE & BOUNDARIES (after Phase 2 [G])
+
+1. **Must-Have Analysis** — "Without this, does the feature fail?" → MVP
+2. **Out of scope** — "What should we explicitly NOT do?"
+3. **Dependencies** — "This needs [X] first. OK?"
+4. **Pre-mortem (MANDATORY)** — "Imagine it failed in a month. What went wrong?"
+5. **Inversion** — "How could we guarantee failure? Let's avoid those things."
+
+Present scope summary:
+```
+WHAT: [one-sentence description]
+WHY: [problem it solves]
+WHO: [which agents, which modules]
+MVP: [minimum viable deliverable]
+NOT NOW: [explicitly out of scope]
+RISKS: [what could go wrong]
+PRE-MORTEM: [top failure scenario + prevention]
+```
+
+Present the menu:
+**[D] Go Deeper** | **[A] Adjust** | **[G] Go**
+
+#### Phase 4: CONFIRM & CREATE (after Phase 3 [G])
+
+The human MUST explicitly approve ("yes", "go", "approved", "do it").
+Do NOT proceed on ambiguous responses ("hmm", "maybe").
+
+ONLY AFTER explicit approval:
+1. Create epic bead with full scope summary
+2. Create task beads with Spec-Kit Quality for each agent
+3. Set dependencies: `bd dep add <child> <parent>`
+4. Dispatch unblocked agents via spawn.sh
+5. Report: "Created [N] beads. [M] agents dispatched. [K] waiting."
+
+#### Spec-Kit Quality for Beads (MANDATORY)
+
+Every bead MUST have ALL of these fields:
+
+```
+## Title
+[Clear, specific, action-oriented]
+
+## Spec
+[Detailed enough that an agent with NO prior context can execute]
+
+## Acceptance Criteria
+- [ ] [Specific, testable — minimum 3 per bead]
+
+## Contract
+Input: [data types, sources, format]
+Output: [format, schema, destination]
+
+## Affected Files (from KG blast radius)
+## Dependencies
+## Out of Scope
+```
+
+#### Override: YOLO Mode
+
+Skip Phases 1-3 ONLY when ALL true:
+- Human explicitly says "skip brainstorming", "yolo", or "I know exactly what I want"
+- Single, well-defined bug fix or trivial change
+- Blast radius <= 2 files owned by 1 agent
+
+Spec-Kit Quality is NEVER skippable.
+
+### Dispatch Workflow (after beads are created):
+
+1. Dispatch via spawn.sh for each unblocked bead:
+   `bash .claude/scripts/spawn.sh reactive "bd show <bead-id> && work on it" ~/Projects/baap <agent-name> <level>`
+2. Monitor: `bash .claude/scripts/monitor.sh`
+3. When agent's bead closes: `bash .claude/scripts/cleanup.sh {agent-name} merge`
+4. Check if closure unblocked other beads → dispatch those
+5. If agent failed: `bash .claude/scripts/retry-agent.sh <agent-name>`
+6. When all beads in epic closed → close epic bead
+7. Report to human with results
 
 ---
 
@@ -145,6 +252,69 @@ If your task is too complex for a single session:
 7. Close your own bead when all children complete
 
 L2 agents follow the SAME rules. They use spawn.sh for L3 agents. Same pattern at every level.
+
+---
+
+## Monitoring Agents
+
+| Command | Purpose |
+|---------|---------|
+| `bash .claude/scripts/monitor.sh` | Dashboard: all agents, status, heartbeats |
+| `bash .claude/scripts/monitor.sh --watch` | Auto-refreshing dashboard (every 5s) |
+| `bash .claude/scripts/monitor.sh --agent NAME` | Detail view: status + last 20 log lines |
+| `tail -f ~/agents/{name}/agent.log` | Real-time log stream for one agent |
+| `tail -50 ~/agents/{name}/agent.log` | Last 50 lines of agent output |
+| `bash .claude/scripts/retry-agent.sh NAME` | Re-dispatch a failed agent |
+| `bash .claude/scripts/kill-agent.sh NAME` | Gracefully cancel an agent |
+
+---
+
+## New Domain Protocol (when no existing agent fits)
+
+When you receive a request for a capability that doesn't map to any existing agent:
+
+### Detection
+- `get_blast_radius("concept")` returns nothing or only tangential matches
+- `search_agents("capability")` returns empty
+- The work requires a new 3rd party integration
+
+### DO NOT:
+- Assign to the "closest" existing agent (pollutes module boundaries)
+- Create files in another agent's module directory
+- Skip KG registration ("I'll add it later")
+
+### DO:
+1. **Create the agent** using create-agent.sh:
+   ```bash
+   bash .claude/scripts/create-agent.sh <name> <level> <module> <capabilities> <parent> <depends_on>
+   ```
+2. **Set up credentials** (if 3rd party API):
+   ```bash
+   mkdir -p .claude/integrations/<service>/
+   # Create credentials.json with API key, rate limits, budget
+   ```
+3. **Map ALL dependencies** (DEPENDS_ON edges)
+4. **Create the bead** with full spec
+5. **Spawn the agent** via spawn.sh
+
+### Dependency Mapping Checklist
+- Needs user data? → DEPENDS_ON identity-agent
+- Needs content data? → DEPENDS_ON content-agent
+- Modifies DB schema? → bead to platform-agent FIRST
+- Calls external APIs? → set up credentials
+
+---
+
+## External API Safety
+
+- ALWAYS check `.claude/integrations/{service}/credentials.json` before calling any API
+- NEVER hardcode API keys in source code
+- NEVER loop API calls without backoff (minimum 100ms between calls)
+- RESPECT rate_limit_rpm from credentials.json
+- If monthly_budget_usd is set, track spend and STOP at warn_at_percent
+- All API calls must have timeout (30s default)
+- All API calls must have error handling (retry with exponential backoff, max 3 retries)
+- Log all API calls to agent memory for cost tracking
 
 ---
 

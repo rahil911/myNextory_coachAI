@@ -22,6 +22,13 @@ Thumbs.db
 # Beads runtime state
 .beads/
 
+# Agent logs (local, not committed)
+.claude/logs/
+
+# Credentials (NEVER commit)
+.claude/integrations/*/credentials.json
+.claude/integrations/*/secrets.*
+
 # Temporary
 *.flag
 *.tmp

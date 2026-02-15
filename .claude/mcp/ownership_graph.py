@@ -21,8 +21,10 @@ NOTE: Uses simple dict-based graph instead of NetworkX for Python 3.14 compatibi
 """
 
 import asyncio
+import fcntl
 import json
-from pathlib import Path
+import os
+import subprocess
 from collections import deque
 from datetime import datetime, timezone
 
@@ -31,9 +33,30 @@ from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
 
-# Load graph on startup
-CACHE_FILE = Path(__file__).parent.parent / "kg" / "agent_graph_cache.json"
-PROPOSALS_FILE = Path(__file__).parent.parent / "kg" / "proposals.json"
+def get_main_repo_root():
+    """Get the main repo root, even from a worktree."""
+    try:
+        git_common = subprocess.check_output(
+            ["git", "rev-parse", "--git-common-dir"],
+            text=True, stderr=subprocess.DEVNULL
+        ).strip()
+        # git-common-dir returns the .git dir of the main repo
+        if git_common.endswith("/.git"):
+            return git_common[:-5]
+        # If bare or just ".git", use toplevel
+        return subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            text=True, stderr=subprocess.DEVNULL
+        ).strip()
+    except subprocess.CalledProcessError:
+        return os.getcwd()
+
+
+# Load graph on startup — always use main repo root so all worktrees share the same cache
+MAIN_REPO = get_main_repo_root()
+CACHE_FILE = os.path.join(MAIN_REPO, ".claude", "kg", "agent_graph_cache.json")
+PROPOSALS_FILE = os.path.join(MAIN_REPO, ".claude", "kg", "proposals.json")
+LOCK_PATH = CACHE_FILE + ".lock"
 
 # Simple graph structure (avoiding NetworkX for Python 3.14 compatibility)
 nodes_data: dict = {}
@@ -46,7 +69,7 @@ def load_graph():
     """Load graph from cache file into simple dict structure."""
     global nodes_data, predecessors, successors, edges_data
 
-    if not CACHE_FILE.exists():
+    if not os.path.exists(CACHE_FILE):
         raise FileNotFoundError(f"Graph cache not found: {CACHE_FILE}")
 
     with open(CACHE_FILE, "r") as f:
@@ -203,8 +226,8 @@ def bfs_shortest_path(start: str, end: str) -> list:
     return []
 
 
-def save_cache():
-    """Persist the current in-memory graph back to agent_graph_cache.json."""
+def _build_cache_dict():
+    """Build the cache dictionary from in-memory graph state."""
     nodes_list = list(nodes_data.values())
     edges_list = []
     for (f, t), edata in edges_data.items():
@@ -215,7 +238,7 @@ def save_cache():
             edge["inferred_from"] = edata["inferred_from"]
         edges_list.append(edge)
 
-    cache = {
+    return {
         "metadata": {
             "built_at": datetime.now(timezone.utc).isoformat(),
             "node_count": len(nodes_data),
@@ -229,8 +252,17 @@ def save_cache():
         "edges": edges_list,
     }
 
-    with open(CACHE_FILE, "w") as f:
-        json.dump(cache, f, indent=2)
+
+def save_cache():
+    """Persist the current in-memory graph back to agent_graph_cache.json with exclusive file lock."""
+    cache = _build_cache_dict()
+    with open(LOCK_PATH, "w") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            with open(CACHE_FILE, "w") as f:
+                json.dump(cache, f, indent=2)
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 # Create MCP server
@@ -839,84 +871,105 @@ def _get_module_decomposition(arguments: dict) -> list[TextContent]:
 
 
 def _propose_ownership(arguments: dict) -> list[TextContent]:
-    """Propose that an agent owns a file. HOT UPDATE + persist."""
+    """Propose that an agent owns a file. HOT UPDATE + persist.
+
+    Uses exclusive file locking with re-read inside the lock to prevent
+    TOCTOU races when multiple agents propose ownership simultaneously.
+    """
     global nodes_data, predecessors, successors, edges_data
 
     file_path = arguments["file"]
     agent = arguments["agent"]
     evidence = arguments.get("evidence", "")
 
-    # Validate agent exists
+    # Validate agent exists (pre-check before acquiring lock)
     if agent not in nodes_data:
         return [TextContent(type="text", text=json.dumps({"error": f"Agent '{agent}' not found in graph"}))]
     if nodes_data[agent].get("type") != "agent":
         return [TextContent(type="text", text=json.dumps({"error": f"'{agent}' is not an agent"}))]
 
-    # Check if file already has an owner
-    if file_path in nodes_data:
-        for pred in predecessors.get(file_path, []):
-            edge = edges_data.get((pred, file_path), {})
-            if edge.get("type") == "OWNS":
-                return [TextContent(type="text", text=json.dumps({
-                    "error": f"File '{file_path}' is already owned by '{pred}'. Use transfer instead.",
-                    "current_owner": pred,
-                }))]
+    # Acquire exclusive lock for the entire read-modify-write cycle
+    with open(LOCK_PATH, "w") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            # Re-read the cache INSIDE the lock to get the latest state
+            # (another agent may have written since our last read)
+            load_graph()
 
-    # Determine if auto-approve: file is in agent's module
-    agent_module = get_agent_module(agent)
-    file_module = get_module_for_file(file_path)
-    auto_approved = agent_module is not None and agent_module == file_module
+            # Re-validate agent after reload
+            if agent not in nodes_data:
+                return [TextContent(type="text", text=json.dumps({"error": f"Agent '{agent}' not found in graph after reload"}))]
 
-    # Build proposal record
-    proposal = {
-        "id": f"prop-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
-        "file": file_path,
-        "agent": agent,
-        "evidence": evidence,
-        "proposed_at": datetime.now(timezone.utc).isoformat(),
-        "status": "approved" if auto_approved else "pending",
-        "auto_approved": auto_approved,
-        "reason": f"File is within agent's module ({agent_module})" if auto_approved else "Requires human review (file not in agent's module)",
-    }
+            # Check if file already has an owner (using fresh data)
+            if file_path in nodes_data:
+                for pred in predecessors.get(file_path, []):
+                    edge = edges_data.get((pred, file_path), {})
+                    if edge.get("type") == "OWNS":
+                        return [TextContent(type="text", text=json.dumps({
+                            "error": f"File '{file_path}' is already owned by '{pred}'. Use transfer instead.",
+                            "current_owner": pred,
+                        }))]
 
-    # Save to proposals.json
-    proposals = []
-    if PROPOSALS_FILE.exists():
-        with open(PROPOSALS_FILE, "r") as f:
-            try:
-                proposals = json.load(f)
-            except json.JSONDecodeError:
-                proposals = []
+            # Determine if auto-approve: file is in agent's module
+            agent_module = get_agent_module(agent)
+            file_module = get_module_for_file(file_path)
+            auto_approved = agent_module is not None and agent_module == file_module
 
-    proposals.append(proposal)
+            # Build proposal record
+            proposal = {
+                "id": f"prop-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
+                "file": file_path,
+                "agent": agent,
+                "evidence": evidence,
+                "proposed_at": datetime.now(timezone.utc).isoformat(),
+                "status": "approved" if auto_approved else "pending",
+                "auto_approved": auto_approved,
+                "reason": f"File is within agent's module ({agent_module})" if auto_approved else "Requires human review (file not in agent's module)",
+            }
 
-    with open(PROPOSALS_FILE, "w") as f:
-        json.dump(proposals, f, indent=2)
+            # Save to proposals.json (also inside the lock)
+            proposals = []
+            if os.path.exists(PROPOSALS_FILE):
+                with open(PROPOSALS_FILE, "r") as f:
+                    try:
+                        proposals = json.load(f)
+                    except json.JSONDecodeError:
+                        proposals = []
 
-    # HOT UPDATE: add file node and OWNS edge to in-memory graph
-    # Always do the hot update (even for pending) so the agent can work immediately
-    if file_path not in nodes_data:
-        nodes_data[file_path] = {
-            "id": file_path,
-            "type": "file",
-            "language": _infer_language(file_path),
-            "module": agent_module,
-            "locked_by": None,
-        }
-        predecessors[file_path] = []
-        successors[file_path] = []
+            proposals.append(proposal)
 
-    # Add OWNS edge
-    predecessors[file_path].append(agent)
-    successors[agent].append(file_path)
-    edges_data[(agent, file_path)] = {
-        "type": "OWNS",
-        "dependency_type": "",
-        "inferred_from": evidence,
-    }
+            with open(PROPOSALS_FILE, "w") as f:
+                json.dump(proposals, f, indent=2)
 
-    # Persist updated graph to cache file
-    save_cache()
+            # HOT UPDATE: add file node and OWNS edge to in-memory graph
+            # Always do the hot update (even for pending) so the agent can work immediately
+            if file_path not in nodes_data:
+                nodes_data[file_path] = {
+                    "id": file_path,
+                    "type": "file",
+                    "language": _infer_language(file_path),
+                    "module": agent_module,
+                    "locked_by": None,
+                }
+                predecessors[file_path] = []
+                successors[file_path] = []
+
+            # Add OWNS edge
+            predecessors[file_path].append(agent)
+            successors[agent].append(file_path)
+            edges_data[(agent, file_path)] = {
+                "type": "OWNS",
+                "dependency_type": "",
+                "inferred_from": evidence,
+            }
+
+            # Persist updated graph to cache file (still inside the lock)
+            cache = _build_cache_dict()
+            with open(CACHE_FILE, "w") as f:
+                json.dump(cache, f, indent=2)
+
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
     result = {
         "status": "approved" if auto_approved else "pending",
