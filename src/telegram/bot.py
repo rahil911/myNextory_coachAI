@@ -2,7 +2,7 @@
 Baap Telegram Bot — Two-way bridge between Telegram and the Baap agent swarm.
 
 Polls Telegram for incoming messages and routes them to the appropriate handler.
-Replies via OpenClaw Gateway CLI (primary) or direct Bot API (fallback).
+Free-text messages are answered by Claude (via `claude -p`) using your subscription.
 
 Usage:
     python -m src.telegram.bot                  # run polling loop
@@ -12,7 +12,7 @@ Commands:
     /status  — Show agent swarm status
     /beads   — List active beads
     /help    — Show available commands
-    (free text) — Echoed back + logged for orchestrator review
+    (free text) — Answered by Claude via your subscription
 """
 
 import asyncio
@@ -40,9 +40,18 @@ logger = logging.getLogger("baap.telegram")
 BOT_TOKEN = "8595926634:AAHWQ-ee7JYrR4WOgBfUKZRPEYpvyLab6M0"
 CHAT_ID = "8288652266"
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
-OPENCLAW_BIN = "/home/rahil/.npm-global/bin/openclaw"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 POLL_INTERVAL = 2  # seconds between getUpdates calls
+CLAUDE_BIN = "claude"  # uses your subscription via OAuth
+CLAUDE_MODEL = "haiku"  # fast + cheap for chat replies
+
+SYSTEM_PROMPT = """You are Baap Bot, the Telegram interface to the Baap agent swarm platform.
+You are talking to Rahil, the platform owner and operator.
+Keep replies concise (under 200 words) — this is a mobile chat interface.
+You have access to the MyNextory coaching/learning platform database (38 tables).
+The Command Center dashboard is at https://rahil911.duckdns.org:8002
+If asked about agent status, suggest using /status command.
+If asked about beads/tasks, suggest using /beads command."""
 
 
 # ── Telegram API helpers ──────────────────────────────────────────────────────
@@ -131,16 +140,50 @@ async def handle_help(client: "httpx.AsyncClient", chat_id: str):
     await send_message(client, text, chat_id)
 
 
+async def ask_claude(prompt: str) -> str:
+    """Send a prompt to Claude via `claude -p` using your subscription."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            CLAUDE_BIN, "-p", prompt,
+            "--model", CLAUDE_MODEL,
+            "--append-system-prompt", SYSTEM_PROMPT,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=str(PROJECT_ROOT),
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=60)
+        if proc.returncode == 0:
+            reply = stdout.decode().strip()
+            if reply:
+                return reply
+        err = stderr.decode().strip()
+        logger.warning(f"claude -p failed (rc={proc.returncode}): {err[:200]}")
+        return f"(Claude is unavailable right now: {err[:100]})"
+    except asyncio.TimeoutError:
+        return "(Claude timed out after 60s — try a shorter question)"
+    except FileNotFoundError:
+        return "(claude CLI not found — is Claude Code installed?)"
+    except Exception as e:
+        logger.error(f"ask_claude error: {e}")
+        return f"(Error calling Claude: {e})"
+
+
 async def handle_text(client: "httpx.AsyncClient", chat_id: str, text: str, from_user: str):
-    """Handle free-text messages."""
+    """Handle free-text messages — route to Claude for an answer."""
     logger.info(f"Message from {from_user}: {text}")
-    # Log to a file for orchestrator review
+
+    # Log to inbox for audit trail
     log_path = PROJECT_ROOT / "src" / "telegram" / "inbox.log"
     with open(log_path, "a") as f:
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} | {from_user} | {text}\n")
 
-    reply = f"Got it. Logged for orchestrator review.\n\n<i>{text}</i>"
-    await send_message(client, reply, chat_id)
+    # Send typing indicator
+    await tg_request(client, "sendChatAction", chat_id=chat_id, action="typing")
+
+    # Ask Claude via your subscription
+    reply = await ask_claude(text)
+
+    await send_message(client, reply, chat_id, parse_mode="")
 
 
 # ── Routing ───────────────────────────────────────────────────────────────────

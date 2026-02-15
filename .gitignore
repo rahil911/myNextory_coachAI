@@ -29,6 +29,9 @@ Thumbs.db
 .claude/integrations/*/credentials.json
 .claude/integrations/*/secrets.*
 
+# Runtime logs
+src/telegram/inbox.log
+
 # Temporary
 *.flag
 *.tmp
