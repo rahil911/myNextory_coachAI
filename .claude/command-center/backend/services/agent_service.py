@@ -4,6 +4,7 @@ agent_service.py — Agent status reading, transition detection, and script exec
 
 import asyncio
 import json
+import logging
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -12,12 +13,19 @@ from pathlib import Path
 from config import STATUS_DIR, HEARTBEAT_DIR, LOG_DIR, SCRIPTS_DIR, HEARTBEAT_STALE_SECONDS, MAX_TIMELINE_EVENTS
 from models import Agent, AgentStatus, WSEventType
 
+logger = logging.getLogger("baap.agent_service")
+
+# Standalone event bus URL (for bridging lifecycle events)
+EVENT_BUS_URL = "http://localhost:8003/api/emit"
+
 
 class AgentService:
-    def __init__(self, event_bus=None):
+    def __init__(self, event_bus=None, notification_router=None):
         self._event_bus = event_bus
+        self._notification_router = notification_router
         self._last_snapshot: dict[str, str] = {}
         self._timeline: list[dict] = []
+        self._http_client = None
 
     def _add_timeline_event(self, event_type: str, agent: str, detail: str) -> dict:
         event = {
@@ -85,6 +93,42 @@ class AgentService:
             ))
         return agents
 
+    async def _bridge_to_event_bus(self, event_name: str, payload: dict):
+        """Forward lifecycle events to the standalone event bus (port 8003)."""
+        try:
+            import httpx
+        except ImportError:
+            return
+        try:
+            if self._http_client is None:
+                self._http_client = httpx.AsyncClient(timeout=5.0)
+            await self._http_client.post(
+                EVENT_BUS_URL,
+                json={"event": event_name, "payload": payload},
+            )
+        except Exception:
+            pass  # Best-effort bridging — don't crash if event bus is down
+
+    async def _notify(self, agent: str, event: str, detail: str):
+        """Send notification via notification router (if configured)."""
+        if self._notification_router:
+            try:
+                await self._notification_router.notify_agent_event(agent, event, detail)
+            except Exception:
+                pass  # Best-effort notifications
+
+    def _lifecycle_event_type(self, status: str, prev: str | None) -> WSEventType:
+        """Map agent status to specific lifecycle WSEventType."""
+        if prev is None:
+            return WSEventType.AGENT_SPAWNED
+        if status == "working":
+            return WSEventType.AGENT_WORKING
+        if status == "failed":
+            return WSEventType.AGENT_FAILED
+        if status in ("stopped", "gone"):
+            return WSEventType.AGENT_COMPLETED
+        return WSEventType.AGENT_STATUS_CHANGE
+
     async def detect_transitions(self, agents: list[Agent]) -> list[dict]:
         """Compare current agent statuses against last snapshot, emit events."""
         events = []
@@ -96,27 +140,38 @@ class AgentService:
             if prev is None:
                 ev = self._add_timeline_event("agent_spawned", a.name, f"Agent appeared with status: {a.status.value}")
                 events.append(ev)
+                payload = {"agent": a.name, "status": a.status.value, "previous": None, "action": "spawned",
+                           "bead": a.bead, "level": a.level}
                 if self._event_bus:
-                    await self._event_bus.publish(WSEventType.AGENT_STATUS_CHANGE, {
-                        "agent": a.name, "status": a.status.value, "previous": None, "action": "spawned"
-                    })
+                    await self._event_bus.publish(WSEventType.AGENT_SPAWNED, payload)
+                    await self._event_bus.publish(WSEventType.AGENT_STATUS_CHANGE, payload)
+                await self._bridge_to_event_bus("agent.spawned", payload)
+                await self._notify(a.name, "spawned", f"Agent appeared with status: {a.status.value}")
             elif prev != a.status.value:
                 ev = self._add_timeline_event("status_change", a.name, f"{prev} -> {a.status.value}")
                 events.append(ev)
+                lifecycle_type = self._lifecycle_event_type(a.status.value, prev)
+                payload = {"agent": a.name, "status": a.status.value, "previous": prev, "action": "changed",
+                           "bead": a.bead, "level": a.level}
                 if self._event_bus:
-                    await self._event_bus.publish(WSEventType.AGENT_STATUS_CHANGE, {
-                        "agent": a.name, "status": a.status.value, "previous": prev, "action": "changed"
-                    })
+                    await self._event_bus.publish(lifecycle_type, payload)
+                    if lifecycle_type != WSEventType.AGENT_STATUS_CHANGE:
+                        await self._event_bus.publish(WSEventType.AGENT_STATUS_CHANGE, payload)
+                bus_event = f"agent.{a.status.value}"
+                await self._bridge_to_event_bus(bus_event, payload)
+                await self._notify(a.name, a.status.value, f"{prev} -> {a.status.value}")
 
         # Detect agents that disappeared
         for name, prev_status in self._last_snapshot.items():
             if name not in current:
                 ev = self._add_timeline_event("agent_gone", name, f"Agent disappeared (was: {prev_status})")
                 events.append(ev)
+                payload = {"agent": name, "status": "gone", "previous": prev_status, "action": "disappeared"}
                 if self._event_bus:
-                    await self._event_bus.publish(WSEventType.AGENT_STATUS_CHANGE, {
-                        "agent": name, "status": "gone", "previous": prev_status, "action": "disappeared"
-                    })
+                    await self._event_bus.publish(WSEventType.AGENT_COMPLETED, payload)
+                    await self._event_bus.publish(WSEventType.AGENT_STATUS_CHANGE, payload)
+                await self._bridge_to_event_bus("agent.completed", payload)
+                await self._notify(name, "complete", f"Agent disappeared (was: {prev_status})")
 
         self._last_snapshot = current
         return events

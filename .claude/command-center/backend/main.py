@@ -22,6 +22,7 @@ from services.bead_service import BeadService
 from services.attachment_service import AttachmentService
 from services.thinktank_service import ThinkTankService
 from services.command_service import CommandService
+from services.notification_bridge import get_notification_router
 
 from routes import agents, beads, attachments, thinktank, commands, dashboard, epics, websocket
 
@@ -79,7 +80,8 @@ async def lifespan(app: FastAPI):
     global _thinktank_service, _command_service
 
     # Startup: create services
-    _agent_service = AgentService(event_bus=event_bus)
+    _notification_router = get_notification_router()
+    _agent_service = AgentService(event_bus=event_bus, notification_router=_notification_router)
     _bead_service = BeadService(event_bus=event_bus)
     _attachment_service = AttachmentService()
     _thinktank_service = ThinkTankService(event_bus=event_bus)

@@ -1,0 +1,40 @@
+# Notification Routing Configuration
+#
+# Routes agent/bead events to Slack channels and Telegram DMs
+# via OpenClaw Gateway. When no gateway is running, falls back
+# to log-only mode (all notifications logged to stdout).
+#
+# To enable live notifications:
+# 1. Install and start OpenClaw Gateway on port 18789
+# 2. Configure Slack/Telegram tokens in ~/.openclaw/openclaw.json
+# 3. Set enabled: true below
+
+notifications:
+  enabled: true
+  openclaw_gateway: "http://localhost:18789"
+
+  routes:
+    # Critical alerts — high-priority capsules and agent failures
+    - name: critical-alerts
+      priority: [3]
+      channels:
+        - "telegram:@rahil_dev"
+        - "slack:C_ENGINEERING"
+
+    # Agent lifecycle — spawn, complete, fail events
+    - name: agent-status
+      event_types:
+        - agent_spawned
+        - agent_complete
+        - agent_fail
+        - agent_gone
+      channels:
+        - "slack:C_BAAP_STATUS"
+
+    # Bead transitions — when beads move between states
+    - name: bead-transitions
+      event_types:
+        - bead_blocked
+        - bead_closed
+      channels:
+        - "slack:C_BAAP_STATUS"
