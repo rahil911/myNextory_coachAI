@@ -59,14 +59,38 @@ async def thinktank_websocket(ws: WebSocket):
     It also accepts messages from the client for bidirectional communication.
     """
     await ws.accept()
+
+    # Subscribe FIRST so we don't miss events during catch-up
     bus = _get_event_bus()
     queue = await bus.subscribe()
+
+    # Send existing messages as catch-up (fixes race condition where welcome
+    # message fires before WebSocket connects)
+    seen_timestamps = set()
+    from main import get_thinktank_service
+    svc = get_thinktank_service()
+    session_id = ws.query_params.get("session")
+    session = svc.get_session(session_id) if session_id else svc.get_active_session()
+    if session:
+        for msg in session.messages:
+            seen_timestamps.add(msg.timestamp)
+            await ws.send_json({
+                "type": "THINKTANK_MESSAGE",
+                "payload": {"session_id": session.id, "message": msg.model_dump()},
+                "ts": msg.timestamp,
+            })
 
     thinktank_events = {
         "THINKTANK_MESSAGE",
         "THINKTANK_SPECKIT_DELTA",
         "THINKTANK_PHASE_CHANGE",
         "APPROVAL_NEEDED",
+        # Dispatch events (so Think Tank view shows build progress)
+        "DISPATCH_STARTED",
+        "DISPATCH_PROGRESS",
+        "DISPATCH_COMPLETE",
+        "DISPATCH_ERROR",
+        "TOAST",
     }
 
     async def reader():
@@ -98,9 +122,21 @@ async def thinktank_websocket(ws: WebSocket):
         try:
             while True:
                 event_json = await queue.get()
-                event = json.loads(event_json)
-                if event.get("type") in thinktank_events:
+                try:
+                    event = json.loads(event_json)
+                    if event.get("type") not in thinktank_events:
+                        continue
+                    # Deduplicate: skip messages already sent during catch-up
+                    ts = event.get("ts")
+                    if ts and event.get("type") == "THINKTANK_MESSAGE" and ts in seen_timestamps:
+                        continue
+                    if ts:
+                        seen_timestamps.add(ts)
                     await ws.send_text(event_json)
+                except (json.JSONDecodeError, Exception):
+                    pass  # Skip bad event, don't crash the writer loop
+        except WebSocketDisconnect:
+            pass
         except Exception:
             pass
 
