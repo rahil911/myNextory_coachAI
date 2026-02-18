@@ -25,7 +25,7 @@ echo "Creating database 'baap' (if not exists)..."
 mysql -e "CREATE DATABASE IF NOT EXISTS baap CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 echo "Loading dump ($DUMP)..."
-gunzip -c "$DUMP" | mysql baap
+gunzip -c "$DUMP" | mysql --binary-mode baap
 
 echo "Verifying..."
 TABLE_COUNT=$(mysql baap -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='baap';")
