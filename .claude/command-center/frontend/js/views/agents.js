@@ -2,7 +2,7 @@
 // AGENTS.JS — Agent Detail View
 // ==========================================================================
 
-import { getState, subscribe } from '../state.js';
+import { getState, subscribe, setState, isFresh, markFetched } from '../state.js';
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { h } from '../utils/dom.js';
@@ -22,15 +22,20 @@ export function renderAgents(root) {
   root.appendChild(container);
 
   container.querySelector('#agents-refresh').addEventListener('click', loadAgents);
-  loadAgents();
+  if (isFresh('agents') && getState().agents.length > 0) {
+    renderAgentGrid();
+  } else {
+    document.getElementById('agents-grid').innerHTML = '<div class="view-loading"><div class="view-loading-spinner"></div>Loading agents...</div>';
+    loadAgents();
+  }
   subscribe('agents', () => renderAgentGrid());
 }
 
 async function loadAgents() {
   try {
     const agents = await api.getAgents();
-    const { setState } = await import('../state.js');
     setState({ agents: agents || [] });
+    markFetched('agents');
     renderAgentGrid();
   } catch (err) {
     showToast(`Failed to load agents: ${err.message}`, 'error');
@@ -43,25 +48,28 @@ function renderAgentGrid() {
 
   const { agents } = getState();
   grid.innerHTML = (agents || []).map(a => {
-    const statusClass = a.status === 'running' ? 'running' : a.status === 'idle' ? 'idle' : a.status === 'error' ? 'error' : 'dead';
+    const statusClass = a.status === 'working' || a.status === 'spawning' ? 'running' : a.status === 'idle' ? 'idle' : a.status === 'failed' ? 'error' : 'dead';
+    const hbText = a.heartbeat_stale ? 'STALE' : a.heartbeat_age_s != null ? `${a.heartbeat_age_s}s ago` : '';
     return `
-      <div class="dash-card" style="cursor:pointer" data-agent-id="${a.id}">
+      <div class="dash-card" style="cursor:pointer" data-agent-id="${a.name}">
         <div class="flex items-center gap-3" style="margin-bottom:12px">
           <span class="status-dot status-dot-${statusClass}"></span>
-          <span style="font-weight:600;color:var(--text-strong)">${a.name || a.id}</span>
+          <span style="font-weight:600;color:var(--text-strong)">${a.name}</span>
           <span class="badge badge-${statusClass === 'running' ? 'green' : statusClass === 'error' ? 'red' : 'gray'}" style="margin-left:auto">
             ${a.status || 'unknown'}
           </span>
         </div>
         <div style="font-size:12px;color:var(--text-secondary)">
           ${a.level ? `<div>Level: ${a.level}</div>` : ''}
-          ${a.currentBead ? `<div>Current: ${a.currentBead}</div>` : ''}
+          ${a.bead ? `<div>Current: ${a.bead}</div>` : ''}
+          ${a.current_action ? `<div>${a.current_action}</div>` : ''}
           ${a.worktree ? `<div class="mono" style="font-size:11px">${a.worktree}</div>` : ''}
-          ${a.lastHeartbeat ? `<div>Heartbeat: ${timeAgo(a.lastHeartbeat)}</div>` : ''}
+          ${hbText ? `<div>Heartbeat: ${hbText}</div>` : ''}
+          ${a.errors > 0 ? `<div style="color:var(--red)">Errors: ${a.errors}</div>` : ''}
         </div>
         <div class="flex gap-2" style="margin-top:12px">
-          <button class="btn btn-danger btn-sm kill-btn" data-id="${a.id}">Kill</button>
-          <button class="btn btn-ghost btn-sm retry-btn" data-id="${a.id}">Retry</button>
+          <button class="btn btn-danger btn-sm kill-btn" data-id="${a.name}">Kill</button>
+          <button class="btn btn-ghost btn-sm retry-btn" data-id="${a.name}">Retry</button>
         </div>
       </div>
     `;

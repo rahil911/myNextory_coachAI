@@ -14,7 +14,7 @@ export function renderSpecKit(state, onEdit) {
   const container = h('div', { class: 'speckit-content' });
 
   // Project Brief (always visible)
-  container.appendChild(renderSection('brief', 'Project Brief', state.specKit.brief, state.phase >= 1, onEdit));
+  container.appendChild(renderSection('project_brief', 'Project Brief', state.specKit.project_brief, state.phase >= 1, onEdit));
 
   // Requirements (Phase 1+)
   container.appendChild(renderRequirements(state.specKit.requirements, state.phase >= 1, onEdit));
@@ -24,22 +24,22 @@ export function renderSpecKit(state, onEdit) {
 
   // Pre-Mortem (Phase 3+)
   if (state.phase >= 3) {
-    container.appendChild(renderPreMortemSection(state.risks));
+    container.appendChild(renderPreMortemSection(state.risks, state.specKit.pre_mortem));
   } else {
-    container.appendChild(renderLockedSection('pre-mortem', 'Pre-Mortem', 'Unlocks in Phase 3: Scope'));
+    container.appendChild(renderLockedSection('pre_mortem', 'Pre-Mortem', 'Unlocks in Phase 3: Scope'));
   }
 
   // Execution Plan (Phase 4)
   if (state.phase >= 4) {
-    container.appendChild(renderSection('execution', 'Execution Plan', state.specKit.execution, true, onEdit));
+    container.appendChild(renderSection('execution_plan', 'Execution Plan', state.specKit.execution_plan, true, onEdit));
   } else {
-    container.appendChild(renderLockedSection('execution', 'Execution Plan', 'Unlocks in Phase 4: Confirm'));
+    container.appendChild(renderLockedSection('execution_plan', 'Execution Plan', 'Unlocks in Phase 4: Confirm'));
   }
 
   return container;
 }
 
-function renderSection(key, title, content, unlocked, onEdit) {
+function renderSection(key, title, rawContent, unlocked, onEdit) {
   const section = h('div', {
     class: `speckit-section ${unlocked ? '' : 'locked'}`,
     dataset: { lockLabel: unlocked ? '' : 'Locked' }
@@ -53,8 +53,18 @@ function renderSection(key, title, content, unlocked, onEdit) {
 
   section.appendChild(header);
 
+  // Unwrap {content: "...", status: "..."} wrapper from WebSocket/REST data
+  let content = rawContent;
+  if (content && typeof content === 'object' && content.content) {
+    content = content.content;
+  }
+
   if (unlocked && content) {
-    if (typeof content === 'object' && !Array.isArray(content)) {
+    if (typeof content === 'string') {
+      const body = h('div', { class: 'speckit-field-value' });
+      body.innerHTML = typeof marked !== 'undefined' ? marked.parse(content) : content.replace(/\n/g, '<br>');
+      section.appendChild(body);
+    } else if (typeof content === 'object' && !Array.isArray(content)) {
       for (const [fieldKey, fieldVal] of Object.entries(content)) {
         const field = h('div', { class: 'speckit-field' });
         field.innerHTML = `
@@ -63,10 +73,6 @@ function renderSection(key, title, content, unlocked, onEdit) {
         `;
         section.appendChild(field);
       }
-    } else if (typeof content === 'string') {
-      const body = h('div', { class: 'speckit-field-value' });
-      body.innerHTML = content.replace(/\n/g, '<br>');
-      section.appendChild(body);
     }
   } else if (unlocked) {
     // Shimmer placeholders
@@ -101,29 +107,40 @@ function renderSection(key, title, content, unlocked, onEdit) {
   return section;
 }
 
-function renderRequirements(reqs, unlocked, onEdit) {
+function renderRequirements(rawReqs, unlocked, onEdit) {
   const section = h('div', { class: `speckit-section ${unlocked ? '' : 'locked'}` });
   section.innerHTML = `<div class="speckit-section-header">
     <span class="speckit-section-title">Requirements</span>
     ${unlocked ? '<button class="speckit-section-edit">[edit]</button>' : ''}
   </div>`;
 
+  // Unwrap {content: "...", status: "..."} wrapper
+  let reqs = rawReqs;
+  if (reqs && typeof reqs === 'object' && reqs.content) {
+    reqs = reqs.content;
+  }
+
   if (unlocked && reqs) {
-    if (reqs.mustHave) {
+    // String content from Claude spec-kit blocks — render as markdown
+    if (typeof reqs === 'string') {
+      const body = h('div', { class: 'speckit-field-value' });
+      body.innerHTML = typeof marked !== 'undefined' ? marked.parse(reqs) : reqs.replace(/\n/g, '<br>');
+      section.appendChild(body);
+    } else if (reqs.mustHave) {
       const mustHaveLabel = h('div', { class: 'speckit-field-label', style: { marginTop: '8px' } });
       mustHaveLabel.textContent = 'Must-Have';
       section.appendChild(mustHaveLabel);
       reqs.mustHave.forEach(r => {
         section.appendChild(renderRequirement(r));
       });
-    }
-    if (reqs.niceToHave) {
-      const niceLabel = h('div', { class: 'speckit-field-label', style: { marginTop: '12px' } });
-      niceLabel.textContent = 'Nice-to-Have';
-      section.appendChild(niceLabel);
-      reqs.niceToHave.forEach(r => {
-        section.appendChild(renderRequirement(r));
-      });
+      if (reqs.niceToHave) {
+        const niceLabel = h('div', { class: 'speckit-field-label', style: { marginTop: '12px' } });
+        niceLabel.textContent = 'Nice-to-Have';
+        section.appendChild(niceLabel);
+        reqs.niceToHave.forEach(r => {
+          section.appendChild(renderRequirement(r));
+        });
+      }
     }
   } else if (unlocked) {
     section.appendChild(h('div', { class: 'shimmer shimmer-long', style: { marginBottom: '8px' } }));
@@ -156,7 +173,7 @@ function renderLockedSection(key, title, lockMessage) {
   return section;
 }
 
-function renderPreMortemSection(risks) {
+function renderPreMortemSection(risks, specContent) {
   const section = h('div', { class: 'speckit-section' });
   section.innerHTML = `<div class="speckit-section-header">
     <span class="speckit-section-title">Pre-Mortem</span>
@@ -184,6 +201,17 @@ function renderPreMortemSection(risks) {
       <span style="margin-left:auto;font-size:11px;color:var(--text-tertiary)">${addressed}/${risks.length} addressed</span>
     `;
     section.appendChild(summary);
+  } else if (specContent) {
+    // Spec content from Claude but no structured risks — render as markdown
+    let text = specContent;
+    if (typeof text === 'object' && text.content) {
+      text = text.content;
+    }
+    if (typeof text === 'string') {
+      const body = h('div', { class: 'speckit-field-value' });
+      body.innerHTML = typeof marked !== 'undefined' ? marked.parse(text) : text.replace(/\n/g, '<br>');
+      section.appendChild(body);
+    }
   } else {
     section.appendChild(h('div', { class: 'shimmer shimmer-long', style: { marginBottom: '8px' } }));
     section.appendChild(h('div', { class: 'shimmer shimmer-medium' }));

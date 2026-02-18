@@ -30,8 +30,11 @@ Thumbs.db
 .claude/integrations/*/secrets.*
 
 # Runtime logs
-src/telegram/inbox.log
+.claude/integrations/telegram/inbox.log
 
 # Temporary
 *.flag
 *.tmp
+
+# Think Tank session data (runtime, not committed)
+.claude/command-center/sessions/

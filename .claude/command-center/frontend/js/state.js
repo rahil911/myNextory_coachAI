@@ -3,6 +3,9 @@
 // Key-level subscriptions: only re-render what changed
 // ==========================================================================
 
+// Staleness threshold: data younger than this is considered fresh (ms)
+const STALE_MS = 10000;
+
 const _state = {
   agents: [],
   beads: [],
@@ -14,14 +17,17 @@ const _state = {
     messages: [],
     specKit: {},
     risks: [],
-    sessionId: null
+    sessionId: null,
+    status: null
   },
   currentView: 'dashboard',
   selectedBeadId: null,
   selectedAgentId: null,
   selectedEventId: null,
   filters: {},
-  wsConnected: false
+  wsConnected: false,
+  // Timestamps of last successful fetch per data key
+  _fetchedAt: {},
 };
 
 const _listeners = new Map();
@@ -58,4 +64,15 @@ export function subscribe(key, fn) {
 export function subscribeMany(keys, fn) {
   const unsubs = keys.map(k => subscribe(k, () => fn(getState())));
   return () => unsubs.forEach(u => u());
+}
+
+// Mark a data key as freshly fetched
+export function markFetched(key) {
+  _state._fetchedAt[key] = Date.now();
+}
+
+// Check if a data key's data is still fresh (fetched within STALE_MS)
+export function isFresh(key) {
+  const ts = _state._fetchedAt[key];
+  return ts && (Date.now() - ts) < STALE_MS;
 }

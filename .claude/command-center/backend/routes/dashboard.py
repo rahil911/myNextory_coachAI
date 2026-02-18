@@ -26,6 +26,7 @@ def _get_thinktank_service():
     return get_thinktank_service()
 
 
+@router.get("", response_model=DashboardOverview)
 @router.get("/overview", response_model=DashboardOverview)
 async def get_overview():
     """Summary stats for the dashboard header."""

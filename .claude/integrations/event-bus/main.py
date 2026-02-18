@@ -2,13 +2,13 @@
 Baap Event Bus API — Lightweight WebSocket server for bead lifecycle events.
 
 Usage:
-    uvicorn src.api.main:app --host 0.0.0.0 --port 8003
+    uvicorn main:app --host 0.0.0.0 --port 8003 --app-dir .claude/integrations/event-bus
 """
 
 from fastapi import FastAPI, WebSocket
 from starlette.websockets import WebSocketDisconnect
 
-from src.api.event_bus import event_bus
+from event_bus import event_bus
 
 app = FastAPI(
     title="Baap Event Bus",

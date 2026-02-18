@@ -239,6 +239,7 @@
   padding: 4px 10px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border);
+  background: transparent;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   cursor: pointer;

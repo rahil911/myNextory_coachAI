@@ -4,10 +4,10 @@ Notification Router — Routes agent events via OpenClaw Gateway.
 Primary path: OpenClaw Gateway CLI (handles Telegram, Slack, etc.)
 Fallback: Direct Telegram Bot API (one-way only)
 
-Channels are defined in config/notifications.yaml.
+Channels are defined in .claude/integrations/notifications/notifications.yaml.
 
 Usage:
-    router = NotificationRouter.from_config("config/notifications.yaml")
+    router = NotificationRouter.from_config(".claude/integrations/notifications/notifications.yaml")
     await router.route("Agent Failed", "identity-agent crashed", priority=3)
 """
 
@@ -84,7 +84,7 @@ class NotificationRouter:
         self._gateway_available: Optional[bool] = None  # lazy-checked
 
     @classmethod
-    def from_config(cls, config_path: str = "config/notifications.yaml") -> "NotificationRouter":
+    def from_config(cls, config_path: str = ".claude/integrations/notifications/notifications.yaml") -> "NotificationRouter":
         """Load router configuration from YAML file."""
         path = Path(config_path)
         if not path.exists():

@@ -24,7 +24,7 @@ from services.thinktank_service import ThinkTankService
 from services.command_service import CommandService
 from services.notification_bridge import get_notification_router
 
-from routes import agents, beads, attachments, thinktank, commands, dashboard, epics, websocket
+from routes import agents, approvals, beads, attachments, thinktank, commands, dashboard, epics, websocket
 
 # ── Service singletons ────────────────────────────────────────────────────────
 
@@ -121,6 +121,7 @@ app.add_middleware(
 
 # Register routers
 app.include_router(agents.router)
+app.include_router(approvals.router)
 app.include_router(beads.router)
 app.include_router(attachments.router)
 app.include_router(thinktank.router)

@@ -1,8 +1,8 @@
 """
 notification_bridge.py — Bridge between Command Center and the notification router.
 
-Imports the notification router from src/notifications/router.py and provides
-a singleton for use in services. Falls back gracefully if not available.
+Imports the notification router from .claude/integrations/notifications/router.py
+and provides a singleton for use in services. Falls back gracefully if not available.
 """
 
 import logging
@@ -11,11 +11,13 @@ from pathlib import Path
 
 logger = logging.getLogger("baap.notification_bridge")
 
-# Add project root to path so we can import src.notifications
-# __file__ = .claude/command-center/backend/services/notification_bridge.py (5 levels)
+# __file__ = .claude/command-center/backend/services/notification_bridge.py (5 levels up to project root)
 _project_root = Path(__file__).resolve().parent.parent.parent.parent.parent
-if str(_project_root) not in sys.path:
-    sys.path.insert(0, str(_project_root))
+
+# .claude is not a valid Python package (dot prefix), so add integrations dir to sys.path
+_integrations_dir = _project_root / ".claude" / "integrations"
+if str(_integrations_dir) not in sys.path:
+    sys.path.insert(0, str(_integrations_dir))
 
 _router = None
 
@@ -27,8 +29,8 @@ def get_notification_router():
         return _router
 
     try:
-        from src.notifications.router import NotificationRouter
-        config_path = _project_root / "config" / "notifications.yaml"
+        from notifications.router import NotificationRouter
+        config_path = _integrations_dir / "notifications" / "notifications.yaml"
         _router = NotificationRouter.from_config(str(config_path))
         logger.info(f"Notification router loaded from {config_path}")
     except ImportError as e:

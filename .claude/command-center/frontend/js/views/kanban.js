@@ -2,7 +2,7 @@
 // KANBAN.JS — Kanban Board with DnD, Context Menus, Table Toggle
 // ==========================================================================
 
-import { getState, subscribe, setState } from '../state.js';
+import { getState, subscribe, setState, isFresh, markFetched } from '../state.js';
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { showContextMenu } from '../components/context-menu.js';
@@ -53,7 +53,12 @@ export function renderKanban(root) {
     });
   });
 
-  loadKanbanData();
+  if (isFresh('beads') && getState().beads.length > 0) {
+    renderBoard();
+  } else {
+    document.getElementById('kanban-content').innerHTML = '<div class="view-loading"><div class="view-loading-spinner"></div>Loading kanban...</div>';
+    loadKanbanData();
+  }
   subscribe('beads', () => renderBoard());
 }
 
@@ -67,6 +72,7 @@ async function loadKanbanData() {
         (col.beads || []).forEach(b => beads.push({ ...b, column: colId }));
       }
       setState({ beads });
+      markFetched('beads');
     }
   } catch (err) {
     showToast(`Failed to load Kanban: ${err.message}`, 'error');

@@ -3,14 +3,20 @@ bead_service.py — Wraps the bd (beads) CLI with structured Python interface.
 """
 
 import json
+import os
 import subprocess
+import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from models import (
     Bead, BeadComment, KanbanColumn, KanbanColumnData, KanbanResponse,
     WSEventType,
 )
+
+# TTL cache for bd CLI results (seconds)
+_BEAD_CACHE_TTL = 10
 
 
 # Bead status -> kanban column mapping
@@ -60,13 +66,22 @@ COLUMN_TITLES: dict[str, str] = {
 class BeadService:
     def __init__(self, event_bus=None):
         self._event_bus = event_bus
+        # Resolve bd binary: check ~/.local/bin first, then fall back to bare name
+        _local_bd = Path.home() / ".local" / "bin" / "bd"
+        self._bd_cmd = str(_local_bd) if _local_bd.exists() else "bd"
+        # Ensure ~/.local/bin is in PATH for subprocess calls
+        self._env = {**os.environ, "PATH": f"{Path.home() / '.local' / 'bin'}:{os.environ.get('PATH', '')}"}
+        # In-memory cache for list_beads results
+        self._cache_beads: list[Bead] = []
+        self._cache_ts: float = 0
 
     def _run_bd(self, args: list[str], timeout: int = 10) -> tuple[bool, str]:
         """Run a bd CLI command and return (success, output)."""
         try:
             result = subprocess.run(
-                ["bd"] + args,
+                [self._bd_cmd] + args,
                 capture_output=True, text=True, timeout=timeout,
+                env=self._env,
             )
             output = result.stdout.strip() or result.stderr.strip()
             return result.returncode == 0, output
@@ -77,14 +92,17 @@ class BeadService:
         except Exception as e:
             return False, str(e)
 
-    def list_beads(self, status: str | None = None, assignee: str | None = None,
-                   epic: str | None = None) -> list[Bead]:
-        """List all beads, optionally filtered."""
-        args = ["list", "--json"]
-        if status:
-            args.extend(["--status", status])
+    def _invalidate_cache(self):
+        """Invalidate the bead list cache after mutations."""
+        self._cache_ts = 0
 
-        ok, output = self._run_bd(args)
+    def _fetch_all_beads(self) -> list[Bead]:
+        """Fetch all beads from bd CLI, with TTL caching."""
+        now = time.monotonic()
+        if self._cache_beads and (now - self._cache_ts) < _BEAD_CACHE_TTL:
+            return self._cache_beads
+
+        ok, output = self._run_bd(["list", "--json"])
         if not ok or not output:
             return []
 
@@ -95,29 +113,42 @@ class BeadService:
 
         beads = []
         for b in raw_beads:
-            bead = Bead(
+            beads.append(Bead(
                 id=b.get("id", "?"),
                 title=b.get("title") or b.get("description") or "Untitled",
                 status=(b.get("status") or "open").lower().replace("-", "_"),
                 assignee=b.get("assignee") or b.get("agent"),
                 priority=b.get("priority"),
                 epic=b.get("epic") or b.get("parent"),
-                type=b.get("type", "task"),
+                type=b.get("type") or b.get("issue_type") or "task",
                 deps=b.get("dependencies") or b.get("deps") or b.get("blocked_by") or [],
                 notes=b.get("notes", ""),
                 created_at=b.get("created_at") or b.get("created"),
                 updated_at=b.get("updated_at") or b.get("updated") or b.get("last_update"),
-            )
+            ))
 
-            # Apply filters
+        self._cache_beads = beads
+        self._cache_ts = now
+        return beads
+
+    def list_beads(self, status: str | None = None, assignee: str | None = None,
+                   epic: str | None = None) -> list[Bead]:
+        """List all beads, optionally filtered."""
+        beads = self._fetch_all_beads()
+
+        if not status and not assignee and not epic:
+            return beads
+
+        result = []
+        for bead in beads:
+            if status and bead.status != status:
+                continue
             if assignee and bead.assignee != assignee:
                 continue
             if epic and bead.epic != epic:
                 continue
-
-            beads.append(bead)
-
-        return beads
+            result.append(bead)
+        return result
 
     def get_bead(self, bead_id: str) -> Bead | None:
         """Get a single bead by ID."""
@@ -140,6 +171,8 @@ class BeadService:
             args.extend(["--epic", epic])
 
         ok, output = self._run_bd(args)
+        if ok:
+            self._invalidate_cache()
         return ok, output
 
     def update_bead(self, bead_id: str, **kwargs) -> tuple[bool, str]:
@@ -150,6 +183,8 @@ class BeadService:
                 args.extend([f"--{key}", str(value)])
 
         ok, output = self._run_bd(args)
+        if ok:
+            self._invalidate_cache()
         return ok, output
 
     async def move_bead(self, bead_id: str, column: KanbanColumn) -> tuple[bool, str]:

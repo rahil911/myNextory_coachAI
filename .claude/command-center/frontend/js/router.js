@@ -1,10 +1,13 @@
 // ==========================================================================
-// ROUTER.JS — Hash-Based Router
+// ROUTER.JS — Hash-Based Router with View Caching
+// Views are created once and toggled via display:none/block for instant switching.
 // ==========================================================================
 
 import { setState } from './state.js';
 
 const _routes = {};
+// Cache of already-rendered view containers keyed by view name
+const _viewCache = {};
 
 export function registerRoute(name, renderFn) {
   _routes[name] = renderFn;
@@ -27,7 +30,8 @@ export function navigate(hash) {
     thinktank: 'Think Tank',
     timeline: 'Timeline',
     agents: 'Agents',
-    epics: 'Epics'
+    epics: 'Epics',
+    approvals: 'Approvals'
   };
   const titleEl = document.getElementById('topbar-title');
   if (titleEl) titleEl.textContent = titles[view] || view;
@@ -35,13 +39,29 @@ export function navigate(hash) {
   // Update state
   setState({ currentView: view });
 
-  // Render view
-  const renderFn = _routes[view];
-  if (renderFn) {
-    root.innerHTML = '';
-    renderFn(root);
+  // Hide all cached views
+  for (const [name, el] of Object.entries(_viewCache)) {
+    el.style.display = 'none';
+  }
+
+  // Show cached view or create new one
+  if (_viewCache[view]) {
+    _viewCache[view].style.display = '';
   } else {
-    root.innerHTML = `<div class="view-container"><h2>View not found: ${view}</h2></div>`;
+    const renderFn = _routes[view];
+    if (renderFn) {
+      const wrapper = document.createElement('div');
+      wrapper.dataset.viewName = view;
+      root.appendChild(wrapper);
+      renderFn(wrapper);
+      _viewCache[view] = wrapper;
+    } else {
+      // Uncached 404 — render inline (no caching needed)
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = `<div class="view-container"><h2>View not found: ${view}</h2></div>`;
+      root.appendChild(wrapper);
+      _viewCache[view] = wrapper;
+    }
   }
 }
 

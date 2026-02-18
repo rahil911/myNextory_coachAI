@@ -1,1 +1,99 @@
-[]
+[
+  {
+    "id": "prop-20260215230027",
+    "file": ".claude/integrations/telegram/bot.py",
+    "agent": "platform-agent",
+    "evidence": "Orchestrator communication infrastructure: two-way Telegram bridge for human-swarm interface",
+    "proposed_at": "2026-02-15T23:00:27.063021+00:00",
+    "status": "approved",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)",
+    "reviewed_by": "rahil",
+    "reviewed_at": "2026-02-15T23:03:33Z"
+  },
+  {
+    "id": "prop-20260215230028",
+    "file": ".claude/integrations/notifications/router.py",
+    "agent": "platform-agent",
+    "evidence": "System notification routing: routes agent/bead lifecycle events to human via Telegram/Slack",
+    "proposed_at": "2026-02-15T23:00:28.452455+00:00",
+    "status": "approved",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)",
+    "reviewed_by": "rahil",
+    "reviewed_at": "2026-02-15T23:03:33Z"
+  },
+  {
+    "id": "prop-20260215230029",
+    "file": ".claude/integrations/notifications/notifications.yaml",
+    "agent": "platform-agent",
+    "evidence": "Notification channel routing config for the system alert infrastructure",
+    "proposed_at": "2026-02-15T23:00:29.405742+00:00",
+    "status": "approved",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)",
+    "reviewed_by": "rahil",
+    "reviewed_at": "2026-02-15T23:03:33Z"
+  },
+  {
+    "id": "prop-20260215230030",
+    "file": ".claude/integrations/event-bus/event_bus.py",
+    "agent": "platform-agent",
+    "evidence": "Real-time WebSocket event coordination for bead lifecycle events",
+    "proposed_at": "2026-02-15T23:00:30.353864+00:00",
+    "status": "approved",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)",
+    "reviewed_by": "rahil",
+    "reviewed_at": "2026-02-15T23:03:33Z"
+  },
+  {
+    "id": "prop-20260215230031",
+    "file": ".claude/integrations/event-bus/main.py",
+    "agent": "platform-agent",
+    "evidence": "FastAPI WebSocket server (port 8003) for real-time event bus API",
+    "proposed_at": "2026-02-15T23:00:31.550231+00:00",
+    "status": "approved",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)",
+    "reviewed_by": "rahil",
+    "reviewed_at": "2026-02-15T23:03:33Z"
+  },
+  {
+    "id": "prop-20260215231626",
+    "file": ".claude/command-center/frontend/js/views/approvals.js",
+    "agent": "platform-agent",
+    "evidence": "Approvals view UI component for the Command Center dashboard",
+    "proposed_at": "2026-02-15T23:16:26.166673+00:00",
+    "status": "approved",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)",
+    "reviewed_by": "human",
+    "reviewed_at": "2026-02-15T23:16:47.103580+00:00"
+  },
+  {
+    "id": "prop-20260215231708",
+    "file": ".claude/command-center/backend/routes/approvals.py",
+    "agent": "platform-agent",
+    "evidence": "Backend approvals route for the Command Center",
+    "proposed_at": "2026-02-15T23:17:08.698105+00:00",
+    "status": "approved",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)",
+    "reviewed_by": "human",
+    "reviewed_at": "2026-02-15T23:18:31.857209+00:00"
+  },
+  {
+    "id": "prop-20260215231709",
+    "file": ".claude/command-center/frontend/css/approvals.css",
+    "agent": "content-agent",
+    "evidence": "Approvals view styling for the Command Center",
+    "proposed_at": "2026-02-15T23:17:09.570783+00:00",
+    "status": "rejected",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)",
+    "reviewed_by": "human",
+    "reviewed_at": "2026-02-15T23:17:20.647153+00:00",
+    "reject_reason": "Wrong agent for CSS files"
+  }
+]

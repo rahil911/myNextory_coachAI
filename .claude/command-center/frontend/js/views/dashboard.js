@@ -2,7 +2,7 @@
 // DASHBOARD.JS — Overview Home View
 // ==========================================================================
 
-import { getState, subscribe } from '../state.js';
+import { getState, subscribe, setState, isFresh, markFetched } from '../state.js';
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { renderApprovalCard } from '../components/approval-card.js';
@@ -54,7 +54,16 @@ export function renderDashboard(root) {
   });
   container.querySelector('#dash-refresh').addEventListener('click', () => loadDashData());
 
-  loadDashData();
+  // Use cached state if fresh, otherwise fetch
+  if (isFresh('dashboard')) {
+    updateDashStats();
+    renderDashApprovals();
+    renderDashRecentEvents();
+    checkAlerts();
+  } else {
+    document.querySelectorAll('.dash-card-value').forEach(el => el.textContent = '...');
+    loadDashData();
+  }
 
   // Subscribe to real-time updates
   subscribe('agents', () => updateDashStats());
@@ -64,15 +73,20 @@ export function renderDashboard(root) {
 
 async function loadDashData() {
   try {
-    const [agents, beads, epics, events] = await Promise.all([
+    const [agents, beads, epics, events, approvalsData] = await Promise.all([
       api.getAgents().catch(() => []),
       api.getBeads().catch(() => []),
       api.getEpics().catch(() => []),
       api.getEvents({ limit: 20 }).catch(() => []),
+      api.getApprovals().catch(() => ({ pending: [], history: [], pending_count: 0 })),
     ]);
 
-    const { setState } = await import('../state.js');
-    setState({ agents, beads, epics, events });
+    setState({ agents, beads, epics, events, approvals: approvalsData.pending || [] });
+    markFetched('dashboard');
+    markFetched('agents');
+    markFetched('beads');
+    markFetched('epics');
+    markFetched('events');
     updateDashStats();
     renderDashApprovals();
     renderDashRecentEvents();
@@ -89,7 +103,7 @@ function updateDashStats() {
   const epics = state.epics || [];
   const events = state.events || [];
 
-  const active = agents.filter(a => a.status === 'running').length;
+  const active = agents.filter(a => a.status === 'working' || a.status === 'spawning').length;
   const el = (id) => document.getElementById(id);
 
   if (el('stat-agents')) el('stat-agents').textContent = active;
@@ -123,11 +137,17 @@ function renderDashRecentEvents() {
     container.innerHTML = '<p class="caption">No recent events</p>';
     return;
   }
+  const eventBadgeColor = (type) => {
+    if (type === 'agent_gone' || type === 'agent_failed') return 'red';
+    if (type === 'agent_spawned') return 'purple';
+    if (type === 'status_change' || type === 'bead_moved') return 'yellow';
+    return 'blue';
+  };
   container.innerHTML = events.slice(0, 10).map(e => `
     <div class="flex items-center gap-3" style="padding:6px 0;border-bottom:1px solid var(--border)">
-      <span class="badge badge-${e.type === 'error' ? 'red' : e.type === 'approval' ? 'yellow' : 'blue'}">${e.type || 'event'}</span>
-      <span style="font-size:13px;flex:1">${e.description || e.name || ''}</span>
-      <span class="caption">${timeAgo(e.timestamp)}</span>
+      <span class="badge badge-${eventBadgeColor(e.type)}">${e.type || 'event'}</span>
+      <span style="font-size:13px;flex:1">${e.agent ? '<strong>' + e.agent + '</strong>: ' : ''}${e.detail || e.description || e.name || ''}</span>
+      <span class="caption">${timeAgo(e.ts || e.timestamp)}</span>
     </div>
   `).join('');
 }
@@ -136,10 +156,7 @@ function checkAlerts() {
   const container = document.getElementById('dash-alerts');
   if (!container) return;
   const { agents } = getState();
-  const stale = (agents || []).filter(a => {
-    if (!a.lastHeartbeat) return false;
-    return Date.now() - new Date(a.lastHeartbeat).getTime() > 5 * 60 * 1000;
-  });
+  const stale = (agents || []).filter(a => a.heartbeat_stale);
   if (stale.length > 0) {
     container.innerHTML = `
       <div class="dash-alert">

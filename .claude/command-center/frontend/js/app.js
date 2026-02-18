@@ -3,7 +3,7 @@
 // Wires state, router, WebSocket, command palette, keyboard shortcuts
 // ==========================================================================
 
-import { getState, setState } from './state.js';
+import { getState, setState, subscribe } from './state.js';
 import { api, connectWebSockets } from './api.js';
 import { initRouter, registerRoute, navigate } from './router.js';
 import { getCommandPalette } from './components/command-palette.js';
@@ -16,6 +16,8 @@ import { renderThinkTank } from './views/thinktank.js';
 import { renderTimeline } from './views/timeline.js';
 import { renderAgents } from './views/agents.js';
 import { renderEpics } from './views/epics.js';
+import { renderApprovals } from './views/approvals.js';
+import { renderArchitecture } from './views/architecture.js';
 
 // ── Initialize ─────────────────────────────────────────────────────────────
 
@@ -27,12 +29,28 @@ document.addEventListener('DOMContentLoaded', () => {
   registerRoute('timeline', renderTimeline);
   registerRoute('agents', renderAgents);
   registerRoute('epics', renderEpics);
+  registerRoute('architecture', renderArchitecture);
+  registerRoute('approvals', renderApprovals);
 
   // 2. Initialize router
   initRouter();
 
   // 3. Connect WebSocket for real-time updates
   connectWebSockets();
+
+  // 3.5. Load approval badge count + subscribe for real-time updates
+  function refreshApprovalBadge() {
+    api.getApprovals().then(data => {
+      const count = data.pending_count || 0;
+      const badge = document.getElementById('approval-badge');
+      if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+    }).catch(() => {});
+  }
+  refreshApprovalBadge();
+  subscribe('_approvalTick', () => refreshApprovalBadge());
 
   // 4. Set up command palette
   setupCommandPalette();
@@ -71,11 +89,15 @@ function setupCommandPalette() {
       shortcut: 'G A', icon: '\u2699', action: () => { window.location.hash = 'agents'; } },
     { name: 'Go to Epics', description: 'Epic progress tracking', category: 'Navigation',
       shortcut: 'G E', icon: '\u2630', action: () => { window.location.hash = 'epics'; } },
+    { name: 'Go to Architecture', description: 'System architecture visualization', category: 'Navigation',
+      shortcut: 'G R', icon: '\u25a6', action: () => { window.location.hash = 'architecture'; } },
+    { name: 'Go to Approvals', description: 'Review pending ownership proposals', category: 'Navigation',
+      shortcut: 'G P', icon: '\u26A0', action: () => { window.location.hash = 'approvals'; } },
 
     // Actions
     { name: 'New Think Tank Session', description: 'Start brainstorming', category: 'Actions',
       shortcut: 'N', icon: '\u2795', action: () => {
-        setState({ thinktank: { ...getState().thinktank, sessionId: null, messages: [], specKit: {}, risks: [], phase: 1 } });
+        setState({ thinktank: { ...getState().thinktank, sessionId: null, messages: [], specKit: {}, risks: [], phase: 1, status: null } });
         window.location.hash = 'thinktank';
       }
     },
@@ -102,9 +124,9 @@ function setupCommandPalette() {
       icon: '\u26D4', action: async () => {
         if (!confirm('Kill ALL running agents?')) return;
         const { agents } = getState();
-        const running = agents.filter(a => a.status === 'running');
+        const running = agents.filter(a => a.status === 'working' || a.status === 'spawning');
         for (const a of running) {
-          try { await api.killAgent(a.id); } catch {}
+          try { await api.killAgent(a.name); } catch {}
         }
         showToast(`Killed ${running.length} agents`, 'warning');
       }
@@ -131,6 +153,8 @@ function setupKeyboardShortcuts() {
       case '4': window.location.hash = 'timeline'; break;
       case '5': window.location.hash = 'agents'; break;
       case '6': window.location.hash = 'epics'; break;
+      case '7': window.location.hash = 'approvals'; break;
+      case '8': window.location.hash = 'architecture'; break;
       case 'r':
       case 'R':
         getCommandPalette().commands.find(c => c.name === 'Refresh Data')?.action();

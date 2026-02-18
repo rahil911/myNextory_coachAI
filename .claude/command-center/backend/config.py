@@ -49,6 +49,10 @@ ATTACHMENTS_DIR = Path(os.environ.get(
     "BAAP_ATTACHMENTS_DIR",
     str(PROJECT_ROOT / ".claude" / "command-center" / "attachments")
 ))
+SESSIONS_DIR = Path(os.environ.get(
+    "BAAP_SESSIONS_DIR",
+    str(PROJECT_ROOT / ".claude" / "command-center" / "sessions")
+))
 
 # Server
 PORT = int(os.environ.get("BAAP_CC_PORT", "8002"))
@@ -61,5 +65,6 @@ MAX_TIMELINE_EVENTS = 500
 
 # Ensure directories exist
 ATTACHMENTS_DIR.mkdir(parents=True, exist_ok=True)
+SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 STATUS_DIR.mkdir(parents=True, exist_ok=True)
 HEARTBEAT_DIR.mkdir(parents=True, exist_ok=True)

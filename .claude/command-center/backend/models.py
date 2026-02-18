@@ -60,8 +60,18 @@ class WSEventType(str, Enum):
     THINKTANK_SPECKIT_DELTA = "THINKTANK_SPECKIT_DELTA"
     THINKTANK_PHASE_CHANGE = "THINKTANK_PHASE_CHANGE"
     APPROVAL_NEEDED = "APPROVAL_NEEDED"
+    APPROVAL_RESOLVED = "APPROVAL_RESOLVED"
     TIMELINE_EVENT = "TIMELINE_EVENT"
     TOAST = "TOAST"
+    # Dispatch Engine events
+    DISPATCH_STARTED = "DISPATCH_STARTED"
+    DISPATCH_PROGRESS = "DISPATCH_PROGRESS"
+    DISPATCH_COMPLETE = "DISPATCH_COMPLETE"
+    DISPATCH_ERROR = "DISPATCH_ERROR"
+    AGENT_PROGRESS = "AGENT_PROGRESS"
+    AGENT_RETRYING = "AGENT_RETRYING"
+    BEAD_STATUS_CHANGE = "BEAD_STATUS_CHANGE"
+    FAILURE_HANDLED = "FAILURE_HANDLED"
 
 
 class CommandCategory(str, Enum):
@@ -255,6 +265,7 @@ class ThinkTankSession(BaseModel):
     started_at: str
     updated_at: str
     status: str = "active"  # active | paused | approved | completed
+    epic_id: str | None = None  # linked beads epic ID (set after dispatch)
 
 
 class ThinkTankSessionSummary(BaseModel):
@@ -365,3 +376,41 @@ class WSEvent(BaseModel):
     type: WSEventType
     payload: dict[str, Any]
     ts: str | None = None
+
+
+# ── Approval Models ──────────────────────────────────────────────────────────
+
+class ApprovalStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class ApprovalSource(str, Enum):
+    OWNERSHIP = "ownership"
+    AGENT_ACTION = "agent_action"
+
+
+class Approval(BaseModel):
+    id: str
+    source: ApprovalSource = ApprovalSource.OWNERSHIP
+    file: str | None = None
+    agent: str | None = None
+    evidence: str = ""
+    proposed_at: str
+    status: ApprovalStatus = ApprovalStatus.PENDING
+    auto_approved: bool = False
+    reason: str = ""
+    reviewed_by: str | None = None
+    reviewed_at: str | None = None
+    reject_reason: str | None = None
+
+
+class ApprovalListResponse(BaseModel):
+    pending: list[Approval]
+    history: list[Approval]
+    pending_count: int
+
+
+class ApprovalRejectRequest(BaseModel):
+    reason: str = ""

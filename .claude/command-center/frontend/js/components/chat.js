@@ -189,9 +189,13 @@ export function renderChatInput(onSend) {
   return area;
 }
 
-// Simple markdown-ish formatting
 function formatMessageContent(text) {
   if (!text) return '';
+  if (typeof marked !== 'undefined') {
+    marked.setOptions({ breaks: true, gfm: true });
+    return marked.parse(text);
+  }
+  // Fallback if marked not loaded
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

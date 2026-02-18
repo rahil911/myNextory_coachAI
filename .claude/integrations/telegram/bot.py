@@ -7,8 +7,8 @@ Voice messages are transcribed via Sarvam AI, answered by Claude.
 Supports audio replies in Hindi, English, and Kannada (mixed dialects OK).
 
 Usage:
-    python -m src.telegram.bot                  # run polling loop
-    python -m src.telegram.bot --send "hello"   # send a one-off message
+    python .claude/integrations/telegram/bot.py                  # run polling loop
+    python .claude/integrations/telegram/bot.py --send "hello"   # send a one-off message
 
 Commands:
     /status  — Show agent swarm status
@@ -48,7 +48,7 @@ logger = logging.getLogger("baap.telegram")
 BOT_TOKEN = "8595926634:AAHWQ-ee7JYrR4WOgBfUKZRPEYpvyLab6M0"
 CHAT_ID = "8288652266"
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 POLL_INTERVAL = 2  # seconds between getUpdates calls
 CLAUDE_BIN = "claude"  # uses your subscription via OAuth
 CLAUDE_MODEL = "sonnet"  # capable enough for DB queries + contextual answers
@@ -411,8 +411,8 @@ async def handle_help(client: "httpx.AsyncClient", chat_id: str):
 
 # Namespace UUID for generating deterministic session IDs from chat IDs
 _SESSION_NS = uuid.UUID("b4a7c0d1-2e3f-4a5b-8c6d-7e8f9a0b1c2d")
-# Track whether a session has been started (first call uses --session-id, subsequent use --resume)
-_active_sessions: dict[str, bool] = {}
+# Session memory: always try --resume first (survives bot restarts),
+# fall back to --session-id only if the session does not exist yet.
 
 
 def _session_id_for_chat(chat_id: str) -> str:
@@ -420,43 +420,58 @@ def _session_id_for_chat(chat_id: str) -> str:
     return str(uuid.uuid5(_SESSION_NS, f"tg-{chat_id}"))
 
 
-async def ask_claude(prompt: str, chat_id: str = CHAT_ID) -> str:
-    """Send a prompt to Claude via `claude -p` with session memory."""
-    session_id = _session_id_for_chat(chat_id)
-    is_resumed = _active_sessions.get(session_id, False)
+async def _run_claude(args: list[str], timeout: int = 90) -> tuple[int, str, str]:
+    """Run claude CLI and return (returncode, stdout, stderr)."""
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        cwd=str(PROJECT_ROOT),
+    )
+    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    return proc.returncode, stdout.decode().strip(), stderr.decode().strip()
 
-    args = [CLAUDE_BIN, "-p", prompt, "--model", CLAUDE_MODEL]
-    if is_resumed:
-        args += ["--resume", session_id]
-    else:
-        args += ["--session-id", session_id,
-                 "--system-prompt", SYSTEM_PROMPT]
+
+async def ask_claude(prompt: str, chat_id: str = CHAT_ID) -> str:
+    """Send a prompt to Claude via `claude -p` with persistent session memory.
+
+    Strategy: try --resume first (works across bot restarts since sessions
+    are persisted on disk by Claude Code). If the session doesn't exist yet,
+    fall back to --session-id to create it.
+    """
+    session_id = _session_id_for_chat(chat_id)
 
     try:
-        proc = await asyncio.create_subprocess_exec(
-            *args,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            cwd=str(PROJECT_ROOT),
-        )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=90)
-        if proc.returncode == 0:
-            reply = stdout.decode().strip()
-            if reply:
-                _active_sessions[session_id] = True
-                return reply
-        err = stderr.decode().strip()
-        logger.warning(f"claude -p failed (rc={proc.returncode}): {err[:200]}")
-        # If resume failed, retry with fresh session
-        if is_resumed and proc.returncode != 0:
-            logger.info("Resume failed, retrying with fresh session")
-            _active_sessions[session_id] = False
-            return await ask_claude(prompt, chat_id)
+        # Try resuming existing session (most common path)
+        rc, out, err = await _run_claude([
+            CLAUDE_BIN, "-p", prompt,
+            "--model", CLAUDE_MODEL,
+            "--resume", session_id,
+        ])
+        if rc == 0 and out:
+            return out
+
+        # Resume failed — session might not exist yet. Create it.
+        if "not found" in err.lower() or "no session" in err.lower() or rc != 0:
+            logger.info(f"Session {session_id[:8]}... not found, creating new session")
+            rc2, out2, err2 = await _run_claude([
+                CLAUDE_BIN, "-p", prompt,
+                "--model", CLAUDE_MODEL,
+                "--session-id", session_id,
+                "--system-prompt", SYSTEM_PROMPT,
+            ])
+            if rc2 == 0 and out2:
+                return out2
+            logger.warning(f"claude -p fresh session failed (rc={rc2}): {err2[:200]}")
+            return f"(Claude is unavailable right now: {err2[:100]})"
+
+        logger.warning(f"claude -p resume failed (rc={rc}): {err[:200]}")
         return f"(Claude is unavailable right now: {err[:100]})"
+
     except asyncio.TimeoutError:
-        return "(Claude timed out after 90s \u2014 try a shorter question)"
+        return "(Claude timed out after 90s — try a shorter question)"
     except FileNotFoundError:
-        return "(claude CLI not found \u2014 is Claude Code installed?)"
+        return "(claude CLI not found — is Claude Code installed?)"
     except Exception as e:
         logger.error(f"ask_claude error: {e}")
         return f"(Error calling Claude: {e})"
@@ -493,7 +508,7 @@ async def handle_voice(client: "httpx.AsyncClient", chat_id: str,
     logger.info(f"Transcribed ({lang}): {transcript}")
 
     # Log to inbox
-    log_path = PROJECT_ROOT / "src" / "telegram" / "inbox.log"
+    log_path = PROJECT_ROOT / ".claude" / "integrations" / "telegram" / "inbox.log"
     with open(log_path, "a") as f:
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} | {from_user} | [VOICE:{lang}] {transcript}\n")
 
@@ -518,7 +533,7 @@ async def handle_text(client: "httpx.AsyncClient", chat_id: str, text: str, from
     logger.info(f"Message from {from_user}: {text}")
 
     # Log to inbox for audit trail
-    log_path = PROJECT_ROOT / "src" / "telegram" / "inbox.log"
+    log_path = PROJECT_ROOT / ".claude" / "integrations" / "telegram" / "inbox.log"
     with open(log_path, "a") as f:
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} | {from_user} | {text}\n")
 

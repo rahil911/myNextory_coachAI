@@ -1,92 +1,324 @@
 // ==========================================================================
-// THINKTANK.JS — Think Tank Split-View (Chat + Spec-Kit)
+// THINKTANK.JS — Think Tank Split-View (Chat + Spec-Kit) + Session History
 // ==========================================================================
 
 import { getState, setState, subscribe } from '../state.js';
-import { api, connectThinktankWs, thinktankWs } from '../api.js';
+import { api, connectThinktankWs, disconnectThinktankWs, thinktankWs, parseDagLine, stripSpecKitBlocks } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { renderPhaseStepper } from '../components/phase-stepper.js';
 import { renderChatMessage, renderTypingIndicator, renderChatInput } from '../components/chat.js';
 import { renderSpecKit } from '../components/spec-kit.js';
 import { h } from '../utils/dom.js';
+import { timeAgo } from '../utils/format.js';
+
+let _currentMode = null; // 'history' | 'session'
 
 export function renderThinkTank(root) {
-  const state = getState();
-  const tt = state.thinktank;
+  const container = h('div', { class: 'thinktank-root', id: 'thinktank-root' });
+  root.appendChild(container);
 
-  const container = h('div', { class: 'thinktank' });
+  // Initial render
+  _doRender(container);
+
+  // Re-render on state changes
+  subscribe('thinktank', () => _doRender(container));
+}
+
+function _doRender(container) {
+  const tt = getState().thinktank;
+
+  if (tt.sessionId) {
+    if (_currentMode !== 'session') {
+      container.innerHTML = '';
+      _renderSessionView(container);
+      _currentMode = 'session';
+    } else {
+      _updateSessionView(tt);
+    }
+  } else {
+    if (_currentMode !== 'history') {
+      container.innerHTML = '';
+      _renderHistoryView(container);
+      _currentMode = 'history';
+    }
+  }
+}
+
+// ── History View ──────────────────────────────────────────────────────────
+
+async function _renderHistoryView(container) {
+  const wrapper = h('div', { class: 'tt-history view-container' });
+
+  // Header
+  const header = h('div', { class: 'view-header' });
+  const headerLeft = h('div', { class: 'view-header-left' });
+  headerLeft.appendChild(h('h2', {}, 'Think Tank Sessions'));
+  header.appendChild(headerLeft);
+
+  const headerRight = h('div', { class: 'view-header-right' });
+  const newBtn = h('button', { class: 'btn btn-primary', onClick: _startNewSession });
+  newBtn.textContent = '+ New Session';
+  headerRight.appendChild(newBtn);
+  header.appendChild(headerRight);
+  wrapper.appendChild(header);
+
+  // Session list container
+  const list = h('div', { class: 'tt-session-list', id: 'tt-session-list' });
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-tertiary)">Loading sessions...</div>';
+  wrapper.appendChild(list);
+  container.appendChild(wrapper);
+
+  // Fetch history
+  try {
+    const sessions = await api.getHistory();
+    list.innerHTML = '';
+
+    if (!sessions || sessions.length === 0) {
+      list.innerHTML = `
+        <div class="tt-empty-state">
+          <div class="tt-empty-icon">&#9733;</div>
+          <h3>No sessions yet</h3>
+          <p>Start a brainstorming session to collaboratively design features with AI.</p>
+        </div>
+      `;
+      return;
+    }
+
+    sessions.forEach(s => list.appendChild(_renderSessionCard(s)));
+  } catch (err) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--red)">Failed to load: ${err.message}</div>`;
+  }
+}
+
+function _renderSessionCard(session) {
+  const card = h('div', { class: 'tt-session-card' });
+
+  const statusClass = {
+    active: 'status-active', paused: 'status-paused',
+    approved: 'status-approved', completed: 'status-completed',
+  }[session.status] || 'status-paused';
+
+  const phaseLabel = session.phase.charAt(0).toUpperCase() + session.phase.slice(1);
+
+  card.innerHTML = `
+    <div class="tt-card-main">
+      <div class="tt-card-topic">${_escapeHtml(session.topic)}</div>
+      <div class="tt-card-meta">
+        <span class="tt-card-badge ${statusClass}">${session.status}</span>
+        <span class="tt-card-badge tt-phase-badge">${phaseLabel}</span>
+        <span class="tt-card-stat">${session.message_count} messages</span>
+        <span class="tt-card-time">${timeAgo(session.updated_at)}</span>
+      </div>
+    </div>
+    <div class="tt-card-actions"></div>
+  `;
+
+  const actions = card.querySelector('.tt-card-actions');
+
+  const openBtn = h('button', {
+    class: 'btn btn-sm',
+    onClick: (e) => { e.stopPropagation(); _openSession(session.id); }
+  });
+  openBtn.textContent = session.status === 'active' ? 'Open' : 'Resume';
+  actions.appendChild(openBtn);
+
+  const delBtn = h('button', {
+    class: 'btn btn-sm btn-danger',
+    onClick: async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Delete session "${session.topic}"?`)) return;
+      try {
+        await api.deleteSession(session.id);
+        card.remove();
+        showToast('Session deleted', 'info');
+        // If list is now empty, show empty state
+        const list = document.getElementById('tt-session-list');
+        if (list && !list.querySelector('.tt-session-card')) {
+          list.innerHTML = `
+            <div class="tt-empty-state">
+              <div class="tt-empty-icon">&#9733;</div>
+              <h3>No sessions yet</h3>
+              <p>Start a brainstorming session to collaboratively design features with AI.</p>
+            </div>
+          `;
+        }
+      } catch (err) {
+        showToast(`Delete failed: ${err.message}`, 'error');
+      }
+    }
+  });
+  delBtn.textContent = 'Delete';
+  actions.appendChild(delBtn);
+
+  card.addEventListener('click', () => _openSession(session.id));
+  return card;
+}
+
+// ── Session Open / Create ─────────────────────────────────────────────────
+
+async function _openSession(sessionId) {
+  try {
+    const session = await api.resumeSession(sessionId);
+    const phaseMap = { listen: 1, explore: 2, scope: 3, confirm: 4, building: 5, complete: 6 };
+
+    const messages = (session.messages || [])
+      .filter(m => m.role !== 'system')
+      .map(m => {
+        const isAi = m.role === 'orchestrator';
+        let content = m.content;
+        let chips = [];
+
+        if (isAi) {
+          content = stripSpecKitBlocks(content);
+          const dagResult = parseDagLine(content);
+          content = dagResult.content;
+          chips = dagResult.chips;
+        }
+
+        return {
+          role: isAi ? 'ai' : m.role,
+          content,
+          streaming: false,
+          chips,
+        };
+      });
+
+    const specKit = {};
+    if (session.spec_kit) {
+      for (const [key, val] of Object.entries(session.spec_kit)) {
+        if (val) specKit[key] = val;
+      }
+    }
+
+    setState({
+      thinktank: {
+        phase: phaseMap[session.phase] || 1,
+        messages,
+        specKit,
+        risks: [],
+        sessionId: session.id,
+        status: session.status,
+      }
+    });
+
+    connectThinktankWs(session.id);
+  } catch (err) {
+    showToast(`Failed to open session: ${err.message}`, 'error');
+  }
+}
+
+async function _startNewSession() {
+  const topic = prompt('What do you want to brainstorm?');
+  if (!topic || !topic.trim()) return;
+
+  try {
+    const session = await api.createSession({ topic: topic.trim() });
+    setState({
+      thinktank: {
+        phase: 1,
+        messages: [],
+        specKit: {},
+        risks: [],
+        sessionId: session.id,
+        status: 'active',
+      }
+    });
+    connectThinktankWs(session.id);
+  } catch (err) {
+    showToast(`Failed to create session: ${err.message}`, 'error');
+  }
+}
+
+// ── Session View (Chat + Spec-Kit) ────────────────────────────────────────
+
+function _renderSessionView(container) {
+  const tt = getState().thinktank;
+  const isReadOnly = tt.status === 'completed' || tt.status === 'approved';
+
+  const thinktankEl = h('div', { class: 'thinktank' });
 
   // Left: Chat Panel
   const chatPanel = h('div', { class: 'thinktank-chat', dataset: { phase: getPhaseId(tt.phase) } });
 
+  // Back header
+  const backHeader = h('div', { class: 'tt-back-header' });
+  const backBtn = h('button', { class: 'tt-back-btn', onClick: _goToHistory });
+  backBtn.innerHTML = '&#8592; Sessions';
+  backHeader.appendChild(backBtn);
+  chatPanel.appendChild(backHeader);
+
   // Phase stepper
   chatPanel.appendChild(renderPhaseStepper(tt.phase));
 
-  // Messages area
+  // Messages
   const messagesArea = h('div', { class: 'chat-messages', id: 'tt-messages' });
   renderMessages(messagesArea, tt.messages);
   chatPanel.appendChild(messagesArea);
 
-  // Chat input
-  const chatInput = renderChatInput(async (text, images) => {
-    // Add human message to state
-    const msg = { role: 'human', content: text, images: [], streaming: false };
+  // Chat input or read-only bar
+  if (!isReadOnly) {
+    chatPanel.appendChild(renderChatInput(async (text, images) => {
+      const msg = { role: 'human', content: text, images: [], streaming: false };
+      if (images && images.length) {
+        for (const img of images) {
+          try {
+            const result = await api.uploadAttachment(img);
+            msg.images.push(result.url);
+          } catch (err) {
+            showToast(`Image upload failed: ${err.message}`, 'error');
+          }
+        }
+      }
 
-    // Upload images if any
-    if (images && images.length) {
-      for (const img of images) {
+      const newMessages = [...getState().thinktank.messages, msg];
+      setState({ thinktank: { ...getState().thinktank, messages: newMessages } });
+
+      const aiMsg = { role: 'ai', content: '', streaming: true, chips: [] };
+      setState({
+        thinktank: {
+          ...getState().thinktank,
+          messages: [...getState().thinktank.messages, aiMsg]
+        }
+      });
+
+      if (thinktankWs) {
+        thinktankWs.send({ type: 'message', text: text });
+      } else {
         try {
-          const result = await api.uploadAttachment(img);
-          msg.images.push(result.url);
+          const sessionId = getState().thinktank.sessionId;
+          if (sessionId) await api.sendMessage(sessionId, { text: text });
         } catch (err) {
-          showToast(`Image upload failed: ${err.message}`, 'error');
+          showToast(`Send failed: ${err.message}`, 'error');
         }
       }
-    }
-
-    const newMessages = [...getState().thinktank.messages, msg];
-    setState({ thinktank: { ...getState().thinktank, messages: newMessages } });
-
-    // Add placeholder AI message
-    const aiMsg = { role: 'ai', content: '', streaming: true, chips: [] };
-    setState({
-      thinktank: {
-        ...getState().thinktank,
-        messages: [...getState().thinktank.messages, aiMsg]
-      }
-    });
-
-    // Send via WebSocket or REST
-    if (thinktankWs) {
-      thinktankWs.send({ type: 'message', content: text, images: msg.images });
-    } else {
-      try {
-        const sessionId = getState().thinktank.sessionId;
-        if (sessionId) {
-          await api.sendMessage(sessionId, { content: text, images: msg.images });
-        }
-      } catch (err) {
-        showToast(`Send failed: ${err.message}`, 'error');
-      }
-    }
-  });
-  chatPanel.appendChild(chatInput);
+    }));
+  } else {
+    const readOnlyBar = h('div', { class: 'tt-readonly-bar' });
+    readOnlyBar.textContent = 'This session is read-only (completed)';
+    chatPanel.appendChild(readOnlyBar);
+  }
 
   // Right: Spec-Kit Panel
   const specPanel = h('div', { class: 'thinktank-speckit' });
   const specHeader = h('div', { class: 'speckit-header' });
   specHeader.innerHTML = '<span class="speckit-title">Spec-Kit</span>';
+  if (isReadOnly) {
+    const badge = h('span', { class: 'tt-card-badge status-completed', style: { fontSize: '11px', marginLeft: '8px' } });
+    badge.textContent = 'Read-only';
+    specHeader.appendChild(badge);
+  }
   specPanel.appendChild(specHeader);
 
-  specPanel.appendChild(renderSpecKit(tt, (key, val) => {
+  const onEdit = isReadOnly ? null : (key, val) => {
     const sk = { ...getState().thinktank.specKit };
     sk[key] = val;
     setState({ thinktank: { ...getState().thinktank, specKit: sk } });
     showToast('Spec updated', 'info');
-  }));
+  };
+  specPanel.appendChild(renderSpecKit(tt, onEdit));
 
-  // Approval gate (Phase 4 only)
-  if (tt.phase >= 4) {
+  // Approval gate (Phase 4+ only, not read-only)
+  if (tt.phase >= 4 && !isReadOnly) {
     const gate = h('div', { class: 'approval-gate' });
     const approveBtn = h('button', {
       class: 'approval-gate-btn',
@@ -121,89 +353,63 @@ export function renderThinkTank(root) {
     specPanel.appendChild(gate);
   }
 
-  container.appendChild(chatPanel);
-  container.appendChild(specPanel);
-  root.appendChild(container);
-
-  // Initialize session if needed
-  initThinktankSession();
-
-  // Subscribe to thinktank state changes
-  subscribe('thinktank', (tt) => {
-    // Update messages
-    const msgArea = document.getElementById('tt-messages');
-    if (msgArea) renderMessages(msgArea, tt.messages);
-
-    // Update phase stepper
-    const chatEl = document.querySelector('.thinktank-chat');
-    if (chatEl) {
-      chatEl.dataset.phase = getPhaseId(tt.phase);
-      const stepper = chatEl.querySelector('.phase-stepper');
-      if (stepper) stepper.replaceWith(renderPhaseStepper(tt.phase));
-    }
-  });
+  thinktankEl.appendChild(chatPanel);
+  thinktankEl.appendChild(specPanel);
+  container.appendChild(thinktankEl);
 
   // D/A/G keyboard shortcuts
-  const dagHandler = (e) => {
-    const tag = e.target.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-
-    const lastMsg = getState().thinktank.messages.filter(m => m.role === 'ai' && m.chips?.length).pop();
-    if (!lastMsg || !lastMsg.chips) return;
-
-    switch (e.key.toUpperCase()) {
-      case 'D': if (lastMsg.chips[0]?.action) lastMsg.chips[0].action(); break;
-      case 'A': if (lastMsg.chips[1]?.action) lastMsg.chips[1].action(); break;
-      case 'G': if (lastMsg.chips[2]?.action) lastMsg.chips[2].action(); break;
-    }
-  };
-  document.addEventListener('keydown', dagHandler);
+  document.addEventListener('keydown', _dagHandler);
 }
 
-async function initThinktankSession() {
-  const state = getState();
-  if (!state.thinktank.sessionId) {
-    try {
-      const session = await api.createSession({ name: `Session ${Date.now()}` });
-      setState({
-        thinktank: {
-          ...state.thinktank,
-          sessionId: session.id,
-          phase: 1,
-          messages: [{
-            role: 'ai',
-            content: 'Welcome to the Think Tank. Tell me what you\'re trying to build. What problem are you solving, and who is it for?',
-            streaming: false,
-            chips: [
-              { label: 'Describe the problem', icon: '\u{1F50D}', action: () => {} },
-              { label: 'Show a reference', icon: '\u{1F4CE}', action: () => {} },
-              { label: 'Start from template', icon: '\u{1F4CB}', action: () => {} },
-            ]
-          }]
-        }
-      });
-      connectThinktankWs(session.id);
-    } catch (err) {
-      showToast(`Failed to create session: ${err.message}`, 'error');
-    }
+function _updateSessionView(tt) {
+  const msgArea = document.getElementById('tt-messages');
+  if (msgArea) renderMessages(msgArea, tt.messages);
+
+  const chatEl = document.querySelector('.thinktank-chat');
+  if (chatEl) {
+    chatEl.dataset.phase = getPhaseId(tt.phase);
+    const stepper = chatEl.querySelector('.phase-stepper');
+    if (stepper) stepper.replaceWith(renderPhaseStepper(tt.phase));
+  }
+}
+
+function _goToHistory() {
+  disconnectThinktankWs();
+  _currentMode = null; // Force re-render
+  setState({
+    thinktank: { phase: 1, messages: [], specKit: {}, risks: [], sessionId: null, status: null }
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function _dagHandler(e) {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+  const lastMsg = getState().thinktank.messages.filter(m => m.role === 'ai' && m.chips?.length).pop();
+  if (!lastMsg || !lastMsg.chips) return;
+
+  switch (e.key.toUpperCase()) {
+    case 'D': if (lastMsg.chips[0]?.action) lastMsg.chips[0].action(); break;
+    case 'A': if (lastMsg.chips[1]?.action) lastMsg.chips[1].action(); break;
+    case 'G': if (lastMsg.chips[2]?.action) lastMsg.chips[2].action(); break;
   }
 }
 
 function renderMessages(container, messages) {
   container.innerHTML = '';
   (messages || []).forEach(msg => {
-    const el = renderChatMessage(msg);
-    if (el instanceof DocumentFragment) {
-      container.appendChild(el);
-    } else {
-      container.appendChild(el);
-    }
+    container.appendChild(renderChatMessage(msg));
   });
-  // Auto-scroll to bottom
   container.scrollTop = container.scrollHeight;
 }
 
 function getPhaseId(num) {
   return ['listen', 'explore', 'scope', 'confirm'][num - 1] || 'listen';
+}
+
+function _escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

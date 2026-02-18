@@ -514,6 +514,47 @@
 .shimmer-medium { width: 60%; }
 .shimmer-long { width: 90%; }
 
+/* ── View Loading Spinner ──────────────────────────────────────────────── */
+.view-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: 48px 0;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.view-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Empty State ───────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-tertiary);
+}
+
+.empty-state-icon {
+  font-size: 32px;
+  margin-bottom: var(--space-3);
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: var(--font-size-sm);
+}
+
 /* ── Modal (generic) ────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;

@@ -18,6 +18,9 @@ logger = logging.getLogger("baap.agent_service")
 # Standalone event bus URL (for bridging lifecycle events)
 EVENT_BUS_URL = "http://localhost:8003/api/emit"
 
+# TTL cache for agent file reads (seconds)
+_AGENT_CACHE_TTL = 5
+
 
 class AgentService:
     def __init__(self, event_bus=None, notification_router=None):
@@ -26,6 +29,9 @@ class AgentService:
         self._last_snapshot: dict[str, str] = {}
         self._timeline: list[dict] = []
         self._http_client = None
+        # In-memory cache for read_agents results
+        self._cache_agents: list[Agent] = []
+        self._cache_ts: float = 0
 
     def _add_timeline_event(self, event_type: str, agent: str, detail: str) -> dict:
         event = {
@@ -40,7 +46,11 @@ class AgentService:
         return event
 
     def read_agents(self) -> list[Agent]:
-        """Read all agent status files and enrich with heartbeat data."""
+        """Read all agent status files and enrich with heartbeat data. Cached for 5s."""
+        now_mono = time.monotonic()
+        if self._cache_agents and (now_mono - self._cache_ts) < _AGENT_CACHE_TTL:
+            return self._cache_agents
+
         agents = []
         if not STATUS_DIR.exists():
             return agents
@@ -91,6 +101,9 @@ class AgentService:
                 heartbeat_age_s=hb_age,
                 heartbeat_stale=hb_stale,
             ))
+
+        self._cache_agents = agents
+        self._cache_ts = now_mono
         return agents
 
     async def _bridge_to_event_bus(self, event_name: str, payload: dict):

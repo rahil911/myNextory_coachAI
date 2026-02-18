@@ -13,8 +13,12 @@
   <link rel="stylesheet" href="css/timeline.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/architecture.css">
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9881;</text></svg>">
+
+  <!-- Markdown renderer for Think Tank chat -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
@@ -49,6 +53,10 @@
           <span class="nav-item-icon">&#9881;</span>
           <span>Agents</span>
         </a>
+        <a class="nav-item" data-view="architecture" href="#architecture">
+          <span class="nav-item-icon">&#9708;</span>
+          <span>Architecture</span>
+        </a>
         <a class="nav-item" data-view="epics" href="#epics">
           <span class="nav-item-icon">&#9776;</span>
           <span>Epics</span>
@@ -57,7 +65,7 @@
 
       <div class="nav-section">
         <div class="nav-section-label">Quick</div>
-        <a class="nav-item" id="nav-approvals" href="#dashboard">
+        <a class="nav-item" data-view="approvals" id="nav-approvals" href="#approvals">
           <span class="nav-item-icon">&#9888;</span>
           <span>Approvals</span>
           <span class="nav-item-badge" id="approval-badge" style="display:none">0</span>
