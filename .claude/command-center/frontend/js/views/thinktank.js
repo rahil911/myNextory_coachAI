@@ -329,69 +329,77 @@ function _renderSessionView(container) {
     const previewPanel = h('div', { class: 'approval-preview-panel', style: { display: 'none' } });
     previewPanel.id = 'approval-preview-panel';
 
+    // State machine: 'preview' (initial) or 'confirm' (after dry-run)
+    let approvePhase = 'preview';
+    let confirmedSessionId = null;
+
     const approveBtn = h('button', {
       class: 'approval-gate-btn',
       onClick: async () => {
         // Double-click protection: disable immediately
         approveBtn.disabled = true;
-        approveBtn.textContent = 'Approving...';
         errorPanel.style.display = 'none';
-        previewPanel.style.display = 'none';
 
         try {
           const sessionId = getState().thinktank.sessionId;
           if (!sessionId) throw new Error('No session ID');
 
-          // Step 1: Dry-run preview
-          const preview = await api.approveSpec(sessionId, { dryRun: true });
+          if (approvePhase === 'preview') {
+            // Step 1: Dry-run preview
+            approveBtn.textContent = 'Approving...';
+            previewPanel.style.display = 'none';
 
-          if (preview.dry_run && preview.preview) {
-            // Show preview for user confirmation
-            const tasks = preview.preview.tasks || [];
-            previewPanel.innerHTML = `
-              <h4 style="margin:0 0 8px">Build Plan Preview (${tasks.length} tasks)</h4>
-              <ul style="margin:0;padding-left:20px;font-size:13px">
-                ${tasks.map(t => `<li><strong>Phase ${t.phase}:</strong> ${_escapeHtml(t.title)} <em>(${t.suggested_agent || 'auto'})</em></li>`).join('')}
-              </ul>
-            `;
-            previewPanel.style.display = 'block';
+            const preview = await api.approveSpec(sessionId, { dryRun: true });
 
-            // Change button to "Confirm Build"
-            approveBtn.textContent = 'Confirm Build \u2192';
-            approveBtn.disabled = false;
-            approveBtn.onclick = async () => {
-              approveBtn.disabled = true;
-              approveBtn.textContent = 'Starting build...';
-              previewPanel.style.display = 'none';
+            if (preview.dry_run && preview.preview) {
+              // Show preview for user confirmation
+              const tasks = preview.preview.tasks || [];
+              previewPanel.innerHTML = `
+                <h4 style="margin:0 0 8px">Build Plan Preview (${tasks.length} tasks)</h4>
+                <ul style="margin:0;padding-left:20px;font-size:13px">
+                  ${tasks.map(t => `<li><strong>Phase ${t.phase}:</strong> ${_escapeHtml(t.title)} <em>(${t.suggested_agent || 'auto'})</em></li>`).join('')}
+                </ul>
+              `;
+              previewPanel.style.display = 'block';
 
-              try {
-                const result = await api.approveSpec(sessionId);
-                if (result.success) {
-                  approveBtn.textContent = 'Build queued! Agents dispatching...';
-                  approveBtn.classList.add('approved');
-                  approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
-                  showToast('Build started!', 'success');
-                } else {
-                  throw new Error(result.error || 'Unknown error');
-                }
-              } catch (err) {
-                _showApprovalError(errorPanel, approveBtn, err.message);
-              }
-            };
-            return;
-          }
+              // Transition to confirm phase
+              approvePhase = 'confirm';
+              confirmedSessionId = sessionId;
+              approveBtn.textContent = 'Confirm Build \u2192';
+              approveBtn.disabled = false;
+              return;
+            }
 
-          // No preview returned — proceed directly
-          if (preview.success) {
-            approveBtn.textContent = 'Build queued! Agents dispatching...';
-            approveBtn.classList.add('approved');
-            approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
-            showToast('Build started!', 'success');
-          } else {
-            throw new Error(preview.error || 'Unknown error');
+            // No preview returned — proceed directly
+            if (preview.success) {
+              approveBtn.textContent = 'Build queued! Agents dispatching...';
+              approveBtn.classList.add('approved');
+              approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
+              showToast('Build started!', 'success');
+            } else {
+              throw new Error(preview.error || 'Unknown error');
+            }
+
+          } else if (approvePhase === 'confirm') {
+            // Step 2: Actual build
+            approveBtn.textContent = 'Starting build...';
+            previewPanel.style.display = 'none';
+
+            const result = await api.approveSpec(confirmedSessionId || sessionId);
+            if (result.success) {
+              approveBtn.textContent = 'Build queued! Agents dispatching...';
+              approveBtn.classList.add('approved');
+              approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
+              showToast('Build started!', 'success');
+            } else {
+              throw new Error(result.error || 'Unknown error');
+            }
           }
 
         } catch (err) {
+          // Reset to preview phase on error so user can retry
+          approvePhase = 'preview';
+          confirmedSessionId = null;
           _showApprovalError(errorPanel, approveBtn, err.message);
         }
       }
