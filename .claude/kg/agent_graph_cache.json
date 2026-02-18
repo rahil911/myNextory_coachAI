@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "built_at": "2026-02-15T23:17:09.571985+00:00",
-    "node_count": 48,
-    "edge_count": 198,
-    "agent_count": 9,
-    "module_count": 7,
-    "concept_count": 24,
+    "built_at": "2026-02-18T22:43:53.347581+00:00",
+    "node_count": 50,
+    "edge_count": 257,
+    "agent_count": 10,
+    "module_count": 8,
+    "concept_count": 32,
     "builder_version": "1.0"
   },
   "nodes": [
@@ -223,6 +223,31 @@
       }
     },
     {
+      "id": "tory-agent",
+      "type": "agent",
+      "level": 1,
+      "parent": "orchestrator",
+      "spec_path": ".claude/agents/tory-agent/agent.md",
+      "memory_path": ".claude/agents/tory-agent/memory/",
+      "capabilities": [
+        "learning-paths",
+        "profile-interpretation",
+        "content-scoring",
+        "roadmap-generation",
+        "reassessment",
+        "coach-compatibility"
+      ],
+      "model_tier": "opus",
+      "status": "idle",
+      "module": "tory-module",
+      "safety": {
+        "max_children": 5,
+        "timeout_minutes": 120,
+        "can_spawn": true,
+        "review_required": true
+      }
+    },
+    {
       "id": "identity-module",
       "type": "module",
       "description": "Identity and access \u2014 users, clients, coaches, employees, departments, onboarding, password resets, coach-client mappings",
@@ -275,6 +300,14 @@
       "type": "module",
       "description": "Knowledge graph infrastructure \u2014 MCP servers, CLI, seeds, cache",
       "managed_by": "kg-agent",
+      "file_count": 0,
+      "sub_modules": []
+    },
+    {
+      "id": "tory-module",
+      "type": "module",
+      "description": "Tory learning path engine \u2014 profile interpretation, content tagging, roadmap generation, adaptive reassessment, coach compatibility, HR dashboards",
+      "managed_by": "tory-agent",
       "file_count": 0,
       "sub_modules": []
     },
@@ -466,7 +499,6 @@
         "Chapter",
         "Journey",
         "Rating",
-        "Slide",
         "Task",
         "VideoLibrary"
       ],
@@ -529,8 +561,7 @@
       "related_concepts": [
         "Chapter",
         "Journey",
-        "Lesson",
-        "Slide"
+        "Lesson"
       ],
       "agents_involved": [
         "api-agent",
@@ -773,60 +804,171 @@
       ]
     },
     {
-      "id": ".claude/integrations/telegram/bot.py",
-      "type": "file",
-      "language": "python",
-      "module": "platform-module",
-      "locked_by": null
+      "id": "ToryContentTag",
+      "type": "concept",
+      "description": "Claude Opus-generated personality trait tags per lesson. Multi-pass confidence-gated tagging with coach review. Foundation for similarity scoring and roadmap matching.",
+      "tables": [
+        "tory_content_tags"
+      ],
+      "domain": "learning",
+      "related_concepts": [
+        "Lesson",
+        "ToryLearnerProfile",
+        "ToryRoadmapItem"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "learning-agent",
+        "tory-agent",
+        "ui-agent"
+      ]
     },
     {
-      "id": ".claude/integrations/notifications/router.py",
-      "type": "file",
-      "language": "python",
-      "module": "platform-module",
-      "locked_by": null
+      "id": "ToryLearnerProfile",
+      "type": "concept",
+      "description": "Claude-interpreted personality profile from EPP (29 dimensions) + onboarding Q&A. Includes trait vector, motivation cluster, strengths, gaps, and user-facing narrative.",
+      "tables": [
+        "tory_learner_profiles"
+      ],
+      "domain": "identity",
+      "related_concepts": [
+        "ToryContentTag",
+        "ToryReassessment",
+        "ToryRoadmap",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "auth-agent",
+        "db-agent",
+        "tory-agent"
+      ]
     },
     {
-      "id": ".claude/integrations/notifications/notifications.yaml",
-      "type": "file",
-      "language": "yaml",
-      "module": "platform-module",
-      "locked_by": null
+      "id": "ToryRoadmap",
+      "type": "concept",
+      "description": "Personalized adaptive learning path per learner. Versioned, with pedagogy mode snapshot. Tracks completion and generation rationale.",
+      "tables": [
+        "tory_roadmaps"
+      ],
+      "domain": "learning",
+      "related_concepts": [
+        "ToryCoachOverride",
+        "ToryLearnerProfile",
+        "ToryProgressSnapshot",
+        "ToryRoadmapItem"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "learning-agent",
+        "tory-agent",
+        "ui-agent"
+      ]
     },
     {
-      "id": ".claude/integrations/event-bus/event_bus.py",
-      "type": "file",
-      "language": "python",
-      "module": "platform-module",
-      "locked_by": null
+      "id": "ToryRoadmapItem",
+      "type": "concept",
+      "description": "Individual lesson assignment within a roadmap. Includes match score, rationale, critical flag (guardrail), and discovery phase marker.",
+      "tables": [
+        "tory_roadmap_items"
+      ],
+      "domain": "learning",
+      "related_concepts": [
+        "Lesson",
+        "ToryCoachOverride",
+        "ToryContentTag",
+        "ToryRoadmap"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "learning-agent",
+        "tory-agent",
+        "ui-agent"
+      ]
     },
     {
-      "id": ".claude/integrations/event-bus/main.py",
-      "type": "file",
-      "language": "python",
-      "module": "platform-module",
-      "locked_by": null
+      "id": "ToryReassessment",
+      "type": "concept",
+      "description": "Periodic re-evaluation records (mini every 4-6 weeks, full EPP quarterly). Tracks profile drift and triggers path adaptation.",
+      "tables": [
+        "tory_reassessments"
+      ],
+      "domain": "engagement",
+      "related_concepts": [
+        "ToryLearnerProfile",
+        "ToryRoadmap",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "engagement-agent",
+        "tory-agent",
+        "ui-agent"
+      ]
     },
     {
-      "id": ".claude/command-center/frontend/js/views/approvals.js",
-      "type": "file",
-      "language": "javascript",
-      "module": "platform-module",
-      "locked_by": null
+      "id": "ToryCoachOverride",
+      "type": "concept",
+      "description": "Coach curation actions on roadmaps (reorder/swap/lock/unlock). Guardrails prevent removal of critical lessons. Tracks divergence.",
+      "tables": [
+        "tory_coach_overrides"
+      ],
+      "domain": "engagement",
+      "related_concepts": [
+        "Coach",
+        "ToryRoadmap",
+        "ToryRoadmapItem"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "engagement-agent",
+        "tory-agent",
+        "ui-agent"
+      ]
     },
     {
-      "id": ".claude/command-center/backend/routes/approvals.py",
-      "type": "file",
-      "language": "python",
-      "module": "platform-module",
-      "locked_by": null
+      "id": "ToryProgressSnapshot",
+      "type": "concept",
+      "description": "Aggregated HR dashboard data per user per snapshot date. Includes completion, engagement, coach effectiveness, Tory accuracy, and team aggregate support.",
+      "tables": [
+        "tory_progress_snapshots"
+      ],
+      "domain": "platform",
+      "related_concepts": [
+        "Client",
+        "Department",
+        "ToryRoadmap",
+        "User"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "db-agent",
+        "tory-agent"
+      ]
     },
     {
-      "id": ".claude/command-center/frontend/css/approvals.css",
-      "type": "file",
-      "language": "css",
-      "module": "content-module",
-      "locked_by": null
+      "id": "ToryPedagogyConfig",
+      "type": "concept",
+      "description": "Client-company pedagogy preference: gap-fill (A), strength-lead (B), or configurable blend (C) with ratio. Set at company onboarding.",
+      "tables": [
+        "tory_pedagogy_config"
+      ],
+      "domain": "identity",
+      "related_concepts": [
+        "Client",
+        "ToryRoadmap"
+      ],
+      "agents_involved": [
+        "api-agent",
+        "auth-agent",
+        "db-agent",
+        "tory-agent"
+      ]
     }
   ],
   "edges": [
@@ -866,6 +1008,11 @@
       "type": "MANAGES"
     },
     {
+      "from": "tory-agent",
+      "to": "tory-module",
+      "type": "MANAGES"
+    },
+    {
       "from": "api-agent",
       "to": "User",
       "type": "IMPLEMENTS"
@@ -1227,11 +1374,6 @@
     },
     {
       "from": "Lesson",
-      "to": "Slide",
-      "type": "RELATES_TO"
-    },
-    {
-      "from": "Lesson",
       "to": "Task",
       "type": "RELATES_TO"
     },
@@ -1343,11 +1485,6 @@
     {
       "from": "VideoLibrary",
       "to": "Lesson",
-      "type": "RELATES_TO"
-    },
-    {
-      "from": "VideoLibrary",
-      "to": "Slide",
       "type": "RELATES_TO"
     },
     {
@@ -1703,6 +1840,321 @@
     {
       "from": "BackgroundJob",
       "to": "SMS",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ToryContentTag",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ToryContentTag",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "learning-agent",
+      "to": "ToryContentTag",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "tory-agent",
+      "to": "ToryContentTag",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "ToryContentTag",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ToryContentTag",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryContentTag",
+      "to": "ToryLearnerProfile",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryContentTag",
+      "to": "ToryRoadmapItem",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ToryLearnerProfile",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "auth-agent",
+      "to": "ToryLearnerProfile",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ToryLearnerProfile",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "tory-agent",
+      "to": "ToryLearnerProfile",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ToryLearnerProfile",
+      "to": "ToryContentTag",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryLearnerProfile",
+      "to": "ToryReassessment",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryLearnerProfile",
+      "to": "ToryRoadmap",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryLearnerProfile",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ToryRoadmap",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ToryRoadmap",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "learning-agent",
+      "to": "ToryRoadmap",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "tory-agent",
+      "to": "ToryRoadmap",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "ToryRoadmap",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ToryRoadmap",
+      "to": "ToryCoachOverride",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryRoadmap",
+      "to": "ToryLearnerProfile",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryRoadmap",
+      "to": "ToryProgressSnapshot",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryRoadmap",
+      "to": "ToryRoadmapItem",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ToryRoadmapItem",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ToryRoadmapItem",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "learning-agent",
+      "to": "ToryRoadmapItem",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "tory-agent",
+      "to": "ToryRoadmapItem",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "ToryRoadmapItem",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ToryRoadmapItem",
+      "to": "Lesson",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryRoadmapItem",
+      "to": "ToryCoachOverride",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryRoadmapItem",
+      "to": "ToryContentTag",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryRoadmapItem",
+      "to": "ToryRoadmap",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ToryReassessment",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ToryReassessment",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "engagement-agent",
+      "to": "ToryReassessment",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "tory-agent",
+      "to": "ToryReassessment",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "ToryReassessment",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ToryReassessment",
+      "to": "ToryLearnerProfile",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryReassessment",
+      "to": "ToryRoadmap",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryReassessment",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ToryCoachOverride",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ToryCoachOverride",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "engagement-agent",
+      "to": "ToryCoachOverride",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "tory-agent",
+      "to": "ToryCoachOverride",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ui-agent",
+      "to": "ToryCoachOverride",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ToryCoachOverride",
+      "to": "Coach",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryCoachOverride",
+      "to": "ToryRoadmap",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryCoachOverride",
+      "to": "ToryRoadmapItem",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ToryProgressSnapshot",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ToryProgressSnapshot",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "tory-agent",
+      "to": "ToryProgressSnapshot",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ToryProgressSnapshot",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryProgressSnapshot",
+      "to": "Department",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryProgressSnapshot",
+      "to": "ToryRoadmap",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryProgressSnapshot",
+      "to": "User",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "api-agent",
+      "to": "ToryPedagogyConfig",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "auth-agent",
+      "to": "ToryPedagogyConfig",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "db-agent",
+      "to": "ToryPedagogyConfig",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "tory-agent",
+      "to": "ToryPedagogyConfig",
+      "type": "IMPLEMENTS"
+    },
+    {
+      "from": "ToryPedagogyConfig",
+      "to": "Client",
+      "type": "RELATES_TO"
+    },
+    {
+      "from": "ToryPedagogyConfig",
+      "to": "ToryRoadmap",
       "type": "RELATES_TO"
     },
     {
@@ -1795,52 +2247,37 @@
       "inferred_from": "activity_log references nx_users via causer_id"
     },
     {
-      "from": "platform-agent",
-      "to": ".claude/integrations/telegram/bot.py",
-      "type": "OWNS",
-      "inferred_from": "Orchestrator communication infrastructure: two-way Telegram bridge for human-swarm interface"
+      "from": "orchestrator",
+      "to": "tory-agent",
+      "type": "PARENT_OF"
     },
     {
-      "from": "platform-agent",
-      "to": ".claude/integrations/notifications/router.py",
-      "type": "OWNS",
-      "inferred_from": "System notification routing: routes agent/bead lifecycle events to human via Telegram/Slack"
+      "from": "tory-agent",
+      "to": "identity-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "tory_learner_profiles/tory_roadmaps/tory_reassessments/tory_progress_snapshots reference nx_users; tory_pedagogy_config references clients"
     },
     {
-      "from": "platform-agent",
-      "to": ".claude/integrations/notifications/notifications.yaml",
-      "type": "OWNS",
-      "inferred_from": "Notification channel routing config for the system alert infrastructure"
+      "from": "tory-agent",
+      "to": "content-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "tory_content_tags references nx_lessons/lesson_details; tory_roadmap_items references nx_lessons"
     },
     {
-      "from": "platform-agent",
-      "to": ".claude/integrations/event-bus/event_bus.py",
-      "type": "OWNS",
-      "inferred_from": "Real-time WebSocket event coordination for bead lifecycle events"
+      "from": "tory-agent",
+      "to": "engagement-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "tory adaptive layer reads backpacks/tasks/ratings for progress monitoring and path adaptation"
     },
     {
-      "from": "platform-agent",
-      "to": ".claude/integrations/event-bus/main.py",
-      "type": "OWNS",
-      "inferred_from": "FastAPI WebSocket server (port 8003) for real-time event bus API"
-    },
-    {
-      "from": "platform-agent",
-      "to": ".claude/command-center/frontend/js/views/approvals.js",
-      "type": "OWNS",
-      "inferred_from": "Approvals view UI component for the Command Center dashboard"
-    },
-    {
-      "from": "platform-agent",
-      "to": ".claude/command-center/backend/routes/approvals.py",
-      "type": "OWNS",
-      "inferred_from": "Backend approvals route for the Command Center"
-    },
-    {
-      "from": "content-agent",
-      "to": ".claude/command-center/frontend/css/approvals.css",
-      "type": "OWNS",
-      "inferred_from": "Approvals view styling for the Command Center"
+      "from": "tory-agent",
+      "to": "comms-agent",
+      "type": "DEPENDS_ON",
+      "dependency_type": "schema",
+      "inferred_from": "tory dispatches SMS/email nudges via existing comms layer for path changes, stalls, reassessments"
     }
   ]
 }

@@ -6,13 +6,18 @@ Coordinates the full lifecycle: spec -> beads -> assign -> spawn -> monitor -> c
 """
 
 import asyncio
+import json
 import logging
-import os
+import re
+import shutil
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+from config import PROJECT_ROOT, SCRIPTS_DIR, SESSIONS_DIR, HEARTBEAT_DIR, HEARTBEAT_STALE_SECONDS
+
+# Structured logger with session/bead correlation
+logger = logging.getLogger("dispatch")
 
 # Limits
 MAX_CONCURRENT_AGENTS = 3
@@ -21,25 +26,93 @@ MONITOR_POLL_INTERVAL = 10       # Seconds between bead status checks
 MAX_RETRIES_PER_BEAD = 2         # Max retry attempts before escalating
 AGENT_TIMEOUT_MINUTES = 120      # Kill agent after this long
 
+DISPATCH_STATE_FILE = SESSIONS_DIR / "dispatch_state.json"
+
+
+def _log(level: int, msg: str, session_id: str = "", bead_id: str = "", agent: str = "") -> None:
+    """Structured log helper with correlation IDs."""
+    extra_parts = []
+    if session_id:
+        extra_parts.append(f"session={session_id}")
+    if bead_id:
+        extra_parts.append(f"bead={bead_id}")
+    if agent:
+        extra_parts.append(f"agent={agent}")
+    prefix = f"[{' '.join(extra_parts)}] " if extra_parts else ""
+    logger.log(level, f"{prefix}{msg}")
+
 
 class DispatchEngine:
     """Orchestrates the full build lifecycle after Think Tank approval."""
 
     def __init__(self, event_bus=None):
         self._event_bus = event_bus
-        self._baap_root = Path.home() / "Projects" / "baap"
-        self._scripts_dir = self._baap_root / ".claude" / "scripts"
+        self._baap_root = PROJECT_ROOT
+        self._scripts_dir = SCRIPTS_DIR
 
         # Lazy-loaded sibling services
         self._bead_generator = None
         self._agent_assigner = None
         self._beads_bridge = None
         self._failure_recovery = None
+        self._progress_bridge = None
 
         # Active dispatch state
         self._active_dispatches: dict[str, dict] = {}  # session_id -> dispatch state
         self._running_agents: dict[str, dict] = {}     # bead_id -> {agent, process, started_at}
         self._dispatch_tasks: dict[str, asyncio.Task] = {}
+
+        # Idempotency cache: idempotency_key -> (cached_response, timestamp)
+        self._idempotency_cache: dict[str, tuple[dict, float]] = {}
+        self._idempotency_ttl = 300  # 5 minutes
+        self._idempotency_max_size = 100
+
+        # Load persisted dispatch state
+        self._load_dispatch_state()
+
+    def _load_dispatch_state(self) -> None:
+        """Load persisted dispatch state from disk."""
+        if DISPATCH_STATE_FILE.exists():
+            try:
+                data = json.loads(DISPATCH_STATE_FILE.read_text())
+                # Restore running agents and dispatch metadata (not asyncio tasks)
+                for session_id, dispatch_data in data.get("dispatches", {}).items():
+                    self._active_dispatches[session_id] = {
+                        "started_at": dispatch_data.get("started_at"),
+                        "status": dispatch_data.get("status", "unknown"),
+                        "completed_beads": set(dispatch_data.get("completed_beads", [])),
+                        "failed_beads": set(dispatch_data.get("failed_beads", [])),
+                        "retry_counts": dispatch_data.get("retry_counts", {}),
+                        "epic_id": dispatch_data.get("epic_id"),
+                        "task_count": dispatch_data.get("task_count", 0),
+                    }
+                for bead_id, agent_data in data.get("running_agents", {}).items():
+                    self._running_agents[bead_id] = agent_data
+                _log(logging.INFO, f"Loaded dispatch state: {len(self._active_dispatches)} dispatches, {len(self._running_agents)} agents")
+            except Exception as e:
+                _log(logging.WARNING, f"Failed to load dispatch state: {e}")
+
+    def _persist_dispatch_state(self) -> None:
+        """Save dispatch state to disk for crash recovery."""
+        try:
+            data = {
+                "dispatches": {},
+                "running_agents": self._running_agents,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            for session_id, dispatch in self._active_dispatches.items():
+                data["dispatches"][session_id] = {
+                    "started_at": dispatch.get("started_at"),
+                    "status": dispatch.get("status"),
+                    "completed_beads": list(dispatch.get("completed_beads", set())),
+                    "failed_beads": list(dispatch.get("failed_beads", set())),
+                    "retry_counts": dispatch.get("retry_counts", {}),
+                    "epic_id": dispatch.get("epic_id") or (dispatch.get("plan") and dispatch["plan"].epic_id),
+                    "task_count": dispatch.get("task_count") or (dispatch.get("plan") and len(dispatch["plan"].tasks)),
+                }
+            DISPATCH_STATE_FILE.write_text(json.dumps(data, indent=2, default=str))
+        except Exception as e:
+            _log(logging.WARNING, f"Failed to persist dispatch state: {e}")
 
     def _ensure_services(self):
         """Lazy-load sibling services."""
@@ -55,88 +128,202 @@ class DispatchEngine:
         if self._failure_recovery is None:
             from services.failure_recovery import FailureRecovery
             self._failure_recovery = FailureRecovery(event_bus=self._event_bus)
+        if self._progress_bridge is None:
+            from services.progress_bridge import ProgressBridge
+            self._progress_bridge = ProgressBridge(event_bus=self._event_bus)
 
-    async def dispatch_approved_session(self, session) -> dict:
+    def check_dispatch_health(self) -> dict:
+        """Pre-flight check: verify all required binaries and paths exist."""
+        checks = {
+            "bd": shutil.which("bd") is not None,
+            "tmux": shutil.which("tmux") is not None,
+            "claude": shutil.which("claude") is not None,
+            "spawn_sh": (self._scripts_dir / "spawn.sh").exists(),
+            "git_repo": (self._baap_root / ".git").exists(),
+        }
+        missing = [k for k, v in checks.items() if not v]
+        return {
+            "ready": all(checks.values()),
+            "checks": checks,
+            "missing": missing,
+        }
+
+    def check_idempotency(self, key: str) -> dict | None:
+        """Check if an idempotency key has a cached result."""
+        if not key:
+            return None
+        entry = self._idempotency_cache.get(key)
+        if entry is None:
+            return None
+        result, ts = entry
+        if time.time() - ts > self._idempotency_ttl:
+            self._idempotency_cache.pop(key, None)
+            return None
+        return result
+
+    def cache_idempotency(self, key: str, result: dict) -> None:
+        """Cache a result for an idempotency key with TTL."""
+        if not key:
+            return
+        # Evict old entries if cache is full
+        if len(self._idempotency_cache) >= self._idempotency_max_size:
+            now = time.time()
+            expired = [k for k, (_, ts) in self._idempotency_cache.items() if now - ts > self._idempotency_ttl]
+            for k in expired:
+                self._idempotency_cache.pop(k, None)
+            # If still full, evict oldest
+            if len(self._idempotency_cache) >= self._idempotency_max_size:
+                oldest_key = min(self._idempotency_cache, key=lambda k: self._idempotency_cache[k][1])
+                self._idempotency_cache.pop(oldest_key, None)
+        self._idempotency_cache[key] = (result, time.time())
+
+    async def dispatch_approved_session(self, session, dry_run: bool = False) -> dict:
         """Main entry point: dispatch an approved Think Tank session.
 
-        Called from thinktank_service.approve().
+        Args:
+            session: Approved ThinkTankSession
+            dry_run: If True, return bead plan preview without creating beads
 
         Returns:
             {
+                "success": true,
+                "dispatch_status": "queued" | "preview",
                 "epic_id": "baap-xxx",
                 "task_count": 5,
-                "status": "dispatching",
-                "message": "Created 5 beads, dispatching first wave..."
+                ...
             }
         """
         self._ensure_services()
 
         session_id = session.id
-        logger.info(f"Dispatching session {session_id}: {session.topic}")
+        _log(logging.INFO, f"Dispatch requested: {session.topic}", session_id=session_id)
 
-        # Notify UI: dispatch starting
-        await self._publish("DISPATCH_STARTED", {
-            "session_id": session_id,
-            "topic": session.topic,
-            "status": "creating_beads",
-        })
+        # Pre-flight health check
+        health = self.check_dispatch_health()
+        if not health["ready"] and not dry_run:
+            missing = ", ".join(health["missing"])
+            _log(logging.ERROR, f"Pre-flight failed: missing {missing}", session_id=session_id)
+            return {
+                "success": False,
+                "dispatch_status": "failed",
+                "error": f"Dispatch prerequisites missing: {missing}",
+                "health": health,
+            }
 
-        # Step 1: Convert spec-kit -> beads
-        try:
-            plan = await self._bead_generator.spec_to_beads(session)
-        except Exception as e:
-            logger.error(f"Bead generation failed: {e}")
-            await self._publish("DISPATCH_ERROR", {
-                "session_id": session_id,
-                "error": f"Failed to create beads: {e}",
-                "phase": "bead_generation",
-            })
-            return {"status": "error", "message": str(e)}
+        # Dry-run mode: return preview without creating beads
+        if dry_run:
+            _log(logging.INFO, "Dry-run mode: generating preview", session_id=session_id)
+            try:
+                plan = await self._bead_generator.spec_to_beads(session, dry_run=dry_run)
+                preview = {
+                    "success": True,
+                    "dispatch_status": "preview",
+                    "dry_run": True,
+                    "preview": {
+                        "task_count": len(plan.tasks),
+                        "tasks": [
+                            {
+                                "title": t.title,
+                                "description": t.description,
+                                "phase": t.phase,
+                                "suggested_agent": t.suggested_agent,
+                                "acceptance_criteria": t.acceptance_criteria,
+                            }
+                            for t in plan.tasks
+                        ],
+                        "dependency_map": {k: list(v) for k, v in plan.dependency_map.items()},
+                    },
+                }
+                return preview
+            except Exception as e:
+                _log(logging.ERROR, f"Dry-run preview failed: {e}", session_id=session_id)
+                return {"success": False, "dispatch_status": "failed", "error": str(e)}
 
-        await self._publish("DISPATCH_PROGRESS", {
-            "session_id": session_id,
-            "status": "assigning_agents",
-            "beads_created": len(plan.tasks),
-            "epic_id": plan.epic_id,
-        })
-
-        # Step 2: Assign agents via KG
-        try:
-            await self._agent_assigner.assign_beads(plan)
-        except Exception as e:
-            logger.warning(f"Agent assignment failed, using hints: {e}")
-
-        # Step 3: Link session <-> epic
-        self._beads_bridge.link_session(session_id, plan.epic_id)
-
-        # Step 4: Save dispatch state
-        self._active_dispatches[session_id] = {
-            "plan": plan,
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "status": "dispatching",
-            "completed_beads": set(),
-            "failed_beads": set(),
-            "retry_counts": {},
-        }
-
-        await self._publish("DISPATCH_PROGRESS", {
-            "session_id": session_id,
-            "status": "spawning_agents",
-            "task_assignments": {
-                t.id: t.suggested_agent for t in plan.tasks if t.id
-            },
-        })
-
-        # Step 5: Start the dispatch loop (runs in background)
-        task = asyncio.create_task(self._dispatch_loop(session_id))
-        self._dispatch_tasks[session_id] = task
+        # Real dispatch: run in background, return immediately
+        _log(logging.INFO, f"Starting background dispatch for: {session.topic}", session_id=session_id)
+        asyncio.create_task(self._dispatch_in_background(session_id, session))
 
         return {
-            "epic_id": plan.epic_id,
-            "task_count": len(plan.tasks),
-            "status": "dispatching",
-            "message": f"Created {len(plan.tasks)} beads, dispatching first wave...",
+            "success": True,
+            "dispatch_status": "queued",
+            "session_id": session_id,
+            "message": "Dispatch queued. Creating beads and spawning agents...",
         }
+
+    async def _dispatch_in_background(self, session_id: str, session) -> None:
+        """Full dispatch flow that runs as a background task.
+
+        HTTP returns immediately with 'queued' status. This method handles
+        bead creation, agent assignment, and spawning.
+        """
+        try:
+            # Notify UI: dispatch starting
+            await self._publish("DISPATCH_STARTED", {
+                "session_id": session_id,
+                "topic": session.topic,
+                "status": "creating_beads",
+            })
+
+            # Step 1: Convert spec-kit -> beads
+            try:
+                plan = await self._bead_generator.spec_to_beads(session)
+            except Exception as e:
+                _log(logging.ERROR, f"Bead generation failed: {e}", session_id=session_id)
+                await self._publish("DISPATCH_ERROR", {
+                    "session_id": session_id,
+                    "error": f"Failed to create beads: {e}",
+                    "phase": "bead_generation",
+                })
+                return
+
+            await self._publish("DISPATCH_PROGRESS", {
+                "session_id": session_id,
+                "status": "assigning_agents",
+                "beads_created": len(plan.tasks),
+                "epic_id": plan.epic_id,
+            })
+
+            # Step 2: Assign agents via KG
+            try:
+                await self._agent_assigner.assign_beads(plan)
+            except Exception as e:
+                _log(logging.WARNING, f"Agent assignment failed, using hints: {e}", session_id=session_id)
+
+            # Step 3: Link session <-> epic
+            self._beads_bridge.link_session(session_id, plan.epic_id)
+
+            # Step 4: Save dispatch state
+            self._active_dispatches[session_id] = {
+                "plan": plan,
+                "started_at": datetime.now(timezone.utc).isoformat(),
+                "status": "dispatching",
+                "completed_beads": set(),
+                "failed_beads": set(),
+                "retry_counts": {},
+                "epic_id": plan.epic_id,
+                "task_count": len(plan.tasks),
+            }
+            self._persist_dispatch_state()
+
+            await self._publish("DISPATCH_PROGRESS", {
+                "session_id": session_id,
+                "status": "spawning_agents",
+                "task_assignments": {
+                    t.id: t.suggested_agent for t in plan.tasks if t.id
+                },
+            })
+
+            # Step 5: Start the dispatch loop
+            task = asyncio.create_task(self._dispatch_loop(session_id))
+            self._dispatch_tasks[session_id] = task
+
+        except Exception as e:
+            _log(logging.ERROR, f"Background dispatch failed: {e}", session_id=session_id)
+            await self._publish("DISPATCH_ERROR", {
+                "session_id": session_id,
+                "error": str(e),
+                "phase": "dispatch_setup",
+            })
 
     async def _publish(self, event_type_name: str, payload: dict) -> None:
         """Publish an event via the event bus, handling both enum and string types."""
@@ -159,7 +346,10 @@ class DispatchEngine:
         if not dispatch:
             return
 
-        plan = dispatch["plan"]
+        plan = dispatch.get("plan")
+        if not plan:
+            return
+
         all_bead_ids = {t.id for t in plan.tasks if t.id}
 
         while True:
@@ -182,6 +372,9 @@ class DispatchEngine:
                 # Check for completed/failed agents
                 await self._check_agent_statuses(session_id, dispatch)
 
+                # Persist state after every check cycle
+                self._persist_dispatch_state()
+
                 # Check if all done
                 done = dispatch["completed_beads"] | dispatch["failed_beads"]
                 if done >= all_bead_ids:
@@ -193,7 +386,8 @@ class DispatchEngine:
                         dispatch["status"] = "completed"
                         msg = "All tasks completed successfully"
 
-                    logger.info(f"Dispatch {session_id}: {msg}")
+                    _log(logging.INFO, msg, session_id=session_id)
+                    self._persist_dispatch_state()
                     await self._publish("DISPATCH_COMPLETE", {
                         "session_id": session_id,
                         "epic_id": plan.epic_id,
@@ -209,14 +403,17 @@ class DispatchEngine:
                 await asyncio.sleep(MONITOR_POLL_INTERVAL)
 
             except asyncio.CancelledError:
-                logger.info(f"Dispatch loop cancelled for {session_id}")
+                _log(logging.INFO, "Dispatch loop cancelled", session_id=session_id)
                 break
             except Exception as e:
-                logger.error(f"Dispatch loop error: {e}")
+                _log(logging.ERROR, f"Dispatch loop error: {e}", session_id=session_id)
                 await asyncio.sleep(MONITOR_POLL_INTERVAL)
 
     def _find_ready_beads(self, plan, dispatch) -> list:
-        """Find beads that are ready to dispatch (unblocked and not running/done)."""
+        """Find beads that are ready to dispatch (unblocked and not running/done).
+
+        Only dispatches TASK-type beads — epics are skipped.
+        """
         completed = dispatch["completed_beads"]
         failed = dispatch["failed_beads"]
         running = set(self._running_agents.keys())
@@ -224,6 +421,9 @@ class DispatchEngine:
         ready = []
         for task in plan.tasks:
             if not task.id:
+                continue
+            # Skip epic-type beads — only dispatch tasks
+            if getattr(task, 'type', 'task') == 'epic':
                 continue
             if task.id in completed or task.id in failed or task.id in running:
                 continue
@@ -235,7 +435,7 @@ class DispatchEngine:
 
             if any_dep_failed:
                 dispatch["failed_beads"].add(task.id)
-                logger.warning(f"Bead {task.id} skipped: dependency failed")
+                _log(logging.WARNING, f"Bead skipped: dependency failed", bead_id=task.id)
                 continue
 
             if all_deps_done:
@@ -244,26 +444,38 @@ class DispatchEngine:
         return ready
 
     async def _spawn_agent(self, session_id: str, bead_id: str, agent_name: str, task_title: str) -> None:
-        """Spawn an agent via spawn.sh to work on a bead."""
+        """Spawn an agent via spawn.sh to work on a bead.
+
+        Injects agent identity (agent.md + MEMORY.md) via --agent-name flag.
+        """
         spawn_script = self._scripts_dir / "spawn.sh"
 
         if not spawn_script.exists():
-            logger.error(f"spawn.sh not found at {spawn_script}")
+            _log(logging.ERROR, f"spawn.sh not found at {spawn_script}", session_id=session_id, bead_id=bead_id)
             return
 
         # Build the prompt for the agent
-        prompt = f"Work on bead {bead_id}. Run: bd show {bead_id} to see the full task spec. Then implement the task according to its spec and acceptance criteria."
+        prompt = (
+            f"Work on bead {bead_id}. Run: bd show {bead_id} to see the full task spec. "
+            f"Then implement the task according to its spec and acceptance criteria. "
+            f"When done, close the bead: bd close {bead_id} --reason='description of what you did'"
+        )
 
-        logger.info(f"Spawning {agent_name} for bead {bead_id}: {task_title}")
+        _log(logging.INFO, f"Spawning agent for task: {task_title}", session_id=session_id, bead_id=bead_id, agent=agent_name)
 
         try:
-            # spawn.sh <type> <prompt> [project_path] [--bead BEAD_ID]
-            proc = await asyncio.create_subprocess_exec(
+            # spawn.sh <type> <prompt> [project_path] [--bead BEAD_ID] [--agent-name NAME]
+            cmd_args = [
                 "bash", str(spawn_script),
                 "reactive",
                 prompt,
                 str(self._baap_root),
                 "--bead", bead_id,
+                "--agent-name", agent_name,
+            ]
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd_args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=str(self._baap_root),
@@ -271,12 +483,22 @@ class DispatchEngine:
 
             stdout, stderr = await proc.communicate()
             output = stdout.decode().strip()
-            logger.info(f"spawn.sh output: {output}")
+            _log(logging.INFO, f"spawn.sh output: {output}", session_id=session_id, bead_id=bead_id, agent=agent_name)
+
+            if proc.returncode != 0:
+                stderr_text = stderr.decode().strip()
+                _log(logging.ERROR, f"spawn.sh failed (exit {proc.returncode}): {stderr_text}", session_id=session_id, bead_id=bead_id, agent=agent_name)
+                await self._publish("AGENT_FAILED", {
+                    "session_id": session_id,
+                    "bead_id": bead_id,
+                    "agent": agent_name,
+                    "error": f"spawn.sh failed: {stderr_text}",
+                })
+                return
 
             # Extract agent name from spawn.sh output (format: "Launched agent: <name>")
-            import re
             name_match = re.search(r'Launched agent:\s*(\S+)', output)
-            spawned_name = name_match.group(1) if name_match else f"reactive-{bead_id[-6:]}"
+            spawned_name = name_match.group(1) if name_match else f"{agent_name}-{bead_id[-6:]}"
 
             self._running_agents[bead_id] = {
                 "agent": agent_name,
@@ -285,6 +507,15 @@ class DispatchEngine:
                 "session_id": session_id,
                 "title": task_title,
             }
+            self._persist_dispatch_state()
+
+            # Start monitoring this agent via progress_bridge
+            if self._progress_bridge:
+                await self._progress_bridge.start_monitoring([{
+                    "name": spawned_name,
+                    "bead_id": bead_id,
+                    "session_id": session_id,
+                }])
 
             await self._publish("AGENT_SPAWNED", {
                 "session_id": session_id,
@@ -295,7 +526,7 @@ class DispatchEngine:
             })
 
         except Exception as e:
-            logger.error(f"Failed to spawn {agent_name}: {e}")
+            _log(logging.ERROR, f"Failed to spawn agent: {e}", session_id=session_id, bead_id=bead_id, agent=agent_name)
             await self._publish("AGENT_FAILED", {
                 "session_id": session_id,
                 "bead_id": bead_id,
@@ -304,7 +535,15 @@ class DispatchEngine:
             })
 
     async def _check_agent_statuses(self, session_id: str, dispatch: dict) -> None:
-        """Check which running agents have completed or timed out."""
+        """Check which running agents have completed or timed out.
+
+        Implements:
+        - Bead status check (primary signal)
+        - Exit code check with bead status reconciliation
+        - Tmux window watchdog (detects vanished agents)
+        - Timeout detection
+        - Acceptance criteria verification
+        """
         self._ensure_services()
         to_remove = []
 
@@ -313,60 +552,176 @@ class DispatchEngine:
                 continue
 
             elapsed = time.time() - info["started_at"]
+            spawned_name = info.get("spawned_name", "")
 
             # Check bead status via bd show — primary completion signal
             status = await self._beads_bridge.get_bead_status(bead_id)
             if status and status.get("status") in ("closed", "resolved"):
+                # Acceptance criteria check
+                criteria_status = await self._check_acceptance_criteria(bead_id, info)
                 dispatch["completed_beads"].add(bead_id)
                 to_remove.append(bead_id)
-                logger.info(f"Bead {bead_id} closed (agent: {info['agent']})")
+                _log(logging.INFO, f"Bead closed", session_id=session_id, bead_id=bead_id, agent=info['agent'])
 
                 await self._publish("AGENT_COMPLETED", {
                     "session_id": session_id,
                     "bead_id": bead_id,
                     "agent": info["agent"],
                     "title": info.get("title", ""),
+                    "criteria_status": criteria_status,
                 })
                 continue
 
             # Check agent exit code file (written by spawn.sh on completion)
-            spawned_name = info.get("spawned_name", "")
             if spawned_name:
                 exit_code_file = Path.home() / "agents" / spawned_name / ".agent_exit_code"
                 if exit_code_file.exists():
                     try:
                         exit_code = int(exit_code_file.read_text().strip())
                         if exit_code == 0:
-                            dispatch["completed_beads"].add(bead_id)
-                            to_remove.append(bead_id)
-                            logger.info(f"Agent completed (exit 0): {info['agent']} for {bead_id}")
-                            await self._publish("AGENT_COMPLETED", {
-                                "session_id": session_id,
-                                "bead_id": bead_id,
-                                "agent": info["agent"],
-                            })
-                            continue
+                            # Exit 0 but bead not closed — reconciliation check
+                            _log(logging.WARNING, f"Agent exited 0 but bead still open — verifying",
+                                 session_id=session_id, bead_id=bead_id, agent=info['agent'])
+
+                            # Re-check bead status (may have just closed)
+                            await asyncio.sleep(2)
+                            status = await self._beads_bridge.get_bead_status(bead_id)
+                            if status and status.get("status") in ("closed", "resolved"):
+                                dispatch["completed_beads"].add(bead_id)
+                                to_remove.append(bead_id)
+                                _log(logging.INFO, "Bead closed after recheck",
+                                     session_id=session_id, bead_id=bead_id, agent=info['agent'])
+                                await self._publish("AGENT_COMPLETED", {
+                                    "session_id": session_id,
+                                    "bead_id": bead_id,
+                                    "agent": info["agent"],
+                                })
+                                continue
+                            else:
+                                # Agent exited successfully but didn't close bead
+                                diagnostics = self._capture_agent_diagnostics(spawned_name)
+                                _log(logging.ERROR,
+                                     f"Agent exited 0 but bead not closed — marking failed",
+                                     session_id=session_id, bead_id=bead_id, agent=info['agent'])
+                                await self._handle_agent_failure(
+                                    session_id, bead_id, info, dispatch,
+                                    error=f"Agent exited successfully but did not close bead. {diagnostics}"
+                                )
+                                to_remove.append(bead_id)
+                                continue
                         else:
+                            diagnostics = self._capture_agent_diagnostics(spawned_name)
                             await self._handle_agent_failure(
                                 session_id, bead_id, info, dispatch,
-                                error=f"Agent exited with code {exit_code}"
+                                error=f"Agent exited with code {exit_code}. {diagnostics}"
                             )
                             to_remove.append(bead_id)
                             continue
                     except (ValueError, OSError):
                         pass
 
+            # Watchdog: check tmux window still exists
+            if spawned_name and elapsed > 30:
+                tmux_alive = await self._check_tmux_window(spawned_name)
+                if not tmux_alive:
+                    # Tmux window gone but no exit code and bead not closed
+                    diagnostics = self._capture_agent_diagnostics(spawned_name)
+                    _log(logging.WARNING, f"Tmux window vanished — agent likely crashed",
+                         session_id=session_id, bead_id=bead_id, agent=info['agent'])
+                    await self._handle_agent_failure(
+                        session_id, bead_id, info, dispatch,
+                        error=f"Tmux window disappeared (agent crashed). {diagnostics}"
+                    )
+                    to_remove.append(bead_id)
+                    continue
+
+            # Check heartbeat freshness (soft signal — logs warning, doesn't kill)
+            if spawned_name and elapsed > 60:
+                hb_file = HEARTBEAT_DIR / spawned_name
+                if hb_file.exists():
+                    try:
+                        hb_age = time.time() - float(hb_file.read_text().strip())
+                        if hb_age > HEARTBEAT_STALE_SECONDS:
+                            _log(logging.WARNING, f"Heartbeat stale ({int(hb_age)}s old)",
+                                 session_id=session_id, bead_id=bead_id, agent=info['agent'])
+                    except (ValueError, OSError):
+                        pass
+
             # Check timeout
             if elapsed > AGENT_TIMEOUT_MINUTES * 60:
-                logger.warning(f"Agent timed out: {info['agent']} for {bead_id}")
+                diagnostics = self._capture_agent_diagnostics(spawned_name)
+                _log(logging.WARNING, f"Agent timed out after {int(elapsed/60)}m",
+                     session_id=session_id, bead_id=bead_id, agent=info['agent'])
                 await self._handle_agent_failure(
                     session_id, bead_id, info, dispatch,
-                    error="Agent timed out"
+                    error=f"Agent timed out after {int(elapsed/60)} minutes. {diagnostics}"
                 )
                 to_remove.append(bead_id)
 
         for bead_id in to_remove:
             self._running_agents.pop(bead_id, None)
+
+    def _capture_agent_diagnostics(self, spawned_name: str) -> str:
+        """Capture last 50 lines of agent log for diagnostics."""
+        if not spawned_name:
+            return ""
+        log_file = Path.home() / "agents" / spawned_name / "agent.log"
+        if not log_file.exists():
+            return ""
+        try:
+            lines = log_file.read_text().splitlines()
+            last_50 = lines[-50:] if len(lines) > 50 else lines
+            return "Last log lines:\n" + "\n".join(last_50)
+        except OSError:
+            return ""
+
+    async def _check_tmux_window(self, spawned_name: str) -> bool:
+        """Check if a tmux window for this agent still exists."""
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "tmux", "list-windows", "-t", "agents", "-F", "#{window_name}",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=5)
+            if proc.returncode != 0:
+                return False
+            windows = stdout.decode().strip().splitlines()
+            return any(spawned_name in w for w in windows)
+        except Exception:
+            return False
+
+    async def _check_acceptance_criteria(self, bead_id: str, info: dict) -> str:
+        """After bead is closed, check if acceptance criteria were addressed."""
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "bd", "show", bead_id,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=str(self._baap_root),
+            )
+            stdout, _ = await proc.communicate()
+            output = stdout.decode()
+
+            # Find acceptance criteria (unchecked checkboxes)
+            criteria = re.findall(r'-\s*\[\s*\]\s*(.+)', output)
+            if not criteria:
+                return "verified"
+
+            # Check if closing notes mention the criteria
+            notes_match = re.search(r'(?:Notes|Reason|Close):\s*(.+)', output, re.IGNORECASE | re.DOTALL)
+            if notes_match:
+                notes = notes_match.group(1).lower()
+                unmet = [c for c in criteria if c.lower()[:20] not in notes]
+                if unmet:
+                    _log(logging.WARNING, f"Unverified criteria: {unmet}", bead_id=bead_id, agent=info.get('agent', ''))
+                    return "closed_but_unverified"
+            else:
+                return "closed_but_unverified"
+
+            return "verified"
+        except Exception:
+            return "unknown"
 
     async def _handle_agent_failure(self, session_id: str, bead_id: str, info: dict, dispatch: dict, error: str = "") -> None:
         """Handle a failed agent — retry or escalate."""
@@ -374,7 +729,8 @@ class DispatchEngine:
 
         if retry_count < MAX_RETRIES_PER_BEAD:
             dispatch["retry_counts"][bead_id] = retry_count + 1
-            logger.warning(f"Retrying bead {bead_id} (attempt {retry_count + 1}/{MAX_RETRIES_PER_BEAD})")
+            _log(logging.WARNING, f"Retrying (attempt {retry_count + 1}/{MAX_RETRIES_PER_BEAD})",
+                 session_id=session_id, bead_id=bead_id, agent=info["agent"])
 
             await self._publish("AGENT_RETRYING", {
                 "session_id": session_id,
@@ -399,7 +755,8 @@ class DispatchEngine:
         else:
             # Max retries exhausted — mark as failed
             dispatch["failed_beads"].add(bead_id)
-            logger.error(f"Bead {bead_id} failed after {MAX_RETRIES_PER_BEAD} retries")
+            _log(logging.ERROR, f"Failed after {MAX_RETRIES_PER_BEAD} retries",
+                 session_id=session_id, bead_id=bead_id, agent=info["agent"])
 
             if self._failure_recovery:
                 await self._failure_recovery.handle_agent_failure(
@@ -420,12 +777,15 @@ class DispatchEngine:
         if not dispatch:
             return None
 
-        plan = dispatch["plan"]
+        plan = dispatch.get("plan")
+        epic_id = dispatch.get("epic_id") or (plan.epic_id if plan else None)
+        total = dispatch.get("task_count") or (len(plan.tasks) if plan else 0)
+
         return {
             "session_id": session_id,
-            "epic_id": plan.epic_id,
+            "epic_id": epic_id,
             "status": dispatch["status"],
-            "total": len(plan.tasks),
+            "total": total,
             "completed": len(dispatch["completed_beads"]),
             "failed": len(dispatch["failed_beads"]),
             "running": sum(
@@ -464,7 +824,8 @@ class DispatchEngine:
         if dispatch:
             dispatch["status"] = "cancelled"
 
-        logger.info(f"Dispatch cancelled for {session_id}")
+        self._persist_dispatch_state()
+        _log(logging.INFO, "Dispatch cancelled", session_id=session_id)
         return True
 
     async def cleanup(self) -> None:
@@ -473,3 +834,6 @@ class DispatchEngine:
             await self.cancel_dispatch(session_id)
         if self._beads_bridge:
             await self._beads_bridge.cleanup()
+        if self._progress_bridge:
+            await self._progress_bridge.cleanup()
+        self._persist_dispatch_state()

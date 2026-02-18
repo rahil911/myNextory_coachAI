@@ -94,24 +94,27 @@ async def thinktank_websocket(ws: WebSocket):
     }
 
     async def reader():
-        """Read messages from the WebSocket client."""
+        """Read messages from the WebSocket client.
+
+        Uses session_id from query params (captured at WS connect time)
+        instead of get_active_session() to avoid routing to wrong session.
+        """
         try:
             while True:
                 data = await ws.receive_text()
                 msg = json.loads(data)
-                # Route to think tank service
+                # Route to think tank service using the captured session_id
+                target_session_id = session_id or (session.id if session else None)
+                if not target_session_id:
+                    continue
                 if msg.get("type") == "message":
                     from main import get_thinktank_service
                     svc = get_thinktank_service()
-                    session = svc.get_active_session()
-                    if session:
-                        await svc.send_message(session.id, msg.get("text", ""))
+                    await svc.send_message(target_session_id, msg.get("text", ""))
                 elif msg.get("type") == "action":
                     from main import get_thinktank_service
                     svc = get_thinktank_service()
-                    session = svc.get_active_session()
-                    if session:
-                        await svc.handle_action(session.id, msg.get("action", ""), msg.get("context", ""))
+                    await svc.handle_action(target_session_id, msg.get("action", ""), msg.get("context", ""))
         except WebSocketDisconnect:
             pass
         except Exception:

@@ -238,6 +238,63 @@ CONCEPT_DEFINITIONS = [
         "tables": ["jobs"],
         "related_concepts": ["SMS", "Mail", "Notification"],
     },
+    # --- Tory: Personalized Learning Path Engine ---
+    {
+        "id": "ToryContentTag",
+        "domain": "learning",
+        "description": "Claude Opus-generated personality trait tags per lesson. Multi-pass confidence-gated tagging with coach review. Foundation for similarity scoring and roadmap matching.",
+        "tables": ["tory_content_tags"],
+        "related_concepts": ["Lesson", "ToryRoadmapItem", "ToryLearnerProfile"],
+    },
+    {
+        "id": "ToryLearnerProfile",
+        "domain": "identity",
+        "description": "Claude-interpreted personality profile from EPP (29 dimensions) + onboarding Q&A. Includes trait vector, motivation cluster, strengths, gaps, and user-facing narrative.",
+        "tables": ["tory_learner_profiles"],
+        "related_concepts": ["User", "ToryRoadmap", "ToryReassessment", "ToryContentTag"],
+    },
+    {
+        "id": "ToryRoadmap",
+        "domain": "learning",
+        "description": "Personalized adaptive learning path per learner. Versioned, with pedagogy mode snapshot. Tracks completion and generation rationale.",
+        "tables": ["tory_roadmaps"],
+        "related_concepts": ["ToryLearnerProfile", "ToryRoadmapItem", "ToryCoachOverride", "ToryProgressSnapshot"],
+    },
+    {
+        "id": "ToryRoadmapItem",
+        "domain": "learning",
+        "description": "Individual lesson assignment within a roadmap. Includes match score, rationale, critical flag (guardrail), and discovery phase marker.",
+        "tables": ["tory_roadmap_items"],
+        "related_concepts": ["ToryRoadmap", "ToryContentTag", "Lesson", "ToryCoachOverride"],
+    },
+    {
+        "id": "ToryReassessment",
+        "domain": "engagement",
+        "description": "Periodic re-evaluation records (mini every 4-6 weeks, full EPP quarterly). Tracks profile drift and triggers path adaptation.",
+        "tables": ["tory_reassessments"],
+        "related_concepts": ["ToryLearnerProfile", "ToryRoadmap", "User"],
+    },
+    {
+        "id": "ToryCoachOverride",
+        "domain": "engagement",
+        "description": "Coach curation actions on roadmaps (reorder/swap/lock/unlock). Guardrails prevent removal of critical lessons. Tracks divergence.",
+        "tables": ["tory_coach_overrides"],
+        "related_concepts": ["ToryRoadmap", "ToryRoadmapItem", "Coach"],
+    },
+    {
+        "id": "ToryProgressSnapshot",
+        "domain": "platform",
+        "description": "Aggregated HR dashboard data per user per snapshot date. Includes completion, engagement, coach effectiveness, Tory accuracy, and team aggregate support.",
+        "tables": ["tory_progress_snapshots"],
+        "related_concepts": ["ToryRoadmap", "User", "Client", "Department"],
+    },
+    {
+        "id": "ToryPedagogyConfig",
+        "domain": "identity",
+        "description": "Client-company pedagogy preference: gap-fill (A), strength-lead (B), or configurable blend (C) with ratio. Set at company onboarding.",
+        "tables": ["tory_pedagogy_config"],
+        "related_concepts": ["Client", "ToryRoadmap"],
+    },
 ]
 
 
@@ -263,6 +320,15 @@ def determine_agents(domain: str, concept_id: str) -> list[str]:
     if concept_id in hub_concepts:
         if "ui-agent" not in agents:
             agents.append("ui-agent")
+
+    # Tory concepts always involve tory-agent
+    tory_concepts = {
+        "ToryContentTag", "ToryLearnerProfile", "ToryRoadmap",
+        "ToryRoadmapItem", "ToryReassessment", "ToryCoachOverride",
+        "ToryProgressSnapshot", "ToryPedagogyConfig",
+    }
+    if concept_id in tory_concepts:
+        agents.append("tory-agent")
 
     return sorted(set(agents))
 

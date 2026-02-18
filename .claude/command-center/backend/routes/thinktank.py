@@ -2,7 +2,7 @@
 routes/thinktank.py — Think Tank brainstorming session management.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from models import (
     ThinkTankStartRequest, ThinkTankMessageRequest, ThinkTankActionRequest,
@@ -60,17 +60,61 @@ async def handle_action(req: ThinkTankActionRequest):
     return {"success": True}
 
 
+@router.post("/approve/{session_id}")
+async def approve_session(session_id: str, req: ThinkTankApproveRequest, request: Request, dry_run: bool = False):
+    """Approve spec-kit and trigger autonomous execution.
+
+    Args:
+        session_id: Session to approve (from URL path)
+        dry_run: If true (query param), return bead plan preview without creating beads
+    """
+    svc = _get_thinktank_service()
+    session = svc.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+
+    # Idempotency check: if same key was already processed, return cached result
+    idempotency_key = request.headers.get("X-Idempotency-Key", "")
+    dispatch = svc._get_dispatch_engine()
+    if idempotency_key:
+        cached = dispatch.check_idempotency(idempotency_key)
+        if cached is not None:
+            return cached
+
+    # Pre-flight health check (skip for dry-run)
+    if not dry_run:
+        health = dispatch.check_dispatch_health()
+        if not health["ready"]:
+            missing = ", ".join(health["missing"])
+            raise HTTPException(
+                status_code=503,
+                detail=f"Dispatch prerequisites missing: {missing}. Install required binaries before approving.",
+            )
+
+    result = await svc.approve(session_id, req.modifications, dry_run=dry_run)
+
+    # Cache result for idempotency
+    if idempotency_key and result.get("success"):
+        dispatch.cache_idempotency(idempotency_key, result)
+
+    if not result.get("success") and not dry_run:
+        raise HTTPException(
+            status_code=500,
+            detail=result.get("error", "Dispatch failed"),
+        )
+
+    return result
+
+
+# Keep legacy route for backwards compatibility (redirects to new path)
 @router.post("/approve")
-async def approve_session(req: ThinkTankApproveRequest):
-    """Approve spec-kit and trigger autonomous execution."""
+async def approve_session_legacy(req: ThinkTankApproveRequest, request: Request):
+    """Legacy approve route — uses active session."""
     svc = _get_thinktank_service()
     session = svc.get_active_session()
     if not session:
         raise HTTPException(status_code=404, detail="No active session")
-    ok = await svc.approve(session.id, req.modifications)
-    if not ok:
-        raise HTTPException(status_code=500, detail="Failed to approve")
-    return {"success": True, "message": "Spec-kit approved. Building started."}
+    return await approve_session(session.id, req, request)
 
 
 @router.get("/history", response_model=list[ThinkTankSessionSummary])
@@ -98,6 +142,31 @@ async def resume_session(session_id: str):
     if not session:
         raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
     return session
+
+
+@router.post("/session/{session_id}/phase")
+async def set_session_phase(session_id: str, phase: int):
+    """Set session phase (supports backward navigation)."""
+    svc = _get_thinktank_service()
+    from models import ThinkTankPhase
+    try:
+        target_phase = list(ThinkTankPhase)[phase]
+    except (IndexError, KeyError):
+        raise HTTPException(status_code=400, detail=f"Invalid phase index: {phase}")
+    ok = await svc.set_phase(session_id, target_phase)
+    if not ok:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+    return {"success": True, "phase": target_phase.value}
+
+
+@router.post("/session/{session_id}/draft")
+async def save_as_draft(session_id: str):
+    """Save session as draft."""
+    svc = _get_thinktank_service()
+    ok = svc.save_as_draft(session_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+    return {"success": True}
 
 
 @router.delete("/session/{session_id}")

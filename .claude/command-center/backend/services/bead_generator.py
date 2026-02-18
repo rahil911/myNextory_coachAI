@@ -15,7 +15,12 @@ from pathlib import Path
 
 from claude_agent_sdk import query, ClaudeAgentOptions, AssistantMessage, TextBlock
 
+from config import PROJECT_ROOT
+
 logger = logging.getLogger(__name__)
+
+DECOMPOSE_MAX_RETRIES = 3
+DECOMPOSE_RETRY_DELAY = 2  # seconds
 
 
 @dataclass
@@ -29,6 +34,7 @@ class TaskBead:
     acceptance_criteria: list[str] = field(default_factory=list)
     affected_files: list[str] = field(default_factory=list)
     suggested_agent: str | None = None
+    type: str = "task"
 
 
 @dataclass
@@ -45,23 +51,80 @@ class BeadGenerator:
     """Converts spec-kit into executable bead plans."""
 
     def __init__(self):
-        self._baap_root = Path.home() / "Projects" / "baap"
+        self._baap_root = PROJECT_ROOT
+        self._bd_initialized = False
 
-    async def spec_to_beads(self, session) -> BeadPlan:
+    async def _ensure_bd_init(self) -> None:
+        """Ensure bd is initialized with the correct config."""
+        if self._bd_initialized:
+            return
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "bd", "config", "get", "beads.role",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=str(self._baap_root),
+            )
+            stdout, _ = await proc.communicate()
+            role = stdout.decode().strip()
+            if not role:
+                logger.info("bd config not set, initializing beads.role")
+                await asyncio.create_subprocess_exec(
+                    "bd", "config", "set", "beads.role", "orchestrator",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    cwd=str(self._baap_root),
+                )
+        except FileNotFoundError:
+            logger.warning("bd binary not found — bead creation will fail")
+        except Exception as e:
+            logger.warning(f"bd init check failed: {e}")
+        self._bd_initialized = True
+
+    async def spec_to_beads(self, session, dry_run: bool = False) -> BeadPlan:
         """Main entry: convert approved session into bead plan.
 
         Steps:
         1. Extract spec-kit content into structured text
         2. Ask Claude to decompose into phases/tasks
-        3. Create beads via bd CLI
+        3. Create beads via bd CLI (skip if dry_run)
         4. Set up dependency DAG
         5. Return the complete plan
+
+        Args:
+            session: Approved ThinkTankSession
+            dry_run: If True, return task decomposition without creating beads
         """
+        await self._ensure_bd_init()
+
         # Step 1: Build context from spec-kit
         spec_context = self._extract_spec_context(session)
 
         # Step 2: Ask Claude to decompose into tasks
         task_plan = await self._decompose_with_claude(session.topic, spec_context)
+
+        # Dry-run: return preview without creating real beads
+        if dry_run:
+            plan = BeadPlan(
+                epic_id="dry-run-preview",
+                session_id=session.id,
+                topic=session.topic,
+            )
+            for i, task in enumerate(task_plan):
+                task.id = f"preview-{i+1}"
+                plan.tasks.append(task)
+            # Build dependency map for preview
+            phase_bead_ids: dict[int, list[str]] = {}
+            for task in plan.tasks:
+                phase_bead_ids.setdefault(task.phase, []).append(task.id)
+            sorted_phases = sorted(phase_bead_ids.keys())
+            for i, phase_num in enumerate(sorted_phases):
+                if i > 0:
+                    prev_phase = sorted_phases[i - 1]
+                    for bead_id in phase_bead_ids[phase_num]:
+                        plan.dependency_map[bead_id] = phase_bead_ids[prev_phase]
+            logger.info(f"Dry-run preview: {len(plan.tasks)} tasks, {len(sorted_phases)} phases")
+            return plan
 
         # Step 3: Create the epic bead
         epic_id = await self._create_epic(session.topic, session.id)
@@ -130,7 +193,11 @@ class BeadGenerator:
         return "\n\n".join(parts)
 
     async def _decompose_with_claude(self, topic: str, spec_context: str) -> list[TaskBead]:
-        """Ask Claude to decompose the spec into phased tasks."""
+        """Ask Claude to decompose the spec into phased tasks.
+
+        Retries up to DECOMPOSE_MAX_RETRIES times with backoff.
+        Falls back to a single-task plan if all retries fail.
+        """
         os.environ.pop("CLAUDECODE", None)
 
         prompt = f"""You are a technical project manager decomposing a software project into executable tasks.
@@ -143,7 +210,9 @@ Topic: {topic}
 {spec_context}
 
 ## Instructions
-Output a JSON array of tasks. Each task has:
+Respond ONLY with a raw JSON array — no markdown fences, no commentary, no explanation.
+
+Each element is an object with these keys:
 - "title": short imperative title (e.g., "Create users table migration")
 - "description": detailed spec for the developer (2-5 sentences)
 - "phase": integer (1 = first, 2 = depends on phase 1, etc.)
@@ -163,8 +232,10 @@ Rules:
 8. Maximum 4 phases, maximum 12 tasks total
 9. Each task must have at least 2 acceptance criteria
 
-Output ONLY the JSON array, no markdown fences, no commentary:
-[{{"title": "...", "description": "...", "phase": 1, ...}}]"""
+Example output format:
+[{{"title": "Create users table migration", "description": "Add the users table with columns...", "phase": 1, "priority": 1, "requirements": ["MariaDB access"], "acceptance_criteria": ["Table exists", "Columns match spec"], "affected_domain": "database"}}]
+
+Respond ONLY with raw JSON array, no markdown:"""
 
         options = ClaudeAgentOptions(
             permission_mode="bypassPermissions",
@@ -172,26 +243,35 @@ Output ONLY the JSON array, no markdown fences, no commentary:
             max_turns=1,
         )
 
-        raw = ""
-        try:
-            async for msg in query(prompt=prompt, options=options):
-                if isinstance(msg, AssistantMessage):
-                    for block in msg.content:
-                        if isinstance(block, TextBlock):
-                            raw += block.text
-        except Exception as e:
-            logger.warning(f"Claude decomposition failed: {e}. Using fallback.")
-            return [TaskBead(
-                title=f"Implement: {topic}",
-                description=f"Full implementation of: {topic}",
-                phase=1,
-                priority=1,
-                requirements=[],
-                acceptance_criteria=["Feature works as specified"],
-                suggested_agent="platform-agent",
-            )]
+        last_error = None
+        for attempt in range(1, DECOMPOSE_MAX_RETRIES + 1):
+            raw = ""
+            try:
+                async for msg in query(prompt=prompt, options=options):
+                    if isinstance(msg, AssistantMessage):
+                        for block in msg.content:
+                            if isinstance(block, TextBlock):
+                                raw += block.text
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Claude decomposition attempt {attempt}/{DECOMPOSE_MAX_RETRIES} failed: {e}")
+                if attempt < DECOMPOSE_MAX_RETRIES:
+                    await asyncio.sleep(DECOMPOSE_RETRY_DELAY * attempt)
+                continue
 
-        return self._parse_task_json(raw, topic)
+            tasks = self._parse_task_json(raw, topic)
+            # Check if we got real tasks (not a fallback)
+            if tasks and not (len(tasks) == 1 and tasks[0].title.startswith("Implement:")):
+                logger.info(f"Claude decomposition succeeded on attempt {attempt}: {len(tasks)} tasks")
+                return tasks
+
+            logger.warning(f"Claude decomposition attempt {attempt} returned unparseable response")
+            if attempt < DECOMPOSE_MAX_RETRIES:
+                await asyncio.sleep(DECOMPOSE_RETRY_DELAY * attempt)
+
+        # All retries exhausted — build best-effort fallback from spec-kit
+        logger.warning(f"All {DECOMPOSE_MAX_RETRIES} decomposition attempts failed. Using fallback.")
+        return self._build_fallback_tasks(topic, spec_context)
 
     def _parse_task_json(self, raw: str, topic: str) -> list[TaskBead]:
         """Parse Claude's JSON response into TaskBead objects."""
@@ -241,6 +321,65 @@ Output ONLY the JSON array, no markdown fences, no commentary:
                 acceptance_criteria=["Feature works as specified"],
                 suggested_agent="platform-agent",
             )]
+
+    def _build_fallback_tasks(self, topic: str, spec_context: str) -> list[TaskBead]:
+        """Build fallback task list from spec-kit when Claude decomposition fails."""
+        # Extract meaningful title from spec context
+        title = f"Implement: {topic}"
+        description = f"Full implementation of: {topic}"
+
+        # Try to extract better description from spec context
+        lines = spec_context.split("\n")
+        brief_lines = []
+        in_brief = False
+        for line in lines:
+            if "## Project Brief" in line:
+                in_brief = True
+                continue
+            elif line.startswith("## ") and in_brief:
+                break
+            elif in_brief and line.strip():
+                brief_lines.append(line.strip())
+
+        if brief_lines:
+            description = "\n".join(brief_lines[:10])
+
+        # Extract execution plan items as separate tasks if available
+        exec_lines = []
+        in_exec = False
+        for line in lines:
+            if "## Execution Plan" in line:
+                in_exec = True
+                continue
+            elif line.startswith("## ") and in_exec:
+                break
+            elif in_exec and line.strip():
+                exec_lines.append(line.strip())
+
+        if len(exec_lines) >= 2:
+            tasks = []
+            for i, line in enumerate(exec_lines[:8]):
+                clean = re.sub(r'^[-*\d.]+\s*', '', line)
+                if clean:
+                    tasks.append(TaskBead(
+                        title=clean[:80],
+                        description=f"{clean}\n\nPart of: {topic}",
+                        phase=min((i // 2) + 1, 4),
+                        priority=1,
+                        acceptance_criteria=["Task completed as specified", "No regressions introduced"],
+                        suggested_agent="platform-agent",
+                    ))
+            if tasks:
+                return tasks
+
+        return [TaskBead(
+            title=title,
+            description=description,
+            phase=1,
+            priority=1,
+            acceptance_criteria=["Feature works as specified", "No regressions introduced"],
+            suggested_agent="platform-agent",
+        )]
 
     async def _create_epic(self, topic: str, session_id: str) -> str:
         """Create an epic bead via bd CLI."""

@@ -6,3 +6,4 @@ meetings-module,module,"Coaching sessions — meetings, attendees, coach availab
 comms-module,module,"Communications — SMS details/schedules, dynamic SMS, email/mail, notifications, chatbot documents/histories/sessions",comms-agent
 platform-module,module,"Platform infrastructure — activity log, documents, background jobs",platform-agent
 kg-module,module,"Knowledge graph infrastructure — MCP servers, CLI, seeds, cache",kg-agent
+tory-module,module,"Tory learning path engine — profile interpretation, content tagging, roadmap generation, adaptive reassessment, coach compatibility, HR dashboards",tory-agent

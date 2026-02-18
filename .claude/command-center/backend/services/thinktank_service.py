@@ -19,7 +19,7 @@ os.environ.pop("CLAUDECODE", None)
 
 from claude_agent_sdk import query, ClaudeAgentOptions, AssistantMessage, TextBlock
 
-from config import SESSIONS_DIR
+from config import PROJECT_ROOT, SESSIONS_DIR
 from models import (
     ThinkTankSession, ThinkTankMessage, ThinkTankPhase,
     SpecKit, SpecKitSection, ThinkTankSessionSummary,
@@ -256,7 +256,7 @@ class ThinkTankService:
 
         options = ClaudeAgentOptions(
             permission_mode="bypassPermissions",
-            cwd=str(Path.home() / "Projects" / "baap"),
+            cwd=str(PROJECT_ROOT),
         )
 
         raw_text = ""
@@ -457,6 +457,35 @@ class ThinkTankService:
         self._schedule_persist(session_id)
         return True
 
+    async def set_phase(self, session_id: str, phase: ThinkTankPhase) -> bool:
+        """Set session phase (allows backward transitions)."""
+        session = self._sessions.get(session_id)
+        if not session:
+            return False
+
+        session.phase = phase
+        session.updated_at = datetime.now(timezone.utc).isoformat()
+
+        if self._event_bus:
+            await self._event_bus.publish(WSEventType.THINKTANK_PHASE_CHANGE, {
+                "session_id": session_id,
+                "phase": session.phase.value,
+            })
+
+        self._schedule_persist(session_id)
+        return True
+
+    def save_as_draft(self, session_id: str) -> bool:
+        """Save session as draft (pauses without losing state)."""
+        session = self._sessions.get(session_id)
+        if not session:
+            return False
+
+        session.status = "draft"
+        session.updated_at = datetime.now(timezone.utc).isoformat()
+        self._persist_session(session_id)
+        return True
+
     async def _mock_response(self, session_id: str, user_text: str) -> None:
         """Generate a mock orchestrator response when Claude API is not available."""
         session = self._sessions.get(session_id)
@@ -504,61 +533,80 @@ class ThinkTankService:
         text = action_map.get(action, action)
         return await self.send_message(session_id, text)
 
-    async def approve(self, session_id: str, modifications: str = "") -> bool:
-        """Approve the spec-kit and transition to building phase."""
+    async def approve(self, session_id: str, modifications: str = "", dry_run: bool = False) -> dict:
+        """Approve the spec-kit and transition to building phase.
+
+        Args:
+            session_id: Session to approve
+            modifications: Optional last-minute tweaks
+            dry_run: If True, return bead plan preview without creating beads
+
+        Returns:
+            Dict with success, dispatch_status, and optional preview/epic_id
+        """
         session = self._sessions.get(session_id)
         if not session:
-            return False
+            return {"success": False, "error": "Session not found"}
 
         now = datetime.now(timezone.utc).isoformat()
 
-        if modifications:
-            await self.send_message(session_id, f"Approved with modifications: {modifications}")
-        else:
-            await self.send_message(session_id, "Approved. Start building.")
+        if not dry_run:
+            if modifications:
+                await self.send_message(session_id, f"Approved with modifications: {modifications}")
+            else:
+                await self.send_message(session_id, "Approved. Start building.")
 
-        session.phase = ThinkTankPhase.BUILDING
-        session.status = "approved"
-        session.updated_at = now
-        self._persist_now(session_id)
+            session.phase = ThinkTankPhase.BUILDING
+            session.status = "approved"
+            session.updated_at = now
+            self._persist_now(session_id)
 
-        if self._event_bus:
-            await self._event_bus.publish(WSEventType.THINKTANK_PHASE_CHANGE, {
-                "session_id": session_id,
-                "phase": "building",
-            })
-            await self._event_bus.publish(WSEventType.TOAST, {
-                "message": "Spec-kit approved! Creating build plan...",
-                "type": "success",
-            })
+            if self._event_bus:
+                await self._event_bus.publish(WSEventType.THINKTANK_PHASE_CHANGE, {
+                    "session_id": session_id,
+                    "phase": "building",
+                })
+                await self._event_bus.publish(WSEventType.TOAST, {
+                    "message": "Spec-kit approved! Creating build plan...",
+                    "type": "success",
+                })
 
         # Trigger dispatch engine
         try:
             dispatch = self._get_dispatch_engine()
-            result = await dispatch.dispatch_approved_session(session)
+            result = await dispatch.dispatch_approved_session(session, dry_run=dry_run)
 
-            # Store epic ID in session for later reference
-            if result.get("epic_id"):
-                session.epic_id = result["epic_id"]
-                self._persist_now(session_id)
+            if not dry_run:
+                # Store epic ID in session for later reference
+                if result.get("epic_id"):
+                    session.epic_id = result["epic_id"]
+                    self._persist_now(session_id)
 
-            if self._event_bus:
-                await self._event_bus.publish(WSEventType.TOAST, {
-                    "message": f"Build started: {result.get('task_count', 0)} tasks dispatched",
-                    "type": "success",
-                })
+                if self._event_bus and result.get("success"):
+                    await self._event_bus.publish(WSEventType.TOAST, {
+                        "message": "Build queued: agents being dispatched...",
+                        "type": "success",
+                    })
+
+            return {
+                "success": result.get("success", True),
+                "dispatch_status": result.get("dispatch_status", "queued"),
+                **result,
+            }
 
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"Dispatch failed: {e}")
-            if self._event_bus:
+            if self._event_bus and not dry_run:
                 await self._event_bus.publish(WSEventType.TOAST, {
                     "message": f"Dispatch failed: {e}. You can retry from the dashboard.",
                     "type": "error",
                 })
-            # Don't fail the approve — the spec is still approved
-
-        return True
+            return {
+                "success": False,
+                "dispatch_status": "failed",
+                "error": str(e),
+            }
 
     def get_session(self, session_id: str) -> ThinkTankSession | None:
         """Get a session by ID."""

@@ -1,19 +1,19 @@
 {
   "metadata": {
-    "profiled_at": "2026-02-14T04:06:35.675886+00:00",
+    "profiled_at": "2026-02-18T22:42:06.090913+00:00",
     "database": "baap",
-    "tables_profiled": 38,
+    "tables_profiled": 46,
     "total_rows": 74631,
-    "total_size_mb": 87.8429,
+    "total_size_mb": 83.8428,
     "profiler_version": "1.0"
   },
   "tables": [
     {
       "name": "activity_log",
       "row_count": 57210,
-      "data_size_mb": 74.6094,
+      "data_size_mb": 75.6094,
       "index_size_mb": 0.0,
-      "avg_row_length": 1338,
+      "avg_row_length": 1166,
       "is_empty": false,
       "has_timestamps": true,
       "timestamp_columns": [
@@ -186,7 +186,7 @@
       "row_count": 5833,
       "data_size_mb": 2.5156,
       "index_size_mb": 0.0,
-      "avg_row_length": 456,
+      "avg_row_length": 474,
       "is_empty": false,
       "has_timestamps": true,
       "timestamp_columns": [
@@ -1851,9 +1851,9 @@
     {
       "name": "employees",
       "row_count": 1467,
-      "data_size_mb": 0.1562,
+      "data_size_mb": 0.1406,
       "index_size_mb": 0.0,
-      "avg_row_length": 111,
+      "avg_row_length": 100,
       "is_empty": false,
       "has_timestamps": true,
       "timestamp_columns": [
@@ -2475,9 +2475,9 @@
     {
       "name": "lesson_slides",
       "row_count": 521,
-      "data_size_mb": 1.5156,
+      "data_size_mb": 0.4375,
       "index_size_mb": 0.0,
-      "avg_row_length": 3032,
+      "avg_row_length": 873,
       "is_empty": false,
       "has_timestamps": true,
       "timestamp_columns": [
@@ -4025,9 +4025,9 @@
     {
       "name": "nx_users",
       "row_count": 1464,
-      "data_size_mb": 1.5156,
+      "data_size_mb": 0.3438,
       "index_size_mb": 0.0,
-      "avg_row_length": 1072,
+      "avg_row_length": 246,
       "is_empty": false,
       "has_timestamps": true,
       "timestamp_columns": [
@@ -4280,9 +4280,9 @@
     {
       "name": "nx_user_onboardings",
       "row_count": 220,
-      "data_size_mb": 1.5156,
+      "data_size_mb": 0.5,
       "index_size_mb": 0.0,
-      "avg_row_length": 8637,
+      "avg_row_length": 2674,
       "is_empty": false,
       "has_timestamps": true,
       "timestamp_columns": [
@@ -4789,9 +4789,9 @@
     {
       "name": "nx_user_ratings",
       "row_count": 3257,
-      "data_size_mb": 0.5,
+      "data_size_mb": 0.2656,
       "index_size_mb": 0.0,
-      "avg_row_length": 149,
+      "avg_row_length": 85,
       "is_empty": false,
       "has_timestamps": true,
       "timestamp_columns": [
@@ -5212,9 +5212,9 @@
     {
       "name": "sms_details",
       "row_count": 1323,
-      "data_size_mb": 2.5156,
+      "data_size_mb": 1.5156,
       "index_size_mb": 0.0,
-      "avg_row_length": 2105,
+      "avg_row_length": 1314,
       "is_empty": false,
       "has_timestamps": true,
       "timestamp_columns": [
@@ -5484,9 +5484,9 @@
     {
       "name": "tasks",
       "row_count": 2829,
-      "data_size_mb": 2.5156,
+      "data_size_mb": 1.5156,
       "index_size_mb": 0.0,
-      "avg_row_length": 1025,
+      "avg_row_length": 577,
       "is_empty": false,
       "has_timestamps": true,
       "timestamp_columns": [
@@ -5723,6 +5723,1205 @@
           "deleted_at": "NULL"
         }
       ]
+    },
+    {
+      "name": "tory_coach_overrides",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0469,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "roadmap_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "roadmap_item_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "coach_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "action",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "details",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "reason",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "was_blocked",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "blocked_reason",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "tory_content_tags",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0469,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "reviewed_at",
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "lesson_detail_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "trait_tags",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "difficulty",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "learning_style",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "prerequisites",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "confidence",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "review_status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "pass1_tags",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "pass2_tags",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "pass_agreement",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "reviewed_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "reviewed_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "review_notes",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "tory_learner_profiles",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0312,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "onboarding_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "epp_summary",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "motivation_cluster",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "strengths",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "gaps",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "learning_style",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "profile_narrative",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "confidence",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "version",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "source",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "feedback_flags",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "tory_pedagogy_config",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0156,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "client_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "mode",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "gap_ratio",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "strength_ratio",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "configured_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "configured_user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "tory_progress_snapshots",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0781,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "snapshot_date",
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "roadmap_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "snapshot_date",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "completion_pct",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "engagement_score",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "lessons_completed",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "lessons_total",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "days_active",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "days_stalled",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "path_changes",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "coach_overrides",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "divergence_score",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "tory_accuracy",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "reassessments_completed",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "profile_confidence",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "client_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "department_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "tory_reassessments",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0625,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "sent_at",
+        "completed_at",
+        "expires_at",
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "profile_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "trigger_reason",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "assessment_data",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "previous_scores",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "new_scores",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "result_delta",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "drift_detected",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "path_action",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "criteria_order_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "sent_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "completed_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "expires_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "tory_roadmaps",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0469,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_user_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "profile_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "pedagogy_mode",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "pedagogy_ratio",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "version",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "total_lessons",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "completed_lessons",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "completion_pct",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "generation_rationale",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "trigger_source",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_current",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_by",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_user_type",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
+    },
+    {
+      "name": "tory_roadmap_items",
+      "row_count": 0,
+      "data_size_mb": 0.0156,
+      "index_size_mb": 0.0625,
+      "avg_row_length": 0,
+      "is_empty": true,
+      "has_timestamps": true,
+      "timestamp_columns": [
+        "started_at",
+        "completed_at",
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "roadmap_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "nx_lesson_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "content_tag_id",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "sequence",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "status",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_critical",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "is_discovery",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "match_score",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "match_rationale",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "trait_targets",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "started_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "completed_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "learner_rating",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "original_sequence",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "created_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "updated_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        },
+        {
+          "name": "deleted_at",
+          "null_count": 0,
+          "null_rate": 0.0,
+          "distinct_count": 0,
+          "cardinality_ratio": 0.0,
+          "sample_values": []
+        }
+      ],
+      "sample_rows": []
     },
     {
       "name": "video_libraries",
@@ -5995,7 +7194,7 @@
     }
   ],
   "size_distribution": {
-    "empty_tables": 22,
+    "empty_tables": 30,
     "small_tables": 9,
     "medium_tables": 7,
     "large_tables": 0,

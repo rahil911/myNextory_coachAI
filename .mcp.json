@@ -9,6 +9,11 @@
       "command": "bash",
       "args": [".claude/mcp/run_mcp.sh", "db_tools.py"],
       "cwd": "."
+    },
+    "tory-engine": {
+      "command": "bash",
+      "args": [".claude/mcp/run_mcp.sh", "tory_engine.py"],
+      "cwd": "."
     }
   }
 }

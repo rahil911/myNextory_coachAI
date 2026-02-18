@@ -14,3 +14,8 @@ meetings-agent,identity-agent,DEPENDS_ON,schema,"meetings reference nx_users via
 comms-agent,identity-agent,DEPENDS_ON,schema,"sms_details/notification_histories reference nx_users/clients/coaches"
 comms-agent,content-agent,DEPENDS_ON,schema,"sms_details/sms_schedules/dynamic_sms_details reference chapters/lessons"
 platform-agent,identity-agent,DEPENDS_ON,schema,"activity_log references nx_users via causer_id"
+orchestrator,tory-agent,PARENT_OF,,
+tory-agent,identity-agent,DEPENDS_ON,schema,"tory_learner_profiles/tory_roadmaps/tory_reassessments/tory_progress_snapshots reference nx_users; tory_pedagogy_config references clients"
+tory-agent,content-agent,DEPENDS_ON,schema,"tory_content_tags references nx_lessons/lesson_details; tory_roadmap_items references nx_lessons"
+tory-agent,engagement-agent,DEPENDS_ON,schema,"tory adaptive layer reads backpacks/tasks/ratings for progress monitoring and path adaptation"
+tory-agent,comms-agent,DEPENDS_ON,schema,"tory dispatches SMS/email nudges via existing comms layer for path changes, stalls, reassessments"

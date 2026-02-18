@@ -12,6 +12,8 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from config import PROJECT_ROOT
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +22,7 @@ class BeadsBridge:
 
     def __init__(self, event_bus=None):
         self._event_bus = event_bus
-        self._baap_root = Path.home() / "Projects" / "baap"
+        self._baap_root = PROJECT_ROOT
         # session_id -> epic bead ID
         self._session_to_epic: dict[str, str] = {}
         # epic bead ID -> session_id

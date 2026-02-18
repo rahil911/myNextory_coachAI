@@ -11,10 +11,9 @@ import re
 import time
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+from config import PROJECT_ROOT, HEARTBEAT_DIR, HEARTBEAT_STALE_SECONDS
 
-HEARTBEAT_DIR = Path("/tmp/baap-heartbeats")
-HEARTBEAT_STALE_SECONDS = 60
+logger = logging.getLogger(__name__)
 
 
 class ProgressBridge:
@@ -22,7 +21,7 @@ class ProgressBridge:
 
     def __init__(self, event_bus=None):
         self._event_bus = event_bus
-        self._baap_root = Path.home() / "Projects" / "baap"
+        self._baap_root = PROJECT_ROOT
         self._monitored_agents: dict[str, dict] = {}  # agent_name -> config
         self._monitor_task: asyncio.Task | None = None
 

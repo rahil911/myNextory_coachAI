@@ -9,6 +9,8 @@ import logging
 import shutil
 from pathlib import Path
 
+from config import PROJECT_ROOT, SCRIPTS_DIR
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,8 +19,8 @@ class FailureRecovery:
 
     def __init__(self, event_bus=None):
         self._event_bus = event_bus
-        self._baap_root = Path.home() / "Projects" / "baap"
-        self._scripts_dir = self._baap_root / ".claude" / "scripts"
+        self._baap_root = PROJECT_ROOT
+        self._scripts_dir = SCRIPTS_DIR
 
     async def handle_agent_failure(
         self,

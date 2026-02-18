@@ -320,37 +320,144 @@ function _renderSessionView(container) {
   // Approval gate (Phase 4+ only, not read-only)
   if (tt.phase >= 4 && !isReadOnly) {
     const gate = h('div', { class: 'approval-gate' });
+
+    // Error panel (hidden by default)
+    const errorPanel = h('div', { class: 'approval-error-panel', style: { display: 'none' } });
+    errorPanel.id = 'approval-error-panel';
+
+    // Dry-run preview panel (hidden by default)
+    const previewPanel = h('div', { class: 'approval-preview-panel', style: { display: 'none' } });
+    previewPanel.id = 'approval-preview-panel';
+
     const approveBtn = h('button', {
       class: 'approval-gate-btn',
       onClick: async () => {
-        approveBtn.textContent = 'Building... You\'ll be notified when ready';
-        approveBtn.classList.add('approved');
-        approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
+        // Double-click protection: disable immediately
+        approveBtn.disabled = true;
+        approveBtn.textContent = 'Approving...';
+        errorPanel.style.display = 'none';
+        previewPanel.style.display = 'none';
+
         try {
           const sessionId = getState().thinktank.sessionId;
-          if (sessionId) await api.approveSpec(sessionId);
-          showToast('Spec approved -- build started!', 'success');
+          if (!sessionId) throw new Error('No session ID');
+
+          // Step 1: Dry-run preview
+          const preview = await api.approveSpec(sessionId, { dryRun: true });
+
+          if (preview.dry_run && preview.preview) {
+            // Show preview for user confirmation
+            const tasks = preview.preview.tasks || [];
+            previewPanel.innerHTML = `
+              <h4 style="margin:0 0 8px">Build Plan Preview (${tasks.length} tasks)</h4>
+              <ul style="margin:0;padding-left:20px;font-size:13px">
+                ${tasks.map(t => `<li><strong>Phase ${t.phase}:</strong> ${_escapeHtml(t.title)} <em>(${t.suggested_agent || 'auto'})</em></li>`).join('')}
+              </ul>
+            `;
+            previewPanel.style.display = 'block';
+
+            // Change button to "Confirm Build"
+            approveBtn.textContent = 'Confirm Build \u2192';
+            approveBtn.disabled = false;
+            approveBtn.onclick = async () => {
+              approveBtn.disabled = true;
+              approveBtn.textContent = 'Starting build...';
+              previewPanel.style.display = 'none';
+
+              try {
+                const result = await api.approveSpec(sessionId);
+                if (result.success) {
+                  approveBtn.textContent = 'Build queued! Agents dispatching...';
+                  approveBtn.classList.add('approved');
+                  approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
+                  showToast('Build started!', 'success');
+                } else {
+                  throw new Error(result.error || 'Unknown error');
+                }
+              } catch (err) {
+                _showApprovalError(errorPanel, approveBtn, err.message);
+              }
+            };
+            return;
+          }
+
+          // No preview returned — proceed directly
+          if (preview.success) {
+            approveBtn.textContent = 'Build queued! Agents dispatching...';
+            approveBtn.classList.add('approved');
+            approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
+            showToast('Build started!', 'success');
+          } else {
+            throw new Error(preview.error || 'Unknown error');
+          }
+
         } catch (err) {
-          showToast(`Approval failed: ${err.message}`, 'error');
-          approveBtn.textContent = 'Approve & Start Building \u2192';
-          approveBtn.classList.remove('approved');
+          _showApprovalError(errorPanel, approveBtn, err.message);
         }
       }
     });
     approveBtn.textContent = 'Approve & Start Building \u2192';
 
     const escapes = h('div', { class: 'approval-gate-escape' });
-    escapes.innerHTML = `
-      <a href="#" onclick="event.preventDefault()">Go Back to Scope</a>
-      <a href="#" onclick="event.preventDefault()">Save as Draft</a>
-    `;
+
+    const goBackLink = h('a', {
+      href: '#',
+      onClick: async (e) => {
+        e.preventDefault();
+        // Go back to scope phase via dedicated API
+        const sessionId = getState().thinktank.sessionId;
+        if (sessionId) {
+          try {
+            await api.setPhase(sessionId, 2); // 2 = SCOPE phase index
+            showToast('Returned to Scope phase', 'info');
+          } catch (err) {
+            showToast(`Failed: ${err.message}`, 'error');
+          }
+        }
+      }
+    });
+    goBackLink.textContent = 'Go Back to Scope';
+
+    const saveDraftLink = h('a', {
+      href: '#',
+      onClick: async (e) => {
+        e.preventDefault();
+        const sessionId = getState().thinktank.sessionId;
+        if (sessionId) {
+          try {
+            await api.saveAsDraft(sessionId);
+            showToast('Session saved as draft', 'info');
+            _goToHistory();
+          } catch (err) {
+            showToast(`Failed to save: ${err.message}`, 'error');
+          }
+        }
+      }
+    });
+    saveDraftLink.textContent = 'Save as Draft';
+
+    escapes.appendChild(goBackLink);
+    escapes.appendChild(document.createTextNode(' '));
+    escapes.appendChild(saveDraftLink);
+
     const pauseNote = h('p', { style: { textAlign: 'center', fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '8px' } });
     pauseNote.textContent = 'You can pause the build at any time.';
 
+    gate.appendChild(errorPanel);
+    gate.appendChild(previewPanel);
     gate.appendChild(approveBtn);
     gate.appendChild(escapes);
     gate.appendChild(pauseNote);
     specPanel.appendChild(gate);
+
+    // Check dispatch health on render — disable button if not ready
+    api.checkDispatchHealth().then(health => {
+      if (!health.ready) {
+        approveBtn.disabled = true;
+        approveBtn.title = `Missing: ${health.missing.join(', ')}`;
+        approveBtn.textContent = `Cannot build (missing: ${health.missing.join(', ')})`;
+      }
+    }).catch(() => {});
   }
 
   thinktankEl.appendChild(chatPanel);
@@ -412,4 +519,19 @@ function getPhaseId(num) {
 
 function _escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function _showApprovalError(errorPanel, approveBtn, message) {
+  errorPanel.innerHTML = `
+    <div style="background:var(--red-bg, #3a1a1a);border:1px solid var(--red, #ff4444);border-radius:8px;padding:12px;margin-bottom:12px">
+      <strong style="color:var(--red, #ff4444)">Dispatch failed</strong>
+      <p style="margin:4px 0 8px;font-size:13px;color:var(--text-secondary)">${_escapeHtml(message)}</p>
+      <button class="btn btn-sm" onclick="this.closest('.approval-error-panel').style.display='none'">Dismiss</button>
+    </div>
+  `;
+  errorPanel.style.display = 'block';
+  approveBtn.textContent = 'Retry: Approve & Start Building \u2192';
+  approveBtn.classList.remove('approved');
+  approveBtn.disabled = false;
+  showToast(`Approval failed: ${message}`, 'error');
 }

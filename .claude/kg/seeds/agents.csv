@@ -8,3 +8,4 @@ comms-agent,agent,1,orchestrator,".claude/agents/comms-agent/agent.md",".claude/
 platform-agent,agent,1,orchestrator,".claude/agents/platform-agent/agent.md",".claude/agents/platform-agent/memory/","activity-log,documents,jobs,infrastructure",sonnet,platform-module
 kg-agent,agent,1,orchestrator,".claude/agents/kg-agent/agent.md",".claude/agents/kg-agent/memory/","knowledge-graph,mcp,cli,seeds,cache",sonnet,kg-module
 review-agent,agent,1,orchestrator,".claude/agents/review-agent/agent.md",".claude/agents/review-agent/memory/","code-review,security,quality",opus,
+tory-agent,agent,1,orchestrator,".claude/agents/tory-agent/agent.md",".claude/agents/tory-agent/memory/","learning-paths,profile-interpretation,content-scoring,roadmap-generation,reassessment,coach-compatibility",opus,tory-module

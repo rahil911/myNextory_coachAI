@@ -10,13 +10,13 @@ const WS_BASE = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${wi
 
 // ── REST Client ────────────────────────────────────────────────────────────
 
-async function request(method, path, body = null, timeoutMs = 15000) {
+async function request(method, path, body = null, timeoutMs = 15000, extraHeaders = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   const opts = {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
     signal: controller.signal,
   };
   if (body) opts.body = JSON.stringify(body);
@@ -62,11 +62,22 @@ export const api = {
   getSession:     () => request('GET', '/api/thinktank/session'),
   sendMessage:    (sessionId, msg) => request('POST', '/api/thinktank/message', msg, 60000),
   sendAction:     (sessionId, action) => request('POST', '/api/thinktank/action', action, 60000),
-  approveSpec:    (sessionId) => request('POST', '/api/thinktank/approve', {}, 60000),
+  approveSpec:    (sessionId, { dryRun = false } = {}) => {
+    const idempotencyKey = crypto.randomUUID();
+    const qs = dryRun ? '?dry_run=true' : '';
+    return request('POST', `/api/thinktank/approve/${sessionId}${qs}`, {}, 60000, {
+      'X-Idempotency-Key': idempotencyKey,
+    });
+  },
   getHistory:     () => request('GET', '/api/thinktank/history'),
   getSessionById: (id) => request('GET', `/api/thinktank/session/${id}`),
   resumeSession:  (id) => request('POST', `/api/thinktank/resume/${id}`),
   deleteSession:  (id) => request('DELETE', `/api/thinktank/session/${id}`),
+  setPhase:       (sessionId, phase) => request('POST', `/api/thinktank/session/${sessionId}/phase?phase=${phase}`),
+  saveAsDraft:    (sessionId) => request('POST', `/api/thinktank/session/${sessionId}/draft`),
+
+  // Health
+  checkDispatchHealth: () => request('GET', '/api/dashboard/health/dispatch-ready'),
 
   // Dispatch
   getDispatchStatus: (sessionId) => request('GET', `/api/thinktank/dispatch/${sessionId}`),

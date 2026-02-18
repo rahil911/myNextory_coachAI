@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "extracted_at": "2026-02-14T04:05:54.236982+00:00",
+    "extracted_at": "2026-02-18T22:41:53.218367+00:00",
     "database": "baap",
-    "table_count": 38,
-    "total_columns": 472,
+    "table_count": 46,
+    "total_columns": 604,
     "extractor_version": "1.0"
   },
   "tables": [
@@ -12,7 +12,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 70875,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:12",
       "table_comment": "",
       "columns": [
         {
@@ -133,7 +133,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 12068,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:18",
       "table_comment": "",
       "columns": [
         {
@@ -284,7 +284,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 85,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:18",
       "table_comment": "",
       "columns": [
         {
@@ -355,7 +355,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 287,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -456,7 +456,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -537,7 +537,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -788,7 +788,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": null,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -840,7 +840,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -901,7 +901,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -1042,7 +1042,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -1173,7 +1173,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -1234,7 +1234,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -1445,7 +1445,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -1526,7 +1526,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 140,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -1647,7 +1647,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -1838,7 +1838,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1630,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -2169,7 +2169,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -2250,7 +2250,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -2381,7 +2381,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 919,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:19",
       "table_comment": "",
       "columns": [
         {
@@ -2492,7 +2492,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -2693,7 +2693,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -2824,7 +2824,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -3015,7 +3015,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -3086,7 +3086,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -3227,7 +3227,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -3378,7 +3378,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:04",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -3559,7 +3559,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 113,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -3710,7 +3710,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -3831,7 +3831,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -4022,7 +4022,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -4083,7 +4083,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 4652,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -4264,7 +4264,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 576,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -4615,7 +4615,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 3435,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:20",
       "table_comment": "",
       "columns": [
         {
@@ -4776,7 +4776,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 500,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:21",
       "table_comment": "",
       "columns": [
         {
@@ -4917,7 +4917,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 5976,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:21",
       "table_comment": "",
       "columns": [
         {
@@ -5048,7 +5048,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 1,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:21",
       "table_comment": "",
       "columns": [
         {
@@ -5159,7 +5159,7 @@
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 2929,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:21",
       "table_comment": "",
       "columns": [
         {
@@ -5326,11 +5326,1707 @@
       "constraints": []
     },
     {
+      "name": "tory_coach_overrides",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-18 22:40:45",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "roadmap_id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 tory_roadmaps.id",
+          "ordinal_position": 2
+        },
+        {
+          "name": "roadmap_item_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 tory_roadmap_items.id (item affected)",
+          "ordinal_position": 3
+        },
+        {
+          "name": "coach_id",
+          "type": "bigint(20)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 coaches.id",
+          "ordinal_position": 4
+        },
+        {
+          "name": "action",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "reorder | swap | lock | unlock",
+          "ordinal_position": 5
+        },
+        {
+          "name": "details",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: {from_sequence, to_sequence} or {swapped_with_item_id} etc.",
+          "ordinal_position": 6
+        },
+        {
+          "name": "reason",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Coach explanation for the override",
+          "ordinal_position": 7
+        },
+        {
+          "name": "was_blocked",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "1 = action was blocked by guardrail (tried to remove critical lesson)",
+          "ordinal_position": 8
+        },
+        {
+          "name": "blocked_reason",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "System message if action was blocked",
+          "ordinal_position": 9
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 11
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tory_override_action",
+          "columns": [
+            "action"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_override_coach",
+          "columns": [
+            "coach_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_override_roadmap",
+          "columns": [
+            "roadmap_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "tory_content_tags",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-18 22:40:45",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 nx_lessons.id",
+          "ordinal_position": 2
+        },
+        {
+          "name": "lesson_detail_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 lesson_details.id (optional granularity)",
+          "ordinal_position": 3
+        },
+        {
+          "name": "trait_tags",
+          "type": "longtext",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: [{trait, relevance_score, direction}]",
+          "ordinal_position": 4
+        },
+        {
+          "name": "difficulty",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Difficulty level 1-5",
+          "ordinal_position": 5
+        },
+        {
+          "name": "learning_style",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "visual | reflective | active | theoretical | blended",
+          "ordinal_position": 6
+        },
+        {
+          "name": "prerequisites",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: prerequisite trait thresholds",
+          "ordinal_position": 7
+        },
+        {
+          "name": "confidence",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "MUL",
+          "extra": "",
+          "comment": "Confidence score 0-100",
+          "ordinal_position": 8
+        },
+        {
+          "name": "review_status",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "'pending'",
+          "key": "MUL",
+          "extra": "",
+          "comment": "pending | approved | rejected | needs_review",
+          "ordinal_position": 9
+        },
+        {
+          "name": "pass1_tags",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: First pass Claude Opus output",
+          "ordinal_position": 10
+        },
+        {
+          "name": "pass2_tags",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: Second pass Claude Opus output (different prompt)",
+          "ordinal_position": 11
+        },
+        {
+          "name": "pass_agreement",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Agreement score 0-100 between pass1 and pass2",
+          "ordinal_position": 12
+        },
+        {
+          "name": "reviewed_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 nx_users.id (coach/admin who reviewed)",
+          "ordinal_position": 13
+        },
+        {
+          "name": "reviewed_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "review_notes",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Coach/admin notes on tag corrections",
+          "ordinal_position": 15
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 18
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tory_content_confidence",
+          "columns": [
+            "confidence"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_content_lesson",
+          "columns": [
+            "nx_lesson_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_content_review",
+          "columns": [
+            "review_status"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "tory_learner_profiles",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-18 22:40:45",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "bigint(20)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 nx_users.id",
+          "ordinal_position": 2
+        },
+        {
+          "name": "onboarding_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 nx_user_onboardings.id (source data)",
+          "ordinal_position": 3
+        },
+        {
+          "name": "epp_summary",
+          "type": "longtext",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: normalized 29-dimension EPP trait vector",
+          "ordinal_position": 4
+        },
+        {
+          "name": "motivation_cluster",
+          "type": "longtext",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: motivation drivers derived from Q&A",
+          "ordinal_position": 5
+        },
+        {
+          "name": "strengths",
+          "type": "longtext",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: top traits with scores",
+          "ordinal_position": 6
+        },
+        {
+          "name": "gaps",
+          "type": "longtext",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: growth areas with scores and motivation alignment",
+          "ordinal_position": 7
+        },
+        {
+          "name": "learning_style",
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Inferred learning style preference",
+          "ordinal_position": 8
+        },
+        {
+          "name": "profile_narrative",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Claude-generated human-readable profile summary (user-facing)",
+          "ordinal_position": 9
+        },
+        {
+          "name": "confidence",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "50",
+          "key": "",
+          "extra": "",
+          "comment": "Profile confidence 0-100 (grows with data)",
+          "ordinal_position": 10
+        },
+        {
+          "name": "version",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "1",
+          "key": "",
+          "extra": "",
+          "comment": "Profile version (increments on reassessment)",
+          "ordinal_position": 11
+        },
+        {
+          "name": "source",
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": "'epp_qa'",
+          "key": "",
+          "extra": "",
+          "comment": "epp_qa | reassessment_mini | reassessment_full | discovery",
+          "ordinal_position": 12
+        },
+        {
+          "name": "feedback_flags",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "Count of \"doesnt sound like me\" flags",
+          "ordinal_position": 13
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tory_profile_user",
+          "columns": [
+            "nx_user_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_profile_version",
+          "columns": [
+            "nx_user_id",
+            "version"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "tory_pedagogy_config",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-18 22:40:45",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "client_id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 clients.id",
+          "ordinal_position": 2
+        },
+        {
+          "name": "mode",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "'balanced'",
+          "key": "",
+          "extra": "",
+          "comment": "gap_fill | strength_lead | balanced",
+          "ordinal_position": 3
+        },
+        {
+          "name": "gap_ratio",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "50",
+          "key": "",
+          "extra": "",
+          "comment": "Percentage 0-100 for gap-filling emphasis",
+          "ordinal_position": 4
+        },
+        {
+          "name": "strength_ratio",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "50",
+          "key": "",
+          "extra": "",
+          "comment": "Percentage 0-100 for strength-leading emphasis",
+          "ordinal_position": 5
+        },
+        {
+          "name": "configured_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 nx_users.id or admin who set this",
+          "ordinal_position": 6
+        },
+        {
+          "name": "configured_user_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "admin | coach | system",
+          "ordinal_position": 7
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 10
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tory_pedagogy_client",
+          "columns": [
+            "client_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "tory_progress_snapshots",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-18 22:40:45",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "bigint(20)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 nx_users.id",
+          "ordinal_position": 2
+        },
+        {
+          "name": "roadmap_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 tory_roadmaps.id (current roadmap at snapshot time)",
+          "ordinal_position": 3
+        },
+        {
+          "name": "snapshot_date",
+          "type": "date",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 4
+        },
+        {
+          "name": "completion_pct",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "Roadmap completion 0-100",
+          "ordinal_position": 5
+        },
+        {
+          "name": "engagement_score",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Engagement score 0-100 (derived from backpack frequency, ratings, task completion)",
+          "ordinal_position": 6
+        },
+        {
+          "name": "lessons_completed",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 7
+        },
+        {
+          "name": "lessons_total",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "days_active",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Days with at least one interaction in this period",
+          "ordinal_position": 9
+        },
+        {
+          "name": "days_stalled",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Consecutive days with no activity",
+          "ordinal_position": 10
+        },
+        {
+          "name": "path_changes",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "Number of roadmap adaptations to date",
+          "ordinal_position": 11
+        },
+        {
+          "name": "coach_overrides",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "Number of coach interventions to date",
+          "ordinal_position": 12
+        },
+        {
+          "name": "divergence_score",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "How much coach overrides diverge from Tory recs 0-100",
+          "ordinal_position": 13
+        },
+        {
+          "name": "tory_accuracy",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "How well Tory predictions matched outcomes 0-100",
+          "ordinal_position": 14
+        },
+        {
+          "name": "reassessments_completed",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "Total reassessments completed to date",
+          "ordinal_position": 15
+        },
+        {
+          "name": "profile_confidence",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Current profile confidence at snapshot time 0-100",
+          "ordinal_position": 16
+        },
+        {
+          "name": "client_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 clients.id (denormalized for dashboard queries)",
+          "ordinal_position": 17
+        },
+        {
+          "name": "department_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 departments.id (denormalized for team aggregates)",
+          "ordinal_position": 18
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 19
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 20
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 21
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tory_snap_client",
+          "columns": [
+            "client_id",
+            "snapshot_date"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_snap_date",
+          "columns": [
+            "snapshot_date"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_snap_dept",
+          "columns": [
+            "department_id",
+            "snapshot_date"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_snap_user",
+          "columns": [
+            "nx_user_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_snap_user_date",
+          "columns": [
+            "nx_user_id",
+            "snapshot_date"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "tory_reassessments",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-18 22:40:45",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "bigint(20)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 nx_users.id",
+          "ordinal_position": 2
+        },
+        {
+          "name": "profile_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 tory_learner_profiles.id (profile before reassessment)",
+          "ordinal_position": 3
+        },
+        {
+          "name": "type",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "mini | full_epp",
+          "ordinal_position": 4
+        },
+        {
+          "name": "trigger_reason",
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "scheduled | progress_milestone | coach_initiated | drift_detected | learner_feedback",
+          "ordinal_position": 5
+        },
+        {
+          "name": "status",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "'pending'",
+          "key": "MUL",
+          "extra": "",
+          "comment": "pending | sent | in_progress | completed | expired | failed",
+          "ordinal_position": 6
+        },
+        {
+          "name": "assessment_data",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: questions + answers (for mini) or full EPP scores (for full_epp)",
+          "ordinal_position": 7
+        },
+        {
+          "name": "previous_scores",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: EPP/profile snapshot before this reassessment",
+          "ordinal_position": 8
+        },
+        {
+          "name": "new_scores",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: EPP/profile snapshot after this reassessment",
+          "ordinal_position": 9
+        },
+        {
+          "name": "result_delta",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: [{trait, old_score, new_score, change_pct}]",
+          "ordinal_position": 10
+        },
+        {
+          "name": "drift_detected",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "1 = significant profile drift triggered path adaptation",
+          "ordinal_position": 11
+        },
+        {
+          "name": "path_action",
+          "type": "varchar(30)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "none | minor_reorder | major_adaptation | full_regeneration",
+          "ordinal_position": 12
+        },
+        {
+          "name": "criteria_order_id",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Criteria Corp order ID (for full_epp type)",
+          "ordinal_position": 13
+        },
+        {
+          "name": "sent_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 14
+        },
+        {
+          "name": "completed_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 15
+        },
+        {
+          "name": "expires_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Deadline for completion before expiry",
+          "ordinal_position": 16
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 18
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 19
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tory_reassess_schedule",
+          "columns": [
+            "nx_user_id",
+            "type",
+            "status"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_reassess_status",
+          "columns": [
+            "status"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_reassess_type",
+          "columns": [
+            "type"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_reassess_user",
+          "columns": [
+            "nx_user_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "tory_roadmaps",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-18 22:40:45",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "nx_user_id",
+          "type": "bigint(20)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 nx_users.id",
+          "ordinal_position": 2
+        },
+        {
+          "name": "profile_id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 tory_learner_profiles.id (profile used to generate)",
+          "ordinal_position": 3
+        },
+        {
+          "name": "pedagogy_mode",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "'balanced'",
+          "key": "",
+          "extra": "",
+          "comment": "gap_fill | strength_lead | balanced (snapshot from client config)",
+          "ordinal_position": 4
+        },
+        {
+          "name": "pedagogy_ratio",
+          "type": "varchar(10)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "e.g. 70/30 \u2014 snapshot of ratio used",
+          "ordinal_position": 5
+        },
+        {
+          "name": "version",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "1",
+          "key": "",
+          "extra": "",
+          "comment": "Roadmap version (increments on adaptation)",
+          "ordinal_position": 6
+        },
+        {
+          "name": "status",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "'discovery'",
+          "key": "MUL",
+          "extra": "",
+          "comment": "discovery | active | completed | paused | archived",
+          "ordinal_position": 7
+        },
+        {
+          "name": "total_lessons",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 8
+        },
+        {
+          "name": "completed_lessons",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 9
+        },
+        {
+          "name": "completion_pct",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "0-100",
+          "ordinal_position": 10
+        },
+        {
+          "name": "generation_rationale",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Claude-generated explanation of overall path strategy (user-facing)",
+          "ordinal_position": 11
+        },
+        {
+          "name": "trigger_source",
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": "'onboarding'",
+          "key": "",
+          "extra": "",
+          "comment": "onboarding | discovery_complete | reassessment | coach_request | drift",
+          "ordinal_position": 12
+        },
+        {
+          "name": "is_current",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "1",
+          "key": "",
+          "extra": "",
+          "comment": "1 = active roadmap, 0 = historical version",
+          "ordinal_position": 13
+        },
+        {
+          "name": "created_by",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 nx_users.id or system",
+          "ordinal_position": 14
+        },
+        {
+          "name": "created_user_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "system | coach | admin",
+          "ordinal_position": 15
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 18
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tory_roadmap_current",
+          "columns": [
+            "nx_user_id",
+            "is_current"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_roadmap_status",
+          "columns": [
+            "status"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_roadmap_user",
+          "columns": [
+            "nx_user_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "tory_roadmap_items",
+      "engine": "InnoDB",
+      "row_format": "Dynamic",
+      "auto_increment": 1,
+      "create_time": "2026-02-18 22:40:45",
+      "table_comment": "",
+      "columns": [
+        {
+          "name": "id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "PRI",
+          "extra": "auto_increment",
+          "comment": "",
+          "ordinal_position": 1
+        },
+        {
+          "name": "roadmap_id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 tory_roadmaps.id",
+          "ordinal_position": 2
+        },
+        {
+          "name": "nx_lesson_id",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "MUL",
+          "extra": "",
+          "comment": "FK \u2192 nx_lessons.id",
+          "ordinal_position": 3
+        },
+        {
+          "name": "content_tag_id",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "FK \u2192 tory_content_tags.id (tag used for matching)",
+          "ordinal_position": 4
+        },
+        {
+          "name": "sequence",
+          "type": "int(11)",
+          "nullable": false,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Order in the roadmap (1-based)",
+          "ordinal_position": 5
+        },
+        {
+          "name": "status",
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "'pending'",
+          "key": "MUL",
+          "extra": "",
+          "comment": "pending | active | completed | skipped | locked",
+          "ordinal_position": 6
+        },
+        {
+          "name": "is_critical",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "1 = cannot be removed by coach (guardrail)",
+          "ordinal_position": 7
+        },
+        {
+          "name": "is_discovery",
+          "type": "int(11)",
+          "nullable": false,
+          "default": "0",
+          "key": "",
+          "extra": "",
+          "comment": "1 = part of discovery phase (first 3-5)",
+          "ordinal_position": 8
+        },
+        {
+          "name": "match_score",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Cosine similarity score 0-100",
+          "ordinal_position": 9
+        },
+        {
+          "name": "match_rationale",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Claude-generated explanation: why this lesson for this learner (user-facing)",
+          "ordinal_position": 10
+        },
+        {
+          "name": "trait_targets",
+          "type": "longtext",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "JSON: EPP traits this lesson targets [{trait, expected_impact}]",
+          "ordinal_position": 11
+        },
+        {
+          "name": "started_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 12
+        },
+        {
+          "name": "completed_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 13
+        },
+        {
+          "name": "learner_rating",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Learner rating of this lesson 1-5",
+          "ordinal_position": 14
+        },
+        {
+          "name": "original_sequence",
+          "type": "int(11)",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "Original position before coach reorder (for divergence tracking)",
+          "ordinal_position": 15
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 16
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 17
+        },
+        {
+          "name": "deleted_at",
+          "type": "datetime",
+          "nullable": true,
+          "default": null,
+          "key": "",
+          "extra": "",
+          "comment": "",
+          "ordinal_position": 18
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tory_item_lesson",
+          "columns": [
+            "nx_lesson_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_item_roadmap",
+          "columns": [
+            "roadmap_id"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_item_sequence",
+          "columns": [
+            "roadmap_id",
+            "sequence"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "idx_tory_item_status",
+          "columns": [
+            "status"
+          ],
+          "unique": false,
+          "type": "BTREE"
+        },
+        {
+          "name": "PRIMARY",
+          "columns": [
+            "id"
+          ],
+          "unique": true,
+          "type": "BTREE"
+        }
+      ],
+      "constraints": []
+    },
+    {
       "name": "video_libraries",
       "engine": "InnoDB",
       "row_format": "Dynamic",
       "auto_increment": 164,
-      "create_time": "2026-02-14 04:01:05",
+      "create_time": "2026-02-18 22:27:22",
       "table_comment": "",
       "columns": [
         {

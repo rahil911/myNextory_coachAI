@@ -2,10 +2,13 @@
 routes/dashboard.py — Dashboard overview, timeline, and health.
 """
 
+import shutil
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter
 
+from config import PROJECT_ROOT, SCRIPTS_DIR
 from models import DashboardOverview, TimelineResponse, TimelineEvent
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -78,6 +81,46 @@ async def get_timeline(limit: int = 50):
 async def health():
     """Health check."""
     return {"status": "ok", "ts": datetime.now(timezone.utc).isoformat()}
+
+
+@router.get("/health/dispatch-ready")
+async def dispatch_ready_health():
+    """Pre-flight health check for dispatch readiness.
+
+    Checks that all required binaries and paths exist for agent dispatch.
+    Returns per-check results and an overall ready status.
+    """
+    checks = {}
+
+    # Check bd binary
+    checks["bd"] = shutil.which("bd") is not None
+
+    # Check tmux binary
+    checks["tmux"] = shutil.which("tmux") is not None
+
+    # Check claude binary
+    checks["claude"] = shutil.which("claude") is not None
+
+    # Check spawn.sh exists
+    spawn_script = SCRIPTS_DIR / "spawn.sh"
+    checks["spawn_sh"] = spawn_script.exists()
+
+    # Check project root is a git repo
+    checks["git_repo"] = (PROJECT_ROOT / ".git").exists()
+
+    # Check agents directory exists (or can be created)
+    agents_dir = Path.home() / "agents"
+    checks["agents_dir"] = agents_dir.exists() or agents_dir.parent.exists()
+
+    all_ready = all(checks.values())
+    missing = [k for k, v in checks.items() if not v]
+
+    return {
+        "ready": all_ready,
+        "checks": checks,
+        "missing": missing,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @router.post("/test-notification")

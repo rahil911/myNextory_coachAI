@@ -10,6 +10,8 @@ import json
 import logging
 from pathlib import Path
 
+from config import PROJECT_ROOT, KG_CACHE
+
 logger = logging.getLogger(__name__)
 
 # Known agent capabilities (fallback if KG query fails)
@@ -57,7 +59,7 @@ class AgentAssigner:
     """Assigns beads to agents using KG context."""
 
     def __init__(self):
-        self._baap_root = Path.home() / "Projects" / "baap"
+        self._baap_root = PROJECT_ROOT
         self._kg_cache = None
         self._agents: dict[str, dict] = {}
 
@@ -66,7 +68,7 @@ class AgentAssigner:
         if self._kg_cache is not None:
             return
 
-        cache_path = self._baap_root / ".claude" / "kg" / "agent_graph_cache.json"
+        cache_path = KG_CACHE
         try:
             self._kg_cache = json.loads(cache_path.read_text())
             # Index agents by ID for fast lookup
