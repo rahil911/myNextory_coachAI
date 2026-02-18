@@ -1,0 +1,413 @@
+{
+  "id": "tt_78dbab9a",
+  "topic": "tory",
+  "phase": "confirm",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Think Tank session started. Topic: tory",
+      "timestamp": "2026-02-17T23:53:33.968827+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "I want to brainstorm about: tory",
+      "timestamp": "2026-02-17T23:53:33.971586+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 1: LISTEN 🎧\n\nInteresting — **Tory**. That's a name, but I need to understand what it means to *you*.\n\nA few directions this could go, so let me ask the obvious first:\n\n1. **What is Tory?** Is this a product, a feature, a service, a tool? Give me the elevator pitch — even if it's rough.\n\n2. **Who is it for?** Who's the primary user, and what pain are they feeling today?\n\n3. **What's the relationship to your existing work?** I see you've built the Baap/MyNextory platform (coaching/learning). Is Tory an extension of that world, or something entirely new?\n\nDon't worry about being polished — I just want the raw idea so I can start pulling the thread.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something",
+      "timestamp": "2026-02-17T23:53:46.046296+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "do you understand what all tables are there in your db? use kg and db and give me a brief about the company's db you have, we will be building an exciting app, ill tlel you that later",
+      "timestamp": "2026-02-17T23:54:25.370583+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "Let me explore the database and knowledge graph to understand your existing system before we dive into the new app idea.# Think Tank — Phase 1: LISTEN 🎧\n\nAlright Rahil, I've gone deep into the **baap** database. Here's my understanding of what you've got:\n\n---\n\n## Your Company: MyNextory\n\n**A B2B2C corporate coaching & learning platform.** Companies (clients) enroll their employees as learners, who progress through structured **Journeys → Chapters → Lessons → Slides** (50 interactive slide types). Coaches are assigned to clients for 1:1 sessions.\n\n### The Data Landscape (38 tables, ~75K rows)\n\n| Domain | Tables | What It Covers |\n|--------|--------|---------------|\n| **Identity** | 10 | Users (1,464), employees, coaches, clients, departments, auth |\n| **Content** | 6 | The learning hierarchy — journeys down to 521 individual slides |\n| **Engagement** | 6 | Backpacks (5,833 responses), tasks (2,829), ratings (3,257), journals |\n| **Meetings** | 3 | Coach availability, scheduling, attendees |\n| **Comms** | 8 | SMS (1,323 sent), email threads, notifications, chatbot (27 convos) |\n| **Platform** | 3 | The massive activity_log (57K rows = 77% of all data), documents, jobs |\n\n### Key Observations\n- **`nx_users` is the gravitational center** — 20 references, everything points to it\n- **Engagement data is rich** — backpacks capture every slide interaction with full JSON payloads\n- **activity_log is a goldmine** — full before/after diffs on every action, 30 log types, 24 subject types\n- **18 tables are empty** (master data like journeys, chapters, clients, coaches were likely redacted from the dump)\n- **No explicit foreign keys** — all relationships are convention-based (72 inferred)\n\n---\n\nNow I understand the foundation you're building on. This is a coaching platform with deep learner engagement data, audit trails, and multi-channel communication.\n\n**So — what's the exciting app you want to build on top of this?** I'm all ears. 🎧\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something",
+      "timestamp": "2026-02-17T23:57:00.040685+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "do you see the results from criteria corp or the pdfs that criteria corp returns after the candidate has taken the assessment?",
+      "timestamp": "2026-02-17T23:59:29.400497+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "Good question — let me check what's actually in the database and files related to Criteria Corp assessments.# Think Tank — Phase 1: LISTEN 🎧\n\nGreat question. Here's what I found:\n\n## Criteria Corp Assessment Data — Already in Your DB\n\nThe **`nx_user_onboardings`** table (220 rows, identity domain) is where all the assessment data lives. It has 4 key columns:\n\n| Column | Fill Rate | What's In It |\n|--------|-----------|-------------|\n| `assesment_order_id` | 97% (213) | IDs like `myNx0001230210024218` |\n| `assesment_request` | 97% (213) | JSON with packageId `JB-MMCT55O1F`, candidate name/email |\n| `assesment_response` | 97% (213) | Criteria Corp's `ondemandassessment.com` verification URLs |\n| `assesment_result` | 90% (197) | **EPP (Employee Personality Profile)** scores — Achievement, Motivation, Competitiveness, etc. |\n\nSo **213 users were sent assessments**, **197 completed them** (16 never did). They all took the same package, and the results come back as structured JSON with EPP dimension scores.\n\n## What I DON'T See\n\n- **No actual PDF files** anywhere in the repo — Criteria Corp returns richer PDF reports per candidate, but those aren't stored here. Only the JSON API results are captured.\n- **No code** in the baap project that processes, visualizes, or acts on the EPP scores\n- **No Criteria Corp API credentials** set up in the agent architecture\n- The `chatbot_documents` table has 7 coaching PDFs (titles like \"How to Be a More Reliable Professional\") but those are unrelated coaching content, not assessment results.\n\n---\n\n**So the EPP personality scores are sitting in your DB as raw JSON, but nobody's doing anything smart with them yet.** And the richer PDF reports from Criteria Corp aren't being captured.\n\nIs **Tory** about unlocking this assessment data? Are we building something that interprets, coaches from, or matches people based on these personality profiles? Tell me the vision. 🎧\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something",
+      "timestamp": "2026-02-18T00:05:29.319746+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "do you also have access to questions and answers of users when he was onboarded the ones that were sent to criteria corp that returned the EPP (Employee Personality Profile) scores — Achievement, Motivation, Competitiveness, etc.",
+      "timestamp": "2026-02-18T00:29:20.959145+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "Let me dig into the actual data stored in `nx_user_onboardings` to see if there are onboarding questions/answers beyond the Criteria Corp assessment fields.# Think Tank — Phase 1: LISTEN 🎧\n\nGreat question — here's exactly what's in the DB:\n\n## Yes, You Have the Onboarding Q&A — But NOT Sent to Criteria Corp\n\nThe onboarding questions and Criteria Corp assessment are **parallel but independent** data streams, both living in `nx_user_onboardings` (220 rows, 31 columns):\n\n### Onboarding Questionnaire Answers (~196-212 users answered)\n\n| Column | Sample Data |\n|--------|------------|\n| `why_did_you_come` | `[\"I want to get better at my current job and grow my career\"]` |\n| `own_reason` | Free-text: `\"Excited to help evaluate this new platform.\"` |\n| `in_first_professional_job` | `Yes` / `No` |\n| `call_yourself` | `[\"Advanced Beginner\",\"Some Experience\"]` |\n| `advance_your_career` | `[\"I am fully motivated and ready to get started.\"]` |\n| `imp_thing_career_plan` | `[\"Compensation\",\"Grow and Learn\",\"Work/Life Balance\"]` |\n| `best_boss` | `[\"Gave me praise and encouragement\"]` |\n| `success_look_like` | `[\"Make a lot of money...\",\"I am growing and learning\"]` |\n| `stay_longer` | `Yes` / `No` |\n| `future_months` | 6, 7, 9, 10 |\n\n### Criteria Corp EPP Scores (197 users completed)\n29 personality/job-fit scores including Achievement, Motivation, Competitiveness, Assertiveness, Extroversion, Conscientiousness, Stability, StressTolerance, plus 13 job-fit scores (Manager, Sales, Programmer, CustomerService, etc.).\n\n### The Flow Was:\n1. User answers onboarding questions → stored as columns\n2. System sends only **name + email + packageId** to Criteria Corp (no Q&A)\n3. User takes EPP test on Criteria Corp's platform separately\n4. Scores come back as JSON\n\n**The PDFs** — there's a `downloadedUrl` field pointing to `/Uploads/Assesment/{orderId}.pdf`, but no actual PDF files in the repo.\n\n---\n\nSo you've got **two rich personality/motivation datasets per user** — their self-reported career values AND their psychometric EPP profile — sitting unused. Plus 5,833 lesson interaction responses in `backpacks`.\n\nNow I'm really curious — **what's Tory going to do with all this?** 🎧\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something",
+      "timestamp": "2026-02-18T00:32:01.320544+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Tory is about unlocking this assessment data. we want to  build automated learning path that interprets personality profiles and  matches  the lessons as well as coaches from",
+      "timestamp": "2026-02-18T16:19:01.397515+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 1: LISTEN 🎧\n\nNow we're talking. **Tory is a personalized learning path engine** — it reads who you *are* (EPP personality + self-reported motivations) and automatically builds a tailored journey through the right lessons with the right coach.\n\nLet me make sure I'm tracking the full picture:\n\n## What I Think Tory Does\n\n1. **Interprets** — Takes the 29 EPP scores + onboarding Q&A and builds a learner profile (strengths, gaps, motivations)\n2. **Matches Lessons** — Maps that profile to the content library (journeys → chapters → lessons → slides) so each learner gets a personalized path, not a one-size-fits-all sequence\n3. **Matches Coaches** — Pairs learners with coaches based on personality fit (e.g., a low-assertiveness learner might need a different coaching style than a high-competitiveness one)\n\n## What I Need to Understand Better\n\nA few critical questions before we move to Explore:\n\n1. **Who triggers Tory?** Is it automatic at onboarding (assessment done → path generated), or does an admin/HR person kick it off? Or does a coach curate it with Tory's recommendations?\n\n2. **How much content exists to match against?** I saw 18 empty master tables (journeys, chapters, lessons, clients, coaches were redacted). In production, roughly how many journeys/lessons/coaches are we working with? Dozens? Hundreds?\n\n3. **What does \"match\" mean to you?** Is this rules-based (e.g., \"low motivation → assign Module X\"), AI/ML-driven (embeddings, similarity scoring), or LLM-powered (Claude interprets the profile and recommends)? Do you have a preference?\n\n4. **Is the learning path static or adaptive?** Does Tory generate a path once at onboarding, or does it re-adjust as the learner progresses (using backpack interaction data, ratings, task completion)?\n\n\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something",
+      "timestamp": "2026-02-18T16:19:22.964579+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Automatically triggered at onboarding which a coach may or maynot curate the Tory's recommendations. Hundereds of content exisits. Claude interprests the profile and recommends leveraging similarity scoring. the learning path will be adaptive using backpack interaction data, ratings, task completion etc.",
+      "timestamp": "2026-02-18T16:24:28.916408+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 1: LISTEN 🎧\n\nExcellent — this is getting sharp. Let me reflect back what I now understand, then ask my final Listen-phase questions.\n\n\n\n## Two Final Questions Before We Explore\n\n1. **Where does Tory live architecturally?** Is this:\n   - A **standalone app/service** (separate frontend, its own UI where learners see their path)?\n   - A **backend engine** that feeds recommendations into the existing MyNextory platform (the platform renders the path)?\n   - An **MCP agent** that plugs into the baap architecture you've already built?\n\n2. **What does the learner actually see?** When Tory generates a path, what's the experience — a ranked list of lessons? A visual roadmap? A \"next up\" card that changes as they progress? Or is this initially invisible to the learner (just reorders their journey behind the scenes)?\n\nThese two answers will shape everything about the technical approach.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Explore",
+      "timestamp": "2026-02-18T16:24:46.943062+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "A",
+      "timestamp": "2026-02-18T16:26:01.423343+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "What would you like to adjust? Tell me what I've got wrong or what you want to change about my current understanding.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something",
+      "timestamp": "2026-02-18T16:26:08.899008+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "backend engine feeds myNextory platform a visible roadmap",
+      "timestamp": "2026-02-18T16:27:02.020538+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 1: LISTEN 🎧\n\nGot it — clean and clear.\n\n**Tory is a backend engine** that generates a personalized, adaptive learning roadmap. The existing MyNextory platform renders it as a **visible roadmap** the learner can see and follow.\n\nLet me update the spec:\n\n\n\n## My Understanding Check\n\nSo the flow is:\n1. Employee completes onboarding → EPP scores + Q&A land in DB\n2. **Tory fires automatically** → interprets personality, scores content similarity, selects coach\n3. Roadmap is generated and **visible to the learner** in MyNextory\n4. As the learner works through lessons, Tory **re-evaluates and adapts** the path\n5. Coach gets the same roadmap view and **can curate** (reorder, swap, lock lessons)\n\n**One last thing** — is there anything else about the vision I'm missing? Any integration with the existing comms layer (SMS/email nudges when the path updates)? Any reporting dashboard for HR/admins?\n\nIf this feels solid, I think we're **ready to Explore** the technical architecture. 🔍\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Explore",
+      "timestamp": "2026-02-18T16:27:18.829216+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "An integration with the existing comms layer (SMS/email nudges when the path updates) is required. for adaptive learning a Periodic reassessment similar to EPP is required and evaluated before reorder, swap or lock lesson. Also reporting dashboard for HR/admins on the progress",
+      "timestamp": "2026-02-18T16:30:22.628290+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 1: LISTEN 🎧\n\nPerfect — three important additions that round out the vision significantly.\n\n\n\n## Updated Picture\n\n| Layer | What Tory Does |\n|-------|---------------|\n| **Interpret** | Claude reads EPP scores + Q&A → builds learner personality profile |\n| **Match** | Similarity scoring against content library → personalized roadmap + coach pairing |\n| **Adapt** | Periodic reassessments + backpack/ratings/tasks data → re-evaluate and adjust path |\n| **Notify** | SMS/email nudges via existing comms layer (path changes, reassessment reminders) |\n| **Report** | HR/Admin dashboard — learner progress, completion rates, roadmap changes |\n\nThe reassessment piece is a big addition — it means Tory isn't just a one-shot recommendation engine, it's a **continuous feedback loop**: assess → learn → reassess → re-learn.\n\n**I think I have a solid grasp of the vision now.** Ready to move to Explore where I'll map out architecture options, data flows, and tradeoffs?\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Explore",
+      "timestamp": "2026-02-18T16:30:39.562374+00:00",
+      "phase": "listen",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "G",
+      "timestamp": "2026-02-18T16:31:27.937202+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 2: EXPLORE 🔍\n\nWe've crossed into Explore. Now I map the technical solution space — architecture, data flows, tradeoffs, and a recommended approach.\n\nLet me start by grounding this in what you actually have, then propose how Tory layers on top.\n\n---\n\n## The Architecture Landscape\n\nI see three viable approaches. Let me lay them out:\n\n### Option A: **Tory as an MCP Agent** (extends your existing baap architecture)\n- Tory becomes agent #10 in your `.claude/agents/` system\n- Uses `db_tools.py` for data access, `ownership_graph.py` for navigation\n- Claude interprets profiles and generates paths via the agent framework\n- **Pro:** Fits your existing architecture perfectly, reuses all Phase 3-5 infrastructure\n- **Con:** MCP agents are request-response — the \"periodic reassessment\" loop and adaptive engine need a scheduler outside the agent framework\n\n### Option B: **Tory as a Standalone Python Service**\n- FastAPI/Flask service with its own endpoints\n- Embeds Claude API calls for profile interpretation\n- Has its own scheduler (APScheduler/Celery) for periodic reassessment\n- Writes roadmaps to new DB tables, MyNextory reads them\n- **Pro:** Clean separation, can scale independently, handles async loops natively\n- **Con:** New infrastructure to maintain, duplicates some DB access patterns\n\n### Option C: **Hybrid — MCP Agent + Background Worker** (Recommended)\n- The **intelligence layer** (interpret profiles, score content, match coaches) lives as an MCP agent — leveraging Claude and your existing tools\n- A **lightweight worker** (cron/Celery) handles the periodic loops: trigger reassessments, check backpack progress, fire comms notifications\n- New DB tables for roadmaps, reassessment schedules, and coach overrides\n- MyNextory reads the roadmap tables directly\n- **Pro:** Best of both — reuses your architecture for the smart parts, adds scheduling only where needed\n- **Con:** Two moving parts to coordinate\n\n\n\n\n\n---\n\n## Key Question for You\n\nBefore I go deeper on data flow and the new tables needed:\n\n**Does Option C (Hybrid) resonate, or do you lean toward A or B?** This choice shapes everything downstream.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Scope",
+      "timestamp": "2026-02-18T16:31:57.200894+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Option C resonates",
+      "timestamp": "2026-02-18T16:34:18.240022+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 2: EXPLORE 🔍\n\nGreat choice. Let me now map out the full technical architecture for Option C.\n\n---\n\n## Data Flow: End to End\n\n```\nONBOARDING COMPLETE\n       │\n       ▼\n┌─────────────────────┐\n│  TORY MCP AGENT     │  (Claude-powered intelligence)\n│                     │\n│  1. Profile Builder │◄── nx_user_onboardings (EPP + Q&A)\n│  2. Content Scorer  │◄── journeys/chapters/lessons/slides\n│  3. Coach Matcher   │◄── coaches + EPP compatibility\n│  4. Path Generator  │──► tory_roadmaps (NEW)\n└─────────────────────┘\n       │\n       ▼\n┌─────────────────────┐\n│  BACKGROUND WORKER  │  (Celery/cron scheduler)\n│                     │\n│  • Check progress   │◄── backpacks, tasks, ratings\n│  • Trigger reassess │──► tory_reassessments (NEW)\n│  • Fire comms       │──► sms_logs, notification_logs\n│  • Re-invoke Tory   │──► Tory Agent (adapt path)\n└─────────────────────┘\n       │\n       ▼\n┌─────────────────────┐\n│  MYNEXTORY PLATFORM │  (existing frontend)\n│                     │\n│  • Learner roadmap  │◄── tory_roadmaps\n│  • Coach curation   │──► tory_coach_overrides (NEW)\n│  • HR dashboard     │◄── tory_progress_snapshots (NEW)\n└─────────────────────┘\n```\n\n## New Database Tables Needed\n\n| Table | Purpose | Key Columns |\n|-------|---------|-------------|\n| `tory_learner_profiles` | Claude's interpreted personality summary | user_id, epp_summary_json, motivation_tags, strengths, gaps, updated_at |\n| `tory_roadmaps` | The active learning path per learner | user_id, roadmap_json (ordered lessons + rationale), version, status, created_at |\n| `tory_roadmap_items` | Individual lesson assignments | roadmap_id, lesson_id, sequence, status (pending/active/done/skipped), score |\n| `tory_coach_assignments` | Coach-learner pairing with reasoning | user_id, coach_id, match_score, match_rationale, assigned_at |\n| `tory_reassessments` | Periodic re-evaluation records | user_id, trigger (scheduled/progress/coach), assessment_data, result_delta, created_at |\n| `tory_coach_overrides` | When coaches curate the path | roadmap_id, coach_id, action (reorder/swap/lock/unlock), item_id, reason |\n| `tory_progress_snapshots` | Aggregated data for HR dashboard | user_id, snapshot_date, completion_pct, engagement_score, path_changes_count |\n\n## The Intelligence Layer — How Claude Interprets & Matches\n\nThis is the core differentiator. Here's how I see the scoring pipeline:\n\n1. **Profile Interpretation** — Claude receives raw EPP scores (29 dimensions) + Q&A answers → outputs a structured learner profile: learning style, motivational drivers, risk areas, coaching needs. Cached in `tory_learner_profiles`.\n\n2. **Content Similarity Scoring** — Each lesson gets tagged with personality-relevant attributes (e.g., \"builds assertiveness\", \"requires high conscientiousness\"). Claude + embedding similarity scores lessons against the learner profile. **Key question: do lessons already have metadata/tags, or does Claude need to generate them from slide content?**\n\n3. **Coach Matching** — Coaches also take EPP (or have profiles). Claude scores compatibility: complementary strengths, coaching style vs. learner needs. **Key question: do coaches have personality/style data in the DB, or is this net-new?**\n\n4. **Adaptive Re-scoring** — On reassessment or progress milestones, the worker triggers Tory to re-run steps 1-2 with updated data (new EPP scores + interaction patterns from backpacks).\n\n\n\n\n\n---\n\n## Two Critical Questions\n\n1. **Lesson metadata** — Do your lessons already have tags/descriptions that indicate what personality traits they develop? Or does Claude need to analyze slide content and generate these tags as a bootstrap step?\n\n2. **Coach profiles** — Do coaches have EPP scores or any personality/style data? Or do we need to build a coach profiling step first?\n\nThese answers determine whether we need a **content bootstrapping phase** before Tory can start matching.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Scope",
+      "timestamp": "2026-02-18T16:35:01.066355+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Claude need to generate them from slide content. coaches have personality/style and is this net-new",
+      "timestamp": "2026-02-18T16:36:38.268944+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 2: EXPLORE 🔍\n\nImportant clarification needed — I want to make sure I parse your answer correctly on coaches:\n\n**\"coaches have personality/style and is this net-new\"** — did you mean:\n\n- **(a)** Coaches **do** have personality/style data already in the DB, AND this coach matching feature is net-new (never been done before)?\n- **(b)** Coaches **don't** have personality/style data — it's net-new data we need to collect?\n\nThis matters because if (b), we need a **coach onboarding/profiling step** as a prerequisite before Tory can match coaches to learners.\n\nWhile I wait for that answer, let me lay out the **content bootstrapping phase** since that's confirmed:\n\n---\n\n## Content Bootstrap: Claude Generates Lesson Metadata\n\nBefore Tory can match learners to content, we need every lesson tagged. Here's the pipeline:\n\n1. **Crawl** — Pull all lessons + their slides (521 slides across the content hierarchy)\n2. **Analyze** — Claude reads each lesson's slide content and generates:\n   - Personality traits it develops (mapped to EPP dimensions)\n   - Difficulty/intensity level\n   - Learning style fit (visual, reflective, active, etc.)\n   - Prerequisite knowledge/traits\n3. **Store** — New table `tory_content_tags` (lesson_id, trait_tags_json, difficulty, learning_style, prerequisites)\n4. **Review** — Optionally let coaches/admins validate or adjust the generated tags\n\nThis is a **one-time batch job** (with periodic re-runs as new content is added). It creates the scoring surface that Tory's similarity engine matches against.\n\n\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Scope",
+      "timestamp": "2026-02-18T16:36:58.656254+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Coaches don't have personality/style data — it's net-new data we need to collect.",
+      "timestamp": "2026-02-18T17:02:21.336273+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 2: EXPLORE 🔍\n\nClear — so we have **two bootstrap prerequisites** before Tory's matching engine can go live:\n\n---\n\n## Two Bootstrap Phases\n\n### Bootstrap 1: Content Tagging (automated)\nClaude analyzes 521 slides → generates personality-trait tags per lesson. One-time batch, no human input required (though coaches can review).\n\n### Bootstrap 2: Coach Profiling (requires human input)\nCoaches need personality/style data collected. Here are the options:\n\n| Approach | Effort | Data Quality |\n|----------|--------|-------------|\n| **A. Coaches take EPP** via Criteria Corp (same as learners) | Low dev effort, cost per coach | Apples-to-apples comparison with learner EPP scores — best for similarity scoring |\n| **B. Claude-powered coach intake** — a structured questionnaire about coaching style, strengths, approach | Medium dev effort, free | Rich qualitative data but different format than learner EPP |\n| **C. Hybrid** — EPP assessment + a short coaching-style questionnaire | Most complete | Best match quality — quantitative EPP + qualitative style |\n\n**My recommendation: Option C (Hybrid).** EPP gives you the same 29 dimensions for coaches that learners have — making similarity/complementarity scoring mathematically clean. The style questionnaire adds coaching-specific context (directive vs. facilitative, specialization areas, availability patterns).\n\nThis means a new table: `tory_coach_profiles` (coach_id, epp_scores_json, style_json, specializations, availability, updated_at).\n\n---\n\n## Updated Architecture Summary\n\nThe system now has **3 layers**:\n\n1. **Bootstrap Layer** (run once, refresh periodically)\n   - Content tagger → `tory_content_tags`\n   - Coach profiler → `tory_coach_profiles`\n\n2. **Intelligence Layer** (Tory MCP Agent, Claude-powered)\n   - Profile interpreter → `tory_learner_profiles`\n   - Content scorer (learner profile × content tags) → `tory_roadmaps`\n   - Coach matcher (learner EPP × coach EPP + style) → `tory_coach_assignments`\n\n3. **Adaptive Layer** (Background Worker)\n   - Progress monitor → triggers reassessment\n   - Reassessment evaluator → path adjustment\n   - Comms dispatcher → SMS/email nudges\n   - HR snapshot generator → `tory_progress_snapshots`\n\n\n\n---\n\n## Question\n\n**Does Option C (Hybrid) for coach profiling work for you?** And are there any requirements I'm missing before we stress-test this in Scope?\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Scope",
+      "timestamp": "2026-02-18T17:02:49.973933+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "D",
+      "timestamp": "2026-02-18T17:03:40.814794+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Hybrid option C",
+      "timestamp": "2026-02-18T17:03:51.766492+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 2: EXPLORE 🔍\n\nGood — let me dig deeper on the parts that will make or break this system.\n\n---\n\n## Probing Questions\n\n### 1. The Similarity Scoring Engine\nWhen Claude scores a learner against content, I need to understand the matching logic more precisely:\n\n- **Complementary vs. Reinforcing?** If a learner scores LOW on assertiveness, does Tory assign lessons that *build* assertiveness (gap-filling), or lessons that *leverage* their existing strengths (e.g., collaboration)? Or a **blend** with a configurable ratio?\n- **Who decides the pedagogy?** Is there a coaching philosophy at MyNextory that says \"always address weaknesses first\" or \"lead with strengths\"? This is the single most important design decision for the matching algorithm.\n\n### 2. Reassessment Mechanics\nYou said periodic reassessment \"similar to EPP\" — I want to nail this down:\n\n- **Is this literally another Criteria Corp EPP test?** (cost implications — you're paying per assessment)\n- Or a **Tory-native mini-assessment** — a shorter, Claude-designed questionnaire that measures change over time without the full EPP?\n- **What triggers reassessment?** Fixed interval (every 30/60/90 days)? Milestone-based (completed 50% of roadmap)? Coach-initiated? All of the above?\n\n### 3. Coach Override Boundaries\nCoaches can curate Tory's recommendations. But how much power do they get?\n\n- Can a coach **completely replace** Tory's roadmap with their own?\n- Or are there **guardrails** — e.g., coach can reorder/swap within Tory's selections, but can't remove core lessons flagged as critical for the learner's gaps?\n- Does the system **track divergence** between Tory's recommendation and the coach's override (useful for measuring Tory's accuracy over time)?\n\n### 4. The Cold Start Problem\nYou have 197 users with EPP data and 5,833 backpack responses. But:\n\n- **New employees joining tomorrow** — they have EPP but zero interaction data. How aggressive should Tory's initial path be vs. a \"discovery\" phase where it observes before optimizing?\n- **Content without enough learner history** — new lessons with no backpack data. How does Tory score content it hasn't seen performed on?\n\n---\n\nThese four areas are where the system either feels magical or falls flat. Which ones do you want to address first, or hit them all?\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Scope",
+      "timestamp": "2026-02-18T17:04:02.689232+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 2: EXPLORE 🔍\n\nGood — Hybrid it is. Let me dig deeper into the mechanics that matter most.\n\n---\n\n## Deep Dive: The Matching Algorithm\n\nThis is Tory's brain — how Claude + similarity scoring actually work together. Let me break it down:\n\n### Step 1: Learner Profile Vector\nFrom EPP (29 dimensions) + Q&A (10 fields), Claude produces:\n- **Trait vector** — normalized EPP scores (0-100 scale across 29 dims)\n- **Motivation cluster** — derived from Q&A (`why_did_you_come`, `imp_thing_career_plan`, `success_look_like`)\n- **Growth gaps** — where EPP scores are low BUT motivation is high (this is where learning has the most leverage)\n\n### Step 2: Content Scoring\nEach tagged lesson has a trait-relevance vector (from Bootstrap 1). Scoring is:\n- **Cosine similarity** between learner growth-gaps and lesson trait-tags\n- **Sequencing logic** — Claude orders lessons by prerequisite chains + difficulty progression\n- **Diminishing returns** — avoid stacking 5 lessons on the same trait\n\n### Step 3: Coach Matching\n- **EPP complementarity** — not identical personalities, but complementary (e.g., low-assertiveness learner gets a coach with high assertiveness + high empathy)\n- **Style fit** — directive coaches for learners who need structure, facilitative for self-starters\n- **Specialization overlap** — coach expertise areas vs. learner growth gaps\n\n### Step 4: Adaptive Triggers\nThe background worker monitors and re-invokes Tory when:\n\n| Trigger | Signal | Action |\n|---------|--------|--------|\n| **Lesson completion** | Backpack submitted + rating | Update progress, check if path needs reorder |\n| **Stall detection** | No activity for X days | Nudge via comms, flag to coach |\n| **Reassessment due** | Scheduled interval (every N weeks?) | Send mini-assessment, re-score profile |\n| **Coach override** | Coach reorders/swaps | Lock changes, adjust remaining path |\n| **Significant drift** | Reassessment shows big EPP shift | Full path regeneration |\n\n---\n\n## Key Design Decision Needed\n\n**Reassessment format** — you said \"periodic reassessment similar to EPP.\" Does this mean:\n\n1. **Full EPP retake** via Criteria Corp (same 29-dimension test, ~30 min, costs per assessment)?\n2. **Mini-assessment** — a shorter Claude-generated questionnaire targeting only the dimensions where the learner is actively growing (5-10 min, free)?\n3. **Both** — mini-assessments frequently (every 4-6 weeks), full EPP retake at major milestones (quarterly)?\n\nThis affects cost, learner fatigue, and data quality. **What's your preference?**\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Scope",
+      "timestamp": "2026-02-18T17:04:14.925559+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "both",
+      "timestamp": "2026-02-18T17:06:39.045067+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 2: EXPLORE 🔍\n\nSmart — the dual reassessment cadence gives you frequent signal without burning out learners or budget.\n\n---\n\n## Reassessment Design: Dual Cadence\n\n| Type | Frequency | Format | Cost | Data |\n|------|-----------|--------|------|------|\n| **Mini-assessment** | Every 4-6 weeks | Claude-generated, 5-10 questions targeting active growth dimensions | Free | Relative change signals, sentiment |\n| **Full EPP retake** | Quarterly (or at major milestones like 50%/100% roadmap completion) | Criteria Corp EPP, same 29 dimensions | Per-assessment fee | Absolute recalibration of full profile |\n\nThe mini-assessment becomes Tory's \"pulse check\" — it detects drift early. The full EPP is the \"recalibration\" — it resets the ground truth.\n\n---\n\n## Now Let Me Address the 4 Critical Questions I Raised Earlier\n\nI need your input on these before we can move to Scope:\n\n### 1. Pedagogy: Gap-filling vs. Strength-leading?\nWhen a learner scores LOW on assertiveness, does Tory:\n- **A)** Assign lessons that build assertiveness (fix the gap)\n- **B)** Lead with their strengths first, then layer in gap work\n- **C)** Configurable blend — coach or admin sets the ratio per learner/client\n\n### 2. Coach Override Boundaries\n- Can a coach **completely replace** Tory's roadmap?\n- Or are there **guardrails** (coach reorders/swaps but can't remove critical lessons)?\n- Should the system **track divergence** between Tory's recommendation and coach edits?\n\n### 3. Cold Start for New Learners\nA new employee has EPP but zero interaction history. Does Tory:\n- Generate a **full roadmap immediately** based on EPP alone?\n- Start with a **discovery phase** (3-5 exploratory lessons) then refine?\n\n### 4. The HR Dashboard — What Metrics?\nWhat does the admin/HR view need to show? Individual progress? Team aggregates? Coach effectiveness? Tory accuracy?\n\n---\n\nThese four answers complete the requirements picture. Hit them all or pick the ones you feel strongly about — I'll make reasonable defaults for the rest.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Scope",
+      "timestamp": "2026-02-18T17:06:57.830698+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "there should be guardrails (coach reorders/swaps but can't remove critical lessons). The system must  track divergence between Tory's recommendation and coach edits. A new employee has EPP but zero interaction history, Tory will Start with a discovery phase (3-5 exploratory lessons) then refine. Metrics to show must include Individual progress, Team aggregates (by department if available else by company), Coach effectiveness, and Tory accuracy.",
+      "timestamp": "2026-02-18T17:10:57.593248+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 2: EXPLORE 🔍\n\nExcellent — every answer was decisive. Let me capture all of this and address the one remaining question.\n\n---\n\n## Captured Decisions\n\n| Decision | Answer |\n|----------|--------|\n| **Coach guardrails** | Reorder/swap only — critical lessons locked. System tracks all divergence. |\n| **Cold start** | Discovery phase (3-5 exploratory lessons) → refine after initial interaction data |\n| **HR Dashboard** | Individual progress, team aggregates (dept → company), coach effectiveness, Tory accuracy |\n\n## The Last Open Question: Pedagogy\n\nYou didn't address #1 — this is the **single most important matching parameter**:\n\nWhen a learner scores LOW on a trait (e.g., assertiveness), does Tory:\n\n- **A) Gap-fill** — prioritize lessons that build weak areas\n- **B) Strength-lead** — lead with strengths, layer gaps in gradually\n- **C) Configurable blend** — coach or admin sets the ratio per learner or per client company\n\nMy recommendation is **C (Configurable)** with a sensible default (e.g., 60% gap-fill / 40% strength-lead). This lets MyNextory adapt to different coaching philosophies across different client companies. But you may have a strong pedagogical opinion here.\n\n---\n\nOnce you answer this, I believe the requirements are complete and we're **ready for Scope** — where I'll stress-test everything, run a pre-mortem, and draw the v1 boundary.\n\n\n\n\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Scope",
+      "timestamp": "2026-02-18T17:11:20.887795+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Tory should provide selection i.e. A,B or C preference when onboarding the company",
+      "timestamp": "2026-02-18T17:13:15.178657+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 2: EXPLORE 🔍\n\nBrilliant — that's a proper B2B design decision. The pedagogy isn't hardcoded OR per-learner — it's a **client company-level setting** chosen at onboarding.\n\n---\n\n## Pedagogy as a Client Configuration\n\nWhen a new company onboards onto MyNextory, they choose their coaching philosophy:\n\n| Option | Label | Default Ratio | Description |\n|--------|-------|---------------|-------------|\n| **A** | Gap-Fill First | 70% gap / 30% strength | \"Address weaknesses head-on\" |\n| **B** | Strength-Lead | 30% gap / 70% strength | \"Build confidence from strengths, then stretch\" |\n| **C** | Balanced Blend | Configurable slider | Company sets their own ratio |\n\nThis means a new table (or column on `clients`): `tory_pedagogy_preference` with the mode + ratio. Tory reads this when generating any roadmap for that company's learners.\n\n---\n\n## Complete Requirements Summary\n\nI now have the full picture. Here's everything we've established:\n\n**Engine:** Hybrid MCP Agent + Background Worker\n**Bootstrap:** Content tagging (automated) + Coach profiling (EPP + style questionnaire)\n**Matching:** Claude interprets EPP + Q&A → cosine similarity against tagged content → coach complementarity scoring\n**Pedagogy:** Client-company chooses A/B/C at onboarding\n**Cold Start:** Discovery phase (3-5 exploratory lessons) before full path\n**Adaptation:** Mini-assessments every 4-6 weeks + full EPP quarterly\n**Coach Power:** Reorder/swap with guardrails, no removal of critical lessons, divergence tracked\n**Comms:** SMS/email nudges on path changes, stall detection, reassessment reminders\n**Dashboard:** Individual progress, team/dept aggregates, coach effectiveness, Tory accuracy\n**8 new DB tables** across bootstrap, intelligence, and adaptive layers\n\n\n\n\n\n**I believe we're ready for Scope** — where I'll run a pre-mortem, identify what could go wrong, draw the v1 boundary, and stress-test the plan.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Scope",
+      "timestamp": "2026-02-18T17:13:42.480293+00:00",
+      "phase": "explore",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "G",
+      "timestamp": "2026-02-18T17:14:40.477240+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 3: SCOPE 🔬\n\nWelcome to the stress-test zone. My job now is to be the devil's advocate — find the cracks before reality does.\n\n---\n\n## Pre-Mortem: \"It's 3 months later and Tory failed. Why?\"\n\nHere are the most likely failure modes, ranked by risk:\n\n### 🔴 HIGH RISK\n\n**1. Content Tagging Quality is Garbage**\nClaude analyzes 521 slides and generates trait tags — but if the slide content is thin (bullet points, images, videos without transcripts), the tags will be shallow or wrong. Bad tags → bad matches → learners get irrelevant lessons → trust collapses on day one.\n- **Mitigation:** Tag quality audit. Run bootstrap, sample 20% of tags, have a coach validate. Build a feedback loop where coaches flag bad matches.\n\n**2. The \"Magical Matching\" Feels Random to Learners**\nLearners see a roadmap but don't understand *why* these lessons were chosen. Without transparency, it feels like an algorithm making arbitrary decisions — especially if the discovery phase (3-5 exploratory lessons) doesn't resonate.\n- **Mitigation:** Every roadmap item needs a human-readable rationale (\"Assigned because your EPP shows growth opportunity in assertiveness\"). The spec already has `match_rationale` — this must be user-facing, not just internal.\n\n**3. Coach Adoption Resistance**\nCoaches are told \"an AI built the learning path.\" Many will feel undermined, override aggressively, or ignore Tory entirely. If coach divergence is high and outcomes don't improve, you have an expensive system nobody trusts.\n- **Mitigation:** Position Tory as the coach's assistant, not replacement. Coaches see the rationale, can adjust within guardrails, and get credit for improved outcomes. The divergence tracking should be framed as \"insight\" not \"surveillance.\"\n\n### 🟡 MEDIUM RISK\n\n**4. Reassessment Fatigue**\nMini-assessments every 4-6 weeks + full EPP quarterly = a lot of asks. Learners already doing lessons, tasks, and backpacks. If reassessment feels like homework, completion rates will crater.\n- **Mitigation:** Keep minis to 3-5 minutes max. Make them feel like reflection, not testing. Consider embedding them *within* the lesson flow rather than as separate events.\n\n**5. Cold Data Problem — 18 Empty Master Tables**\nYour dump has 197 users with EPP data but journeys, chapters, lessons, and coaches tables are empty. In production these are populated — but we're building and testing against incomplete data. If the production schema differs from what we've designed against, integration breaks.\n- **Mitigation:** Get a production data sample (even anonymized) for at least content + coach tables before building the matching engine.\n\n**6. Criteria Corp API Dependency**\nFull EPP retakes quarterly means ongoing API calls to Criteria Corp. If their API changes, pricing shifts, or they have downtime during a reassessment window, the adaptive loop stalls.\n- **Mitigation:** Design the reassessment scheduler to be resilient — queue failed attempts, fall back to mini-assessment data, alert admins.\n\n### 🟢 LOW RISK (but worth noting)\n\n**7. Dashboard Scope Creep** — HR dashboards have a way of growing endlessly. \"Can we also see X?\" every sprint.\n\n**8. Multi-tenancy Complexity** — Different clients have different pedagogy settings (A/B/C). Ensuring Tory respects these boundaries cleanly across the system.\n\n---\n\n\n\n---\n\n## Questions for You\n\n1. **How rich is the actual slide content in production?** Full paragraphs? Mostly images/videos? This determines whether automated content tagging is viable or needs human augmentation.\n\n2. **Which of these risks scare you most?** I want to know where your gut says \"that could actually kill this.\"\n\n3. **What's your timeline and budget constraint?** This shapes what goes into v1 vs. v2.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Confirm",
+      "timestamp": "2026-02-18T17:15:14.617542+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Content Tagging Quality is Garbage and The \"Magical Matching\" Feels Random to Learners",
+      "timestamp": "2026-02-18T17:29:26.560942+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 3: SCOPE 🔬\n\nGood — you've identified the two risks that are **existential** for Tory. If matching feels arbitrary, nothing else matters. Let me stress-test these and design the mitigations.\n\n---\n\n## Risk #1: Content Tagging Quality is Garbage\n\nThe core problem: Claude is only as good as the input. If slides are mostly images, video embeds, or sparse bullet points, the generated trait-tags will be hallucinated or generic.\n\n### Defense-in-Depth Strategy\n\n| Layer | What | How |\n|-------|------|-----|\n| **L1: Input Enrichment** | Don't just feed Claude raw slides — enrich first | Concatenate slide content + lesson title + chapter title + journey description. If slides have video, check for transcripts. If images, check for alt text. |\n| **L2: Structured Output** | Force Claude into a rigid schema, not freeform | Output must be: `{epp_dimensions: [{trait, relevance_score, direction}], difficulty, learning_style, prerequisite_traits}` — no prose, no guessing |\n| **L3: Confidence Score** | Claude self-rates confidence per tag | If confidence < threshold → flag for human review instead of auto-publishing |\n| **L4: Human-in-the-Loop** | Coach review queue for low-confidence tags | Dashboard where coaches validate/correct tags. Corrections feed back to improve future tagging prompts |\n| **L5: Feedback Loop** | Learner outcomes validate tags retroactively | If learners with low assertiveness complete an \"assertiveness-tagged\" lesson and their next mini-assessment shows no change → tag quality is suspect → re-tag |\n\n**The key insight:** Content tagging isn't a one-shot batch job. It's a **living system** with automated generation → human validation → outcome-based correction.\n\n### V1 Scope Decision\n- L1-L3 in v1 (automated with confidence gating)\n- L4 in v1 (coach review UI — simple approve/reject/edit)\n- L5 in v2 (needs enough outcome data to be meaningful)\n\n---\n\n## Risk #2: \"Magical Matching\" Feels Random\n\nThis is a **trust and transparency** problem. The fix is at the UX layer, but it has deep backend implications.\n\n### The \"Why This?\" Framework\n\nEvery touchpoint where Tory makes a recommendation needs a **human-readable explanation**:\n\n| Touchpoint | What the Learner Sees |\n|------------|----------------------|\n| **Roadmap generation** | \"Your path focuses on building leadership communication because your profile shows strong motivation but developing assertiveness.\" |\n| **Each lesson card** | \"This lesson builds on your strength in conscientiousness while stretching your comfort with delegation.\" |\n| **Coach assignment** | \"Coach Sarah's facilitative style complements your self-directed learning preference.\" |\n| **Path adaptation** | \"Based on your recent progress and reflection, we've moved Lesson X earlier — your engagement data suggests you're ready.\" |\n| **Discovery phase** | \"These first 5 lessons help us understand your learning style. Your full personalized path will be ready after.\" — sets expectations explicitly |\n\n### Backend Requirement\nThis means `match_rationale` isn't a debug field — it's a **first-class, user-facing, Claude-generated explanation** stored alongside every recommendation. Claude must generate both the recommendation AND the explanation in the same call.\n\n### The \"Show Your Work\" Principle\n- Learner profile summary should be **visible to the learner** (\"Here's what we learned about you\")\n- Learners can **disagree** — \"This doesn't sound like me\" button → flags for coach review, adjusts confidence\n- Coaches see the full reasoning, not just the output\n\n\n\n\n\n---\n\n## Still Need Your Input\n\nTwo questions I asked that are still open — they determine v1 scope:\n\n1. **How rich is the actual slide content in production?** If it's mostly text, L1-L3 tagging will work well. If it's mostly video/images, we need a heavier enrichment strategy or manual tagging for v1.\n\n2. **Timeline and budget?** Are we building v1 in 4 weeks? 8 weeks? 3 months? This draws the line on what's in and what's deferred.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Confirm",
+      "timestamp": "2026-02-18T17:30:08.930450+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "need to include everything in V1 except coaching assessment and assignment which can be added in v2",
+      "timestamp": "2026-02-18T17:31:39.976646+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 3: SCOPE 🔬\n\nClear v1/v2 boundary. Let me stress-test this split to make sure it holds up.\n\n---\n\n## V1 vs V2 Boundary\n\n### V1: Automated Learning Path Engine\n| In Scope | Details |\n|----------|---------|\n| **Bootstrap: Content Tagging** | L1-L5 (all layers including feedback loop) |\n| **Learner Profile Interpretation** | Claude reads EPP + Q&A → structured profile |\n| **Content Matching & Roadmap Generation** | Similarity scoring, sequencing, discovery phase |\n| **Pedagogy Configuration** | Client-company chooses A/B/C at onboarding |\n| **Adaptive Learning Loop** | Background worker monitors progress, triggers reassessment |\n| **Dual Reassessment** | Mini-assessments (4-6 weeks) + full EPP (quarterly) |\n| **Comms Integration** | SMS/email nudges for path changes, stalls, reassessments |\n| **HR Dashboard** | Individual progress, team/dept aggregates, Tory accuracy |\n| **\"Why This?\" Transparency** | User-facing rationale on every recommendation |\n| **Learner Feedback** | \"This doesn't sound like me\" mechanism |\n| **Coach Guardrails** | Reorder/swap with locked critical lessons, divergence tracking |\n\n### V2: Coach Intelligence Layer\n| Deferred | Details |\n|----------|---------|\n| **Coach EPP Assessment** | Coaches take Hybrid assessment (EPP + style questionnaire) |\n| **Coach Profiling** | `tory_coach_profiles` table + bootstrap |\n| **Coach-Learner Matching** | Complementarity scoring, style fit, specialization overlap |\n| **Coach Assignment Rationale** | \"Why this coach?\" explanations |\n| **Coach Effectiveness Metrics** | Dashboard metrics comparing coach outcomes |\n\n---\n\n## Stress-Testing the V1 Without Coach Matching\n\nThis raises a critical question: **In V1, how are coaches assigned to learners?**\n\nIf Tory doesn't match coaches, the existing manual assignment process continues. But coaches still interact with Tory's roadmaps (reorder/swap with guardrails). This means:\n\n- ✅ Coaches curate paths — works fine without coach matching\n- ✅ Divergence tracking — works fine\n- ⚠️ **Coach effectiveness metrics in HR dashboard** — you listed this as V1, but without coach profiling, \"effectiveness\" is limited to outcomes (learner progress under each coach) rather than *match quality*. Is that acceptable for V1?\n- ⚠️ **The \"Why This Coach?\" card** — learners won't see this in V1. Is the current assignment process transparent enough, or does V1 need a placeholder?\n\n## Pre-Mortem: V1-Specific Failure Mode\n\n**\"Tory builds great paths but the wrong coach is assigned manually, undermining the learning experience.\"** Without coach matching, there's a gap — Tory optimizes the *what* but not the *who*. If a learner with low assertiveness gets paired with an aggressive directive coach (by manual assignment), the beautifully curated path could still fail.\n\n**Mitigation options for V1:**\n- **A)** Accept the risk — coach assignment stays manual, V2 fixes it\n- **B)** Add a lightweight \"coach compatibility flag\" — when a coach is manually assigned, Tory runs a quick check against the learner profile and surfaces a warning if there's a potential mismatch (no full matching, just a red/yellow/green signal)\n\nOption B is minimal effort but high value — would you want that in V1?\n\n---\n\n\n\n---\n\n## Still Need Answers\n\n1. **Coach effectiveness in V1** — outcome-based metrics only (no match quality). Acceptable?\n2. **Option B (lightweight compatibility flag)** — worth adding to V1?\n3. **Timeline** — I still need this to draw the execution plan. Weeks? Months?\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Confirm",
+      "timestamp": "2026-02-18T17:32:10.968657+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Option B and timeline 3 months",
+      "timestamp": "2026-02-18T17:33:00.914550+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 3: SCOPE 🔬\n\n3 months, Option B included. Let me finalize the stress-test.\n\n---\n\n## Updated V1 Scope (Final)\n\nEverything from before PLUS:\n- **Lightweight coach compatibility flag** — when a coach is manually assigned, Tory runs learner EPP against a basic compatibility heuristic and shows 🟢/🟡/🔴 to the admin/coach. No full coach profiling needed — just checks for obvious mismatches against learner profile traits.\n- **Coach effectiveness = outcome-based only** in V1 (learner progress, completion rates, engagement scores per coach — not match quality)\n\n## 3-Month Execution Risk Assessment\n\n| Month | Focus | Risk |\n|-------|-------|------|\n| **Month 1** | Bootstrap (content tagging) + DB schema + Tory MCP agent core | 🟡 Content tagging quality — if slide content is thin, this month could stall on L4 human review |\n| **Month 2** | Matching engine + roadmap generation + adaptive worker + reassessment | 🔴 This is the heaviest month — Claude interpretation + similarity scoring + background worker + mini-assessment design all landing at once |\n| **Month 3** | Comms integration + HR dashboard + coach guardrails + transparency UX + compatibility flag | 🟡 Dashboard scope creep risk — \"just one more metric\" can eat this entire month |\n\n**The biggest schedule risk is Month 2.** The intelligence layer (Claude interpretation + scoring + adaptive loop) is the most complex and least predictable piece. If Claude's matching quality isn't good enough, you're debugging prompts and scoring algorithms under time pressure.\n\n### Mitigation for Month 2 Overload\nSplit it: Move the background worker + reassessment into early Month 3, push dashboard polish to late Month 3. This gives the core matching engine breathing room.\n\n---\n\n## Hard Constraints Checklist\n\nLet me confirm these before we go to Confirm:\n\n| Constraint | Assumption |\n|------------|-----------|\n| **Tech stack** | Python (MCP agent + Celery/cron worker), MariaDB, Claude API |\n| **Infrastructure** | Same server/environment as baap? Or separate? |\n| **Claude API costs** | Profile interpretation + content tagging + rationale generation = significant token usage. Budget ceiling? |\n| **Criteria Corp costs** | Quarterly EPP retakes for ~200 active learners = ~800 assessments/year. Is this approved? |\n| **Team** | Who's building this? Solo dev? Small team? This shapes what's realistic in 3 months |\n| **Production data** | Can you get real content data (lessons/slides) before Month 1 ends? The empty tables in the dump are a blocker |\n\n---\n\n\n\n---\n\n**Answer what you can from the constraints table**, and tell me if the Month 2 risk mitigation (shift worker + reassessment to Month 3) makes sense. Then we're ready for Confirm.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Confirm",
+      "timestamp": "2026-02-18T17:33:29.869862+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Move the background worker + reassessment into late Month 3, push dashboard polish to late Month 4.",
+      "timestamp": "2026-02-18T17:36:11.149081+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 3: SCOPE 🔬\n\nSo we're extending to **4 months**, not 3. That's a much healthier timeline given the complexity. Let me recalibrate.\n\n---\n\n## Revised Timeline: 4 Months\n\n| Month | Focus | Deliverable |\n|-------|-------|-------------|\n| **Month 1** | Bootstrap + Foundation | Content tagging pipeline (L1-L4), DB schema (8 new tables), Tory MCP agent skeleton, production data integration |\n| **Month 2** | Intelligence Engine | Learner profile interpretation, content similarity scoring, roadmap generation, discovery phase logic, \"Why This?\" rationale generation |\n| **Month 3** | Adaptive Layer + Comms | Background worker, reassessment engine (mini + full EPP), comms integration (SMS/email nudges), coach guardrails + divergence tracking, compatibility flag |\n| **Month 4** | Dashboard + Polish | HR dashboard (individual, team/dept, coach effectiveness, Tory accuracy), feedback loop (L5), learner-facing transparency UX, pedagogy config UI, QA + hardening |\n\nThis spreads the load properly. Month 2 is still the hardest (the brain of the system), but it's now purely focused on getting matching right without the distraction of worker infrastructure.\n\n---\n\n## Remaining Constraints I Need Answered\n\n| Question | Why It Matters |\n|----------|---------------|\n| **Team size?** | Solo dev doing all 4 months is very different from 2-3 people |\n| **Claude API budget ceiling?** | Content tagging alone = 521 slides × multiple Claude calls. Ongoing: every new learner = profile interpretation + roadmap + rationale. Rough estimate needed |\n| **Production data access?** | The 18 empty content/coach tables in your dump — can you get populated data before Month 1 ends? |\n| **Same infra as baap or separate?** | Affects DB schema decisions, deployment, MCP server setup |\n\nThese are the last unknowns before I can write the final spec. Want to address them now, or take them into Confirm as noted assumptions?\n\n---\n\n\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Confirm",
+      "timestamp": "2026-02-18T17:36:32.009105+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "select the team size that allows to deliver the scope with highest quality. Include in the assumption the team members roles, responsibilities, skills required anddesired years of experience. Froggle with Claude API budget but no comprise in the quality of tagging as this is the area where tory can fail when matching to create learning path. Assumption is that all 18 empty content/coach table will be populated before month 1 end",
+      "timestamp": "2026-02-18T17:42:42.781556+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 3: SCOPE 🔬\n\nExcellent direction — you want the team spec'd as part of the plan, not left vague. Let me design the optimal team.\n\n---\n\n## Optimal Team: 5 Members\n\n| Role | Responsibilities | Key Skills | Experience |\n|------|-----------------|------------|------------|\n| **Tech Lead / Architect** (1) | System design, MCP agent architecture, Claude prompt engineering, similarity scoring algorithm, code reviews | Python, Claude API, MariaDB, MCP framework, ML/NLP fundamentals | 7-10 yrs (3+ in AI/LLM integration) |\n| **Backend Engineer** (1) | Background worker (Celery), reassessment scheduler, comms integration, DB schema + migrations, API endpoints for MyNextory | Python, Celery/APScheduler, MariaDB, REST APIs, message queues | 4-6 yrs |\n| **Data/ML Engineer** (1) | Content tagging pipeline, embedding generation, cosine similarity scoring, confidence calibration, feedback loop (L5), Tory accuracy metrics | Python, embeddings/vector similarity, Claude API, data pipelines, evaluation frameworks | 4-6 yrs (2+ in NLP/embeddings) |\n| **Frontend/Dashboard Engineer** (1) | HR dashboard, learner roadmap UI, coach curation interface, \"Why This?\" transparency cards, pedagogy config UI | React/Vue (match MyNextory stack), data visualization (charts/graphs), responsive design | 3-5 yrs |\n| **QA / Product Analyst** (1) | Tag quality auditing, matching quality validation, test scenarios (cold start, edge cases), coach guardrail testing, pre-launch data validation | Test automation, SQL proficiency, analytical mindset, experience with recommendation systems | 3-5 yrs |\n\n### Why 5, Not 3 or 7?\n\n- **3 would bottleneck on Month 2** — the intelligence engine (Tech Lead + Data/ML Engineer) and worker infrastructure (Backend Engineer) need to develop in parallel\n- **7 is overkill** — the scope doesn't justify a dedicated DevOps, a second frontend dev, or a PM at this stage\n- **5 gives parallel tracks:** Months 1-2 the Tech Lead + Data/ML Engineer tackle the brain while Backend Engineer builds the skeleton. Month 3-4 all converge. QA runs continuously from Month 1 (validating tags immediately).\n\n### The \"No Compromise on Tagging\" Budget Strategy\n\nSince content tagging quality is existential:\n\n- **Use Claude's most capable model** (Opus) for content tagging — not Haiku/Sonnet. The cost difference is worth it for the foundation layer\n- **Multi-pass tagging** — Tag each lesson twice with different prompts, compare outputs, flag disagreements for human review\n- **Embed lesson content** using a dedicated embedding model for similarity scoring (separate from Claude interpretation) — this gives mathematical precision alongside Claude's semantic understanding\n- Budget estimate: ~521 lessons × 2 passes × Opus pricing + ongoing per-learner costs. The Data/ML Engineer should run a cost simulation in Week 1 with a 50-lesson sample\n\n---\n\n## Updated Constraints\n\n| Constraint | Resolution |\n|------------|-----------|\n| **Team** | 5 members: Tech Lead, Backend, Data/ML, Frontend, QA |\n| **Claude API** | Opus for tagging (no compromise), optimize model selection for ongoing operations |\n| **Criteria Corp** | Quarterly EPP retakes — budget TBD based on active learner count |\n| **Production data** | All 18 empty tables populated before Month 1 end (assumption) |\n| **Infrastructure** | TBD — same as baap or separate? (carrying forward as assumption: same MariaDB instance, new tables) |\n\n\n\n\n\n---\n\n## One Last Question\n\n**Infrastructure: Same server/DB as baap, or separate environment?** This affects Month 1 setup work. If you want to carry it as an assumption (same infra), that works too.\n\nIf this feels solid, we're **ready for Confirm** — I'll present the complete spec for final review.\n\n---\n\n[D] Dig Deeper — ask me more | [A] Adjust — I want to change something | [G] Go to Confirm",
+      "timestamp": "2026-02-18T17:43:20.193186+00:00",
+      "phase": "scope",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "G",
+      "timestamp": "2026-02-18T17:44:51.167029+00:00",
+      "phase": "confirm",
+      "attachments": []
+    },
+    {
+      "role": "orchestrator",
+      "content": "# Think Tank — Phase 4: CONFIRM ✅\n\nWe've arrived at the final review. Here is the **complete Tory specification** — everything we've established across 3 phases, structured for handoff to execution.\n\n---\n\n## TORY — Complete Product Specification\n\n### Vision\nTory is an AI-powered **personalized learning path engine** that interprets employee personality profiles (Criteria Corp EPP + onboarding Q&A), automatically generates adaptive learning roadmaps matched to content via similarity scoring, and continuously adapts based on learner progress and periodic reassessments. It is a backend engine that feeds the MyNextory platform, rendering a visible roadmap for learners.\n\n---\n\n### Architecture: Hybrid (MCP Agent + Background Worker)\n\n```\n┌─────────────────────────────────────────────────┐\n│                 BOOTSTRAP LAYER                  │\n│  Content Tagger (Claude Opus, multi-pass)        │\n│  → tory_content_tags                             │\n└──────────────────────┬──────────────────────────┘\n                       │\n┌──────────────────────▼──────────────────────────┐\n│            INTELLIGENCE LAYER (MCP Agent)         │\n│  Profile Interpreter (EPP + Q&A → structured)    │\n│  Content Scorer (cosine similarity + sequencing)  │\n│  Roadmap Generator (discovery phase → full path)  │\n│  Rationale Generator (\"Why This?\" user-facing)    │\n│  Coach Compatibility Flag (🟢🟡🔴)               │\n│  → tory_learner_profiles, tory_roadmaps,          │\n│    tory_roadmap_items                             │\n└──────────────────────┬──────────────────────────┘\n                       │\n┌──────────────────────▼──────────────────────────┐\n│            ADAPTIVE LAYER (Background Worker)     │\n│  Progress Monitor (backpacks, tasks, ratings)     │\n│  Stall Detector → comms nudges                   │\n│  Reassessment Scheduler (mini + full EPP)         │\n│  Path Re-evaluator → re-invoke Tory Agent         │\n│  → tory_reassessments, tory_progress_snapshots    │\n└──────────────────────┬──────────────────────────┘\n                       │\n┌──────────────────────▼──────────────────────────┐\n│              PRESENTATION LAYER                   │\n│  Learner: Visible roadmap + \"Why This?\" cards     │\n│  Coach: Curation UI (reorder/swap + guardrails)   │\n│  HR/Admin: Dashboard + pedagogy config            │\n│  → tory_coach_overrides                           │\n└─────────────────────────────────────────────────┘\n```\n\n---\n\n### Core Features (V1)\n\n| Feature | Details |\n|---------|---------|\n| **Content Tagging** | Claude Opus multi-pass tagging of all lessons. 5-layer defense: input enrichment, structured output, confidence scoring, human-in-the-loop review, outcome-based feedback loop |\n| **Learner Profile Interpretation** | Claude reads 29 EPP dimensions + 10 Q&A fields → trait vector, motivation cluster, growth gaps |\n| **Content Similarity Scoring** | Cosine similarity (learner growth-gaps × lesson trait-tags) + sequencing logic + diminishing returns |\n| **Pedagogy Configuration** | Client-company selects at onboarding: A) Gap-Fill First (70/30), B) Strength-Lead (30/70), C) Configurable blend |\n| **Discovery Phase** | New learners with zero interaction history get 3-5 exploratory lessons before full path generation |\n| **Roadmap Generation** | Ordered lesson path with per-item rationale, version-tracked |\n| **\"Why This?\" Transparency** | User-facing explanations on every recommendation (roadmap, lessons, path changes) |\n| **Learner Feedback** | \"This doesn't sound like me\" mechanism → flags for coach review, adjusts confidence |\n| **Dual Reassessment** | Mini-assessments every 4-6 weeks (Claude-generated, 3-5 min) + full EPP retake quarterly |\n| **Adaptive Path** | Background worker monitors progress → triggers re-evaluation on lesson completion, stalls, reassessment results, significant drift |\n| **Coach Guardrails** | Coaches can reorder/swap lessons but cannot remove critical lessons. All divergence tracked |\n| **Coach Compatibility Flag** | 🟢🟡🔴 signal when coach is manually assigned, based on learner profile heuristic |\n| **Comms Integration** | SMS/email nudges for path changes, stall detection, reassessment reminders (via existing comms layer) |\n| **HR Dashboard** | Individual progress, team aggregates (by dept → company), coach effectiveness (outcome-based), Tory accuracy |\n\n---\n\n### V2 (Deferred)\n\n| Feature | Details |\n|---------|---------|\n| Coach EPP + style questionnaire assessment | Hybrid profiling |\n| Coach-learner matching engine | Complementarity scoring, style fit, specialization |\n| Coach assignment rationale | \"Why this coach?\" user-facing |\n| Coach effectiveness by match quality | Beyond outcome-based |\n\n---\n\n### New Database Tables (8)\n\n| Table | Purpose |\n|-------|---------|\n| `tory_content_tags` | Lesson trait-tags, difficulty, learning style, confidence score |\n| `tory_learner_profiles` | Claude's interpreted personality summary, motivation tags, strengths, gaps |\n| `tory_roadmaps` | Active learning path per learner (versioned, JSON + status) |\n| `tory_roadmap_items` | Individual lesson assignments (sequence, status, score) |\n| `tory_reassessments` | Reassessment records (trigger type, data, result delta) |\n| `tory_coach_overrides` | Coach curation actions (reorder/swap/lock + reason) |\n| `tory_progress_snapshots` | Aggregated HR dashboard data per user per snapshot date |\n| `tory_pedagogy_config` | Client-company pedagogy preference (A/B/C + ratio) |\n\n---\n\n### Team: 5 Members\n\n| Role | Skills | YoE |\n|------|--------|-----|\n| **Tech Lead / Architect** | Python, Claude API, MCP, MariaDB, ML/NLP fundamentals | 7-10 yrs (3+ AI/LLM) |\n| **Backend Engineer** | Python, Celery/APScheduler, MariaDB, REST APIs | 4-6 yrs |\n| **Data/ML Engineer** | Python, embeddings, cosine similarity, Claude API, evaluation frameworks | 4-6 yrs (2+ NLP) |\n| **Frontend/Dashboard Engineer** | React/Vue (match MyNextory stack), data visualization | 3-5 yrs |\n| **QA / Product Analyst** | Test automation, SQL, recommendation system testing | 3-5 yrs |\n\n---\n\n### Execution Plan: 4 Months\n\n| Month | Phase | Deliverables | Dependencies |\n|-------|-------|-------------|-------------|\n| **Month 1** | Bootstrap + Foundation | Content tagging pipeline (multi-pass Opus, confidence gating, coach review queue), DB schema (8 tables), MCP agent skeleton, production data integration | Production data for 18 empty tables by end of Month 1 |\n| **Month 2** | Intelligence Engine | Learner profile interpretation, similarity scoring algorithm, roadmap generation, discovery phase logic, \"Why This?\" rationale generation, pedagogy config, learner feedback mechanism | Content tags validated (Month 1), Claude API integration stable |\n| **Month 3** | Adaptive + Comms + Coach | Background worker (Celery), reassessment engine (mini + full EPP), comms integration (SMS/email), coach guardrails + divergence tracking, compatibility flag | Roadmap generation working (Month 2), Criteria Corp API access |\n| **Month 4** | Dashboard + Polish + QA | HR dashboard (all 4 metric categories), feedback loop (L5), transparency UX polish, pedagogy config UI, end-to-end QA, load testing, hardening | All backend layers functional |\n\n---\n\n### Key Risks & Mitigations\n\n| Risk | Severity | Mitigation |\n|------|----------|-----------|\n| Content tagging quality | 🔴 HIGH | Multi-pass Opus, confidence gating, coach review queue, outcome feedback loop |\n| Matching feels random | 🔴 HIGH | User-facing rationale on every recommendation, learner feedback mechanism |\n| Coach adoption resistance | 🟡 MEDIUM | Position as coach's assistant, guardrails not surveillance, credit coaches for outcomes |\n| Reassessment fatigue | 🟡 MEDIUM | Mini-assessments capped at 3-5 min, embedded in learning flow |\n| Criteria Corp API dependency | 🟡 MEDIUM | Resilient scheduler, fallback to mini-assessment data, admin alerts |\n| Dashboard scope creep | 🟡 MEDIUM | Fixed metric set for V1, change requests go to backlog |\n| Month 2 overload | 🟡 MEDIUM | Resolved by 4-month timeline — worker/reassessment shifted to Month 3 |\n\n---\n\n### Assumptions\n\n- All 18 empty content/coach tables populated in production before Month 1 end\n- Same MariaDB instance as baap (new tables in `baap` database)\n- Claude Opus used for content tagging (no cost compromise on foundation layer)\n- Model selection optimized for ongoing operations (Sonnet/Haiku where quality allows)\n- Criteria Corp API available for quarterly EPP retakes\n- MyNextory frontend team handles roadmap rendering (Tory provides data via API/tables)\n\n---\n\n\n\n---\n\n## Does this look right?\n\nReview the full spec above. If everything is accurate and complete:\n\n**[A] Adjust — I want to change something | [G] Go — APPROVE and ready to build**",
+      "timestamp": "2026-02-18T17:45:49.200098+00:00",
+      "phase": "confirm",
+      "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Can you draw the whole architecture flow pipeline and everything, including all the systems, all the services, and the UI layer in an asci drawing that shows the sequence of events, user types, and the whole shebang. as iam a visual learner",
+      "timestamp": "2026-02-18T22:22:02.405222+00:00",
+      "phase": "confirm",
+      "attachments": []
+    }
+  ],
+  "spec_kit": {
+    "project_brief": {
+      "title": "Project Brief",
+      "content": "• Tory = personalized adaptive learning path engine for MyNextory\n• Auto-triggered at onboarding when EPP + Q&A complete\n• Claude interprets 29 EPP scores + onboarding Q&A → learner profile\n• Similarity scoring matches profile to hundreds of lessons + coach pairing\n• Visible roadmap rendered by MyNextory frontend\n• Adaptive: periodic reassessments + backpack/ratings/tasks → path re-evaluation\n• Coaches can curate (reorder/swap/lock) Tory's recommendations\n• Comms integration: SMS/email nudges on path changes & reassessment reminders\n• HR/Admin dashboard: progress tracking, completion rates, roadmap changes",
+      "editable": true,
+      "locked": false,
+      "updated_at": "2026-02-18T16:31:57.200894+00:00"
+    },
+    "requirements": {
+      "title": "Requirements",
+      "content": "CONTENT TAGGING:\n- L1: Input enrichment (concatenate context hierarchy)\n- L2: Structured output schema with EPP dimension mapping\n- L3: Confidence scoring with threshold gating\n- L4: Coach review queue for low-confidence tags (v1)\n- L5: Outcome-based tag correction (v2)\n\nTRANSPARENCY:\n- match_rationale is user-facing on every recommendation\n- Learner profile summary visible to learner\n- 'This doesn't sound like me' feedback mechanism\n- Discovery phase explicitly framed as exploratory\n- Path changes explained with reason",
+      "editable": true,
+      "locked": false,
+      "updated_at": "2026-02-18T17:30:08.930450+00:00"
+    },
+    "constraints": {
+      "title": "Constraints",
+      "content": "- Team: 5 members (Tech Lead 7-10yr, Backend 4-6yr, Data/ML 4-6yr, Frontend 3-5yr, QA 3-5yr)\n- Timeline: 4 months\n- Claude API: Opus for content tagging (no quality compromise), cost-optimized for runtime operations\n- Criteria Corp: Quarterly EPP retakes for active learners\n- Production data: All 18 content/coach tables populated before Month 1 end\n- Infrastructure assumption: Same MariaDB instance as baap, new tory_ prefixed tables\n- V1 excludes: Coach EPP assessment, coach profiling, coach-learner matching (V2)\n- V1 includes: Lightweight coach compatibility flag (🟢🟡🔴)",
+      "editable": true,
+      "locked": false,
+      "updated_at": "2026-02-18T17:43:20.193186+00:00"
+    },
+    "architecture": null,
+    "pre_mortem": {
+      "title": "Pre-Mortem",
+      "content": "- HIGH: Content tagging quality → Mitigated by Opus model, multi-pass tagging, confidence scoring, human review queue, outcome feedback loop\n- HIGH: Matching feels random → Mitigated by user-facing rationale on every recommendation, learner profile visibility, 'doesn't sound like me' feedback\n- MEDIUM: Coach adoption resistance → Position Tory as coach assistant, divergence framed as insight not surveillance\n- MEDIUM: Reassessment fatigue → Minis embedded in lesson flow, 3-5 min max\n- MEDIUM: Month 2 complexity → De-risked by moving worker + reassessment to Month 3\n- LOW: Dashboard scope creep → Month 4 only, QA/Product Analyst gates feature requests\n- LOW: Criteria Corp API dependency → Resilient scheduler with retry + fallback to mini-assessment data",
+      "editable": true,
+      "locked": false,
+      "updated_at": "2026-02-18T17:43:20.193186+00:00"
+    },
+    "execution_plan": {
+      "title": "Execution Plan",
+      "content": "FINAL — 4-month plan: M1 Bootstrap+Foundation, M2 Intelligence Engine, M3 Adaptive+Comms+Coach, M4 Dashboard+Polish+QA. Team of 5. V1 excludes coach assessment/matching (V2). All risks mitigated.",
+      "editable": true,
+      "locked": false,
+      "updated_at": "2026-02-18T17:45:49.200098+00:00"
+    }
+  },
+  "started_at": "2026-02-17T23:53:33.968827+00:00",
+  "updated_at": "2026-02-18T22:22:02.405222+00:00",
+  "status": "active",
+  "epic_id": null
+}
