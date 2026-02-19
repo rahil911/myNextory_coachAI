@@ -124,6 +124,31 @@ export const api = {
   getToryAdminCohort:   (qs) => request('GET', `/api/tory/admin/cohort${qs ? '?' + qs : ''}`),
   getToryAdminLearner:  (id) => request('GET', `/api/tory/admin/learner/${id}`),
   getToryAdminMetrics:  () => request('GET', '/api/tory/admin/metrics'),
+
+  // Tory Workspace — split-view path builder
+  getToryUsers: (params = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString();
+    return request('GET', `/api/tory/users${qs ? '?' + qs : ''}`);
+  },
+  getToryUserDetail:    (userId) => request('GET', `/api/tory/users/${userId}/detail`),
+  processToryUser:      (userId) => request('POST', `/api/tory/process/${userId}`, {}, 60000),
+  batchProcessTory:     (body) => request('POST', '/api/tory/batch-process', body, 60000),
+  getToryPreviewImpact: (params = {}) => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString();
+    return request('GET', `/api/tory/preview-impact${qs ? '?' + qs : ''}`);
+  },
+  getToryAgentSessions: (userId) => request('GET', `/api/tory/agent-sessions/${userId}`),
+  getToryAgentSession:  (userId, sessionId) => request('GET', `/api/tory/agent-sessions/${userId}/${sessionId}`),
+  chatWithToryAgent:    (userId, sessionId, text) => request('POST', `/api/tory/agent-sessions/${userId}/${sessionId}/chat`, { text }, 60000),
+  cancelToryAgent:      (userId, sessionId) => request('DELETE', `/api/tory/agent-sessions/${userId}/${sessionId}`),
+  getToryContentLibrary: (reviewStatus) => {
+    const qs = reviewStatus ? `?review_status=${encodeURIComponent(reviewStatus)}` : '';
+    return request('GET', `/api/tory/content-library${qs}`);
+  },
+  getToryLessonSlides:  (lessonDetailId) => request('GET', `/api/tory/lesson/${lessonDetailId}/slides`),
+  reorderToryPath:      (userId, body) => request('PUT', `/api/tory/path/${userId}/reorder`, body),
+  swapToryLesson:       (userId, body) => request('POST', `/api/tory/path/${userId}/swap`, body),
+  lockToryRecommendation: (userId, recId, body) => request('POST', `/api/tory/path/${userId}/lock/${recId}`, body),
 };
 
 // ── WebSocket Manager ──────────────────────────────────────────────────────

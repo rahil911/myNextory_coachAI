@@ -18,7 +18,7 @@ import { renderAgents } from './views/agents.js';
 import { renderEpics } from './views/epics.js';
 import { renderApprovals } from './views/approvals.js';
 import { renderArchitecture } from './views/architecture.js';
-import { renderTory } from './views/tory.js';
+import { renderToryWorkspace } from './views/tory-workspace.js';
 import { renderToryAdmin } from './views/tory-admin.js';
 
 // ── Initialize ─────────────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   registerRoute('epics', renderEpics);
   registerRoute('architecture', renderArchitecture);
   registerRoute('approvals', renderApprovals);
-  registerRoute('tory', renderTory);
+  registerRoute('tory', renderToryWorkspace);
   registerRoute('tory-admin', renderToryAdmin);
 
   // 2. Initialize router
