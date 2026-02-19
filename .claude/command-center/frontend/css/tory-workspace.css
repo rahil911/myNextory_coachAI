@@ -1,0 +1,863 @@
+/* ==========================================================================
+   TORY-WORKSPACE.CSS — 3-Pane Split-View Layout
+   Left drawer (people), center tabs, right drawer (AI co-pilot)
+   ========================================================================== */
+
+/* ── Layout Grid ───────────────────────────────────────────────────────── */
+
+.tw-layout {
+  --tw-left-width: 300px;
+  --tw-left-collapsed: 48px;
+  --tw-right-width: 340px;
+  --tw-right-collapsed: 48px;
+  --tw-topbar-height: 40px;
+
+  display: grid;
+  grid-template-columns: var(--tw-left-width) 1fr var(--tw-right-width);
+  grid-template-rows: var(--tw-topbar-height) 1fr;
+  grid-template-areas:
+    "topbar topbar topbar"
+    "left   center right";
+  height: calc(100vh - 56px); /* minus app topbar */
+  overflow: hidden;
+}
+
+.tw-layout.left-collapsed {
+  grid-template-columns: var(--tw-left-collapsed) 1fr var(--tw-right-width);
+}
+.tw-layout.right-collapsed {
+  grid-template-columns: var(--tw-left-width) 1fr var(--tw-right-collapsed);
+}
+.tw-layout.left-collapsed.right-collapsed {
+  grid-template-columns: var(--tw-left-collapsed) 1fr var(--tw-right-collapsed);
+}
+
+/* ── Top Bar ───────────────────────────────────────────────────────────── */
+
+.tw-topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-3);
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  gap: var(--space-2);
+  z-index: var(--z-sticky);
+}
+
+.tw-topbar-left,
+.tw-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tw-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+}
+.tw-toggle-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+.tw-toggle-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tw-topbar-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tw-topbar-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.tw-topbar-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tw-topbar-stat strong {
+  color: var(--text-primary);
+}
+
+/* ── Left Drawer (People) ──────────────────────────────────────────────── */
+
+.tw-left {
+  grid-area: left;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  transition: width 0.3s var(--ease-out);
+}
+
+.tw-left-header {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.tw-search-row {
+  position: relative;
+}
+
+.tw-search-row input {
+  width: 100%;
+  padding: 6px 10px 6px 28px;
+  font-size: var(--font-size-sm);
+}
+
+.tw-search-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  pointer-events: none;
+}
+
+.tw-filters {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.tw-filters select {
+  padding: 4px 6px;
+  font-size: var(--font-size-xs);
+  flex: 1;
+}
+
+/* ── People List ──────────────────────────────────────────────────────── */
+
+.tw-people-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tw-person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.tw-person:hover {
+  background: var(--bg-card-hover);
+}
+
+.tw-person.selected {
+  background: var(--accent-dim);
+  border-left-color: var(--accent);
+}
+
+.tw-person-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.tw-person-status {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tw-person-status.processed { background: var(--green); }
+.tw-person-status.has_epp   { background: var(--yellow); }
+.tw-person-status.no_data   { background: var(--text-tertiary); }
+
+.tw-person-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tw-person-name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tw-person-meta {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Left Footer (batch actions + pagination) ─────────────────────────── */
+
+.tw-left-footer {
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.tw-batch-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.tw-batch-row .btn {
+  flex: 1;
+  font-size: var(--font-size-xs);
+}
+
+.tw-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.tw-pagination .btn {
+  padding: 2px 8px;
+  font-size: var(--font-size-xs);
+}
+
+.tw-page-info {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* ── Collapsed Left Drawer ─────────────────────────────────────────────── */
+
+.tw-left-collapsed-strip {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2) 0;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.left-collapsed .tw-left-header,
+.left-collapsed .tw-people-list,
+.left-collapsed .tw-left-footer {
+  display: none;
+}
+
+.left-collapsed .tw-left-collapsed-strip {
+  display: flex;
+}
+
+.tw-mini-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  position: relative;
+}
+
+.tw-mini-avatar:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.tw-mini-avatar.selected {
+  background: var(--accent);
+  color: white;
+}
+
+.tw-mini-avatar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.tw-mini-avatar.status-processed::before { background: var(--green); }
+.tw-mini-avatar.status-has_epp::before   { background: var(--yellow); }
+.tw-mini-avatar.status-no_data::before   { background: var(--text-tertiary); }
+
+/* ── Center Panel ──────────────────────────────────────────────────────── */
+
+.tw-center {
+  grid-area: center;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+/* ── Tab Bar ──────────────────────────────────────────────────────────── */
+
+.tw-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-1);
+  flex-shrink: 0;
+}
+
+.tw-tab {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all var(--duration-fast) var(--ease-out);
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: var(--font);
+  white-space: nowrap;
+}
+
+.tw-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.tw-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Tab Content ──────────────────────────────────────────────────────── */
+
+.tw-tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+.tw-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--space-3);
+  color: var(--text-tertiary);
+}
+
+.tw-placeholder-icon {
+  font-size: 48px;
+  opacity: 0.3;
+}
+
+.tw-placeholder-text {
+  font-size: var(--font-size-sm);
+  text-align: center;
+  max-width: 300px;
+  line-height: 1.6;
+}
+
+/* ── Profile Tab Content ──────────────────────────────────────────────── */
+
+.tw-profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  max-width: 700px;
+}
+
+.tw-profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.tw-profile-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tw-profile-name {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.tw-profile-email {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.tw-profile-company {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.tw-profile-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.tw-profile-section-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
+}
+
+.tw-profile-narrative {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.tw-trait-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tw-trait {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.tw-trait-strength {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.tw-trait-gap {
+  background: var(--yellow-dim);
+  color: var(--yellow);
+}
+
+.tw-profile-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--space-2);
+}
+
+.tw-profile-stat {
+  padding: var(--space-2);
+  background: var(--bg-3);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.tw-profile-stat-value {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.tw-profile-stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+/* ── Coach Info ────────────────────────────────────────────────────────── */
+
+.tw-coach-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--bg-3);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-3);
+}
+
+.tw-coach-signal {
+  font-size: 20px;
+}
+
+.tw-coach-name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.tw-coach-compat {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* ── Right Drawer (AI Co-pilot) ────────────────────────────────────────── */
+
+.tw-right {
+  grid-area: right;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  transition: width 0.3s var(--ease-out);
+}
+
+.tw-right-header {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.tw-right-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tw-session-meta {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tw-session-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.tw-session-badge.running {
+  background: var(--blue-dim);
+  color: var(--blue);
+}
+.tw-session-badge.completed {
+  background: var(--green-dim);
+  color: var(--green);
+}
+.tw-session-badge.error {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+/* ── Chat Area ─────────────────────────────────────────────────────────── */
+
+.tw-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tw-chat-message {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+
+.tw-chat-message.ai {
+  flex-direction: row;
+}
+
+.tw-chat-message.human {
+  flex-direction: row-reverse;
+}
+
+.tw-chat-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tw-chat-avatar.ai {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.tw-chat-avatar.human {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.tw-chat-bubble {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  max-width: 85%;
+  word-wrap: break-word;
+}
+
+.tw-chat-message.ai .tw-chat-bubble {
+  background: var(--bg-3);
+  color: var(--text-primary);
+}
+
+.tw-chat-message.human .tw-chat-bubble {
+  background: var(--accent);
+  color: white;
+}
+
+.tw-chat-bubble p { margin: 0 0 var(--space-1) 0; }
+.tw-chat-bubble p:last-child { margin-bottom: 0; }
+.tw-chat-bubble code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 4px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 3px;
+}
+
+.tw-chat-input-area {
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tw-chat-input-wrapper {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+
+.tw-chat-input-wrapper textarea {
+  flex: 1;
+  resize: none;
+  padding: 6px 10px;
+  font-size: var(--font-size-sm);
+  min-height: 32px;
+  max-height: 100px;
+}
+
+.tw-chat-send-btn {
+  padding: 6px 10px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-family: var(--font);
+  transition: background var(--duration-fast) var(--ease-out);
+  flex-shrink: 0;
+}
+.tw-chat-send-btn:hover { background: var(--accent-hover); }
+.tw-chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Collapsed Right Drawer ────────────────────────────────────────────── */
+
+.tw-right-collapsed-strip {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-3) 0;
+  gap: var(--space-2);
+}
+
+.right-collapsed .tw-right-header,
+.right-collapsed .tw-session-meta,
+.right-collapsed .tw-chat-messages,
+.right-collapsed .tw-chat-input-area,
+.right-collapsed .tw-right-placeholder {
+  display: none;
+}
+
+.right-collapsed .tw-right-collapsed-strip {
+  display: flex;
+}
+
+.tw-collapsed-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.tw-collapsed-icon:hover {
+  background: var(--accent-dim);
+}
+
+.tw-collapsed-label {
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+/* ── Right Drawer Placeholder ──────────────────────────────────────────── */
+
+.tw-right-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  gap: var(--space-2);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.tw-right-placeholder-icon {
+  font-size: 32px;
+  opacity: 0.3;
+}
+
+.tw-right-placeholder-text {
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+/* ── Loading States ────────────────────────────────────────────────────── */
+
+.tw-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  gap: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.tw-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: tw-spin 0.6s linear infinite;
+}
+
+@keyframes tw-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Process Button ────────────────────────────────────────────────────── */
+
+.tw-process-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-size: var(--font-size-xs);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.tw-process-btn:hover { background: var(--accent-hover); }
+.tw-process-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 1200px) {
+  .tw-layout {
+    grid-template-columns: var(--tw-left-collapsed) 1fr var(--tw-right-collapsed);
+  }
+  .tw-layout .tw-left-header,
+  .tw-layout .tw-people-list,
+  .tw-layout .tw-left-footer {
+    display: none;
+  }
+  .tw-layout .tw-left-collapsed-strip {
+    display: flex;
+  }
+  .tw-layout .tw-right-header,
+  .tw-layout .tw-session-meta,
+  .tw-layout .tw-chat-messages,
+  .tw-layout .tw-chat-input-area,
+  .tw-layout .tw-right-placeholder {
+    display: none;
+  }
+  .tw-layout .tw-right-collapsed-strip {
+    display: flex;
+  }
+}
+
+/* ── WebSocket Event Indicators ────────────────────────────────────────── */
+
+.tw-event-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+  animation: pulse-dot 1.5s infinite;
+  margin-right: 4px;
+}

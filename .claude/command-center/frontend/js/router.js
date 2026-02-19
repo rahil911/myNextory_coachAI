@@ -32,7 +32,7 @@ export function navigate(hash) {
     agents: 'Agents',
     epics: 'Epics',
     approvals: 'Approvals',
-    tory: 'Learning Path'
+    tory: 'Tory Workspace'
   };
   const titleEl = document.getElementById('topbar-title');
   if (titleEl) titleEl.textContent = titles[view] || view;
