@@ -850,6 +850,364 @@
   }
 }
 
+/* ── Agent Log Toolbar ─────────────────────────────────────────────────── */
+
+.tw-agentlog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.tw-agentlog-select-row {
+  flex: 1;
+  min-width: 200px;
+}
+
+.tw-agentlog-select {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+.tw-agentlog-actions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* ── Agent Log Stats ──────────────────────────────────────────────────── */
+
+.tw-agentlog-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.tw-agentlog-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tw-agentlog-stat strong {
+  color: var(--text-primary);
+}
+
+.tw-agentlog-error {
+  width: 100%;
+  margin-top: var(--space-1);
+  color: var(--red);
+  font-size: var(--font-size-xs);
+}
+
+.tw-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: tw-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes tw-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Agent Timeline ───────────────────────────────────────────────────── */
+
+.tw-agent-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: calc(100vh - 340px);
+  overflow-y: auto;
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--border);
+}
+
+.tw-event {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  position: relative;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.tw-event:hover {
+  background: var(--bg-card-hover);
+}
+
+/* Timeline connector dot */
+.tw-event::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-2) - 5px);
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg-3);
+  border: 2px solid var(--border);
+}
+
+.tw-event-reasoning::before { background: var(--blue); border-color: var(--blue); }
+.tw-event-tool-call::before { background: var(--yellow); border-color: var(--yellow); }
+.tw-event-tool-result::before { background: var(--green); border-color: var(--green); }
+.tw-event-message::before { background: var(--accent); border-color: var(--accent); }
+
+.tw-event-time {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  min-width: 60px;
+}
+
+.tw-event-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+}
+
+.tw-event-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.tw-event-reasoning .tw-event-text {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Tool call / result details */
+details.tw-event {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  padding-left: calc(var(--space-3) + var(--space-2));
+  border-radius: var(--radius-sm);
+}
+
+details.tw-event summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+details.tw-event summary::-webkit-details-marker { display: none; }
+details.tw-event summary::marker { content: ''; }
+
+details.tw-event summary::after {
+  content: '\25B6';
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-left: auto;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+details.tw-event[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.tw-event-tool-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.tw-event-tool-args {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.tw-event-result-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.tw-event-payload {
+  margin: var(--space-2) 0 0 82px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Raw JSONL Overlay ────────────────────────────────────────────────── */
+
+.tw-raw-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: var(--z-modal, 1000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.tw-raw-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tw-raw-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tw-raw-header span:first-child {
+  flex: 1;
+}
+
+.tw-raw-content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-3);
+  margin: 0;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Co-pilot Metadata Card ──────────────────────────────────────────── */
+
+.tw-copilot-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tw-copilot-meta-name {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tw-copilot-meta-stats {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.tw-copilot-meta-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tw-copilot-meta-ws {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.tw-ws-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.tw-ws-dot.connected {
+  background: var(--green);
+}
+
+/* ── Chat System Messages ─────────────────────────────────────────────── */
+
+.tw-chat-message.system {
+  justify-content: center;
+}
+
+.tw-chat-system {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  font-style: italic;
+  padding: 2px 8px;
+  background: var(--bg-2);
+  border-radius: var(--radius-full);
+}
+
+/* ── Streaming / Typing Indicator ─────────────────────────────────────── */
+
+.tw-chat-streaming {
+  background: var(--bg-3);
+}
+
+.tw-typing-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.tw-typing-dots span {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  animation: tw-typing 1.4s infinite;
+}
+
+.tw-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.tw-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes tw-typing {
+  0%, 60%, 100% { opacity: 0.2; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
 /* ── WebSocket Event Indicators ────────────────────────────────────────── */
 
 .tw-event-dot {

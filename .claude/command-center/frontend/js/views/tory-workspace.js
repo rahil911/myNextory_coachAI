@@ -4,7 +4,7 @@
 // ==========================================================================
 
 import { getState, setState, subscribe, markFetched } from '../state.js';
-import { api } from '../api.js';
+import { api, connectToryAgentWs, sendToryAgentMessage, disconnectToryAgentWs } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { h } from '../utils/dom.js';
 
@@ -12,6 +12,13 @@ import { h } from '../utils/dom.js';
 
 const DEBOUNCE_MS = 300;
 const PAGE_SIZE = 50;
+
+// ── Module-level copilot state (persists across tab switches) ────────────
+
+let _copilotSessionId = null;   // Currently connected session
+let _copilotMessages = [];      // Chat history
+let _copilotStreaming = false;   // Is agent currently streaming?
+let _copilotWsConnected = false;
 
 // ── Render Entry Point ─────────────────────────────────────────────────────
 
@@ -251,6 +258,18 @@ async function loadUsers() {
 
 async function loadUserDetail(userId) {
   const tw = getState().toryWorkspace;
+
+  // Reset copilot state when user changes (disconnect WS, clear chat)
+  if (tw.selectedUserId !== userId) {
+    disconnectToryAgentWs();
+    _copilotSessionId = null;
+    _copilotMessages = [];
+    _copilotStreaming = false;
+    _copilotWsConnected = false;
+    _agentLogSessionId = null;
+    _agentLogEvents = [];
+  }
+
   setState({ toryWorkspace: { ...tw, selectedUserId: userId, detailLoading: true, selectedUserDetail: null } });
 
   renderPeopleList();
@@ -1137,6 +1156,10 @@ function renderContentTab(el) {
 
 // ── Agent Log Tab ───────────────────────────────────────────────────────────
 
+let _agentLogSessionId = null;   // Currently viewing session in agent log
+let _agentLogEvents = [];        // Events for the selected session
+let _agentLogLoading = false;
+
 function renderAgentLogTab(el) {
   const tw = getState().toryWorkspace;
   const sessions = tw.agentSessions || [];
@@ -1152,87 +1175,450 @@ function renderAgentLogTab(el) {
   }
 
   el.innerHTML = '';
-  for (const session of sessions) {
-    const card = h('div', { class: 'tw-profile-card', style: { marginBottom: '8px', padding: '12px 16px' } });
 
-    const statusClass = session.status === 'completed' ? 'completed' : session.status === 'running' ? 'running' : 'error';
+  // Session selector + action buttons row
+  const toolbar = h('div', { class: 'tw-agentlog-toolbar' });
 
-    card.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <span class="tw-session-badge ${statusClass}">${esc(session.status)}</span>
-        <span style="font-size:var(--font-size-xs);color:var(--text-tertiary)">${esc(session.created_at || '')}</span>
-      </div>
-      <div style="font-size:var(--font-size-xs);color:var(--text-secondary)">
-        ${session.tool_call_count || 0} tool calls · ${(session.pipeline_steps || []).length} steps
-      </div>
-      ${session.error_message ? `<div style="font-size:var(--font-size-xs);color:var(--red);margin-top:4px">${esc(session.error_message)}</div>` : ''}
-    `;
+  // Session dropdown
+  const selectHtml = sessions.map(s => {
+    const statusIcon = s.status === 'completed' ? '\u2713' : s.status === 'running' ? '\u25CF' : '\u2717';
+    const shortId = (s.id || '').substring(0, 10);
+    const date = (s.created_at || '').substring(0, 16);
+    return `<option value="${esc(s.id)}" ${s.id === _agentLogSessionId ? 'selected' : ''}>${statusIcon} ${shortId}... (${date}) — ${s.tool_call_count || 0} calls</option>`;
+  }).join('');
 
-    // Click to view session detail in copilot
-    card.style.cursor = 'pointer';
-    card.addEventListener('click', () => openSessionInCopilot(session.id));
+  toolbar.innerHTML = `
+    <div class="tw-agentlog-select-row">
+      <select class="tw-agentlog-select" id="tw-agentlog-session-select">${selectHtml}</select>
+    </div>
+    <div class="tw-agentlog-actions">
+      <button class="btn btn-ghost btn-sm" id="tw-agentlog-raw" title="View raw JSONL transcript">View Raw JSONL</button>
+      <button class="btn btn-ghost btn-sm" id="tw-agentlog-resume" title="Resume this session in AI Co-pilot">Resume Session</button>
+      <button class="btn btn-primary btn-sm" id="tw-agentlog-reprocess" title="Re-process this user with a new agent">Re-process</button>
+    </div>
+  `;
+  el.appendChild(toolbar);
 
-    el.appendChild(card);
+  // Wire up session selector
+  toolbar.querySelector('#tw-agentlog-session-select').addEventListener('change', (e) => {
+    _agentLogSessionId = e.target.value;
+    loadSessionEvents(tw.selectedUserId, _agentLogSessionId);
+  });
+
+  // Wire up action buttons
+  toolbar.querySelector('#tw-agentlog-raw').addEventListener('click', () => viewRawJsonl());
+  toolbar.querySelector('#tw-agentlog-resume').addEventListener('click', () => {
+    if (_agentLogSessionId) openSessionInCopilot(_agentLogSessionId);
+  });
+  toolbar.querySelector('#tw-agentlog-reprocess').addEventListener('click', () => {
+    if (tw.selectedUserId) processUser(tw.selectedUserId);
+  });
+
+  // Session stats card
+  const activeSession = sessions.find(s => s.id === _agentLogSessionId) || sessions[0];
+  if (!_agentLogSessionId) _agentLogSessionId = activeSession.id;
+
+  const statusClass = activeSession.status === 'completed' ? 'completed' : activeSession.status === 'running' ? 'running' : 'error';
+  const statsCard = h('div', { class: 'tw-agentlog-stats' });
+  statsCard.innerHTML = `
+    <div class="tw-agentlog-stat">
+      <span class="tw-session-badge ${statusClass}">${esc(activeSession.status)}</span>
+    </div>
+    <div class="tw-agentlog-stat"><strong>${activeSession.tool_call_count || 0}</strong> tool calls</div>
+    <div class="tw-agentlog-stat"><strong>${(activeSession.pipeline_steps || []).length}</strong> steps</div>
+    <div class="tw-agentlog-stat">${esc((activeSession.created_at || '').substring(0, 19))}</div>
+    ${activeSession.status === 'running' ? '<div class="tw-agentlog-stat"><span class="tw-live-dot"></span> Live</div>' : ''}
+  `;
+  if (activeSession.error_message) {
+    statsCard.innerHTML += `<div class="tw-agentlog-error">${esc(activeSession.error_message)}</div>`;
+  }
+  el.appendChild(statsCard);
+
+  // Timeline container
+  const timeline = h('div', { class: 'tw-agent-timeline', id: 'tw-agent-timeline' });
+  el.appendChild(timeline);
+
+  // Load events if we don't have them yet or session changed
+  if (_agentLogEvents.length === 0 || _agentLogSessionId !== activeSession.id) {
+    _agentLogSessionId = activeSession.id;
+    loadSessionEvents(tw.selectedUserId, _agentLogSessionId);
+  } else {
+    renderTimelineEvents(timeline);
   }
 }
 
-// ── Co-pilot Drawer ─────────────────────────────────────────────────────────
+async function loadSessionEvents(userId, sessionId) {
+  if (!userId || !sessionId) return;
 
-let _copilotWs = null;
+  const timeline = document.getElementById('tw-agent-timeline');
+  if (timeline) timeline.innerHTML = '<div class="tw-loading"><div class="tw-spinner"></div> Loading session events...</div>';
+
+  _agentLogLoading = true;
+
+  try {
+    const data = await api.getToryAgentSession(userId, sessionId);
+    _agentLogEvents = data.events || [];
+    _agentLogLoading = false;
+
+    const el = document.getElementById('tw-agent-timeline');
+    if (el) renderTimelineEvents(el);
+  } catch (err) {
+    _agentLogLoading = false;
+    const el = document.getElementById('tw-agent-timeline');
+    if (el) el.innerHTML = `<div class="tw-placeholder"><div class="tw-placeholder-text">Failed to load session: ${esc(err.message)}</div></div>`;
+  }
+}
+
+function renderTimelineEvents(el) {
+  el.innerHTML = '';
+
+  if (_agentLogEvents.length === 0) {
+    el.innerHTML = '<div class="tw-placeholder"><div class="tw-placeholder-text">No events in this session yet.</div></div>';
+    return;
+  }
+
+  for (const event of _agentLogEvents) {
+    el.appendChild(createTimelineEntry(event));
+  }
+
+  // Auto-scroll to bottom for running sessions
+  const tw = getState().toryWorkspace;
+  const session = (tw.agentSessions || []).find(s => s.id === _agentLogSessionId);
+  if (session && session.status === 'running') {
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+function createTimelineEntry(event) {
+  const time = formatEventTime(event.timestamp);
+
+  switch (event.type) {
+    case 'reasoning': {
+      const entry = h('div', { class: 'tw-event tw-event-reasoning' });
+      entry.innerHTML = `
+        <span class="tw-event-time">${time}</span>
+        <span class="tw-event-icon">\uD83D\uDCAD</span>
+        <p class="tw-event-text">${esc(event.content || '')}</p>
+      `;
+      return entry;
+    }
+
+    case 'tool_call': {
+      const entry = document.createElement('details');
+      entry.className = 'tw-event tw-event-tool-call';
+      const toolName = esc(event.tool || event.name || 'unknown');
+      const inputSummary = summarizeToolInput(event.input);
+      entry.innerHTML = `
+        <summary>
+          <span class="tw-event-time">${time}</span>
+          <span class="tw-event-icon">\uD83D\uDD27</span>
+          <span class="tw-event-tool-name">${toolName}</span><span class="tw-event-tool-args">(${esc(inputSummary)})</span>
+        </summary>
+        <pre class="tw-event-payload">${esc(JSON.stringify(event.input, null, 2))}</pre>
+      `;
+      return entry;
+    }
+
+    case 'tool_result': {
+      const entry = document.createElement('details');
+      entry.className = 'tw-event tw-event-tool-result';
+      const duration = event.duration ? ` (${event.duration})` : '';
+      const isError = event.is_error || event.error;
+      entry.innerHTML = `
+        <summary>
+          <span class="tw-event-time">${time}</span>
+          <span class="tw-event-icon">${isError ? '\u274C' : '\u2705'}</span>
+          <span class="tw-event-result-label">${isError ? 'Error' : 'Result'}${duration}</span>
+        </summary>
+        <pre class="tw-event-payload">${esc(JSON.stringify(event.output || event.error || event.content, null, 2))}</pre>
+      `;
+      return entry;
+    }
+
+    case 'message':
+    case 'text': {
+      const entry = h('div', { class: 'tw-event tw-event-message' });
+      entry.innerHTML = `
+        <span class="tw-event-time">${time}</span>
+        <span class="tw-event-icon">\uD83D\uDCAC</span>
+        <p class="tw-event-text">${esc(event.content || '')}</p>
+      `;
+      return entry;
+    }
+
+    default: {
+      const entry = h('div', { class: 'tw-event tw-event-other' });
+      entry.innerHTML = `
+        <span class="tw-event-time">${time}</span>
+        <span class="tw-event-icon">\u2022</span>
+        <span class="tw-event-text">${esc(event.type || 'event')}: ${esc(event.content || JSON.stringify(event).substring(0, 120))}</span>
+      `;
+      return entry;
+    }
+  }
+}
+
+function summarizeToolInput(input) {
+  if (!input) return '';
+  if (typeof input !== 'object') return String(input).substring(0, 60);
+  // Show key params concisely
+  const parts = [];
+  for (const [k, v] of Object.entries(input)) {
+    if (parts.length >= 3) { parts.push('...'); break; }
+    const val = typeof v === 'object' ? '{...}' : String(v).substring(0, 30);
+    parts.push(`${k}=${val}`);
+  }
+  return parts.join(', ');
+}
+
+function formatEventTime(ts) {
+  if (!ts) return '';
+  try {
+    const d = new Date(ts);
+    return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch { return ts.substring(11, 19) || ''; }
+}
+
+function viewRawJsonl() {
+  // Show raw events in a modal-style overlay
+  const overlay = h('div', { class: 'tw-raw-overlay', id: 'tw-raw-overlay' });
+  const jsonl = _agentLogEvents.map(e => JSON.stringify(e)).join('\n');
+  overlay.innerHTML = `
+    <div class="tw-raw-modal">
+      <div class="tw-raw-header">
+        <span>Raw JSONL — Session ${(_agentLogSessionId || '').substring(0, 10)}...</span>
+        <button class="btn btn-ghost btn-sm" id="tw-raw-copy">Copy</button>
+        <button class="btn btn-ghost btn-sm" id="tw-raw-close">\u2715</button>
+      </div>
+      <pre class="tw-raw-content">${esc(jsonl)}</pre>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#tw-raw-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#tw-raw-copy').addEventListener('click', () => {
+    navigator.clipboard.writeText(jsonl).then(() => showToast('Copied to clipboard', 'success'));
+  });
+}
+
+/** Append a new event to the live agent log timeline */
+function appendTimelineEvent(event) {
+  _agentLogEvents.push(event);
+  const el = document.getElementById('tw-agent-timeline');
+  if (!el) return;
+  el.appendChild(createTimelineEntry(event));
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Co-pilot Drawer ─────────────────────────────────────────────────────────
 
 function renderCopilotDrawer() {
   const tw = getState().toryWorkspace;
   const sessions = tw.agentSessions || [];
   const placeholder = document.getElementById('tw-right-placeholder');
-  const chatMessages = document.getElementById('tw-chat-messages');
+  const chatMessagesEl = document.getElementById('tw-chat-messages');
   const chatInput = document.getElementById('tw-chat-input');
   const sessionMeta = document.getElementById('tw-session-meta');
   const sessionStatus = document.getElementById('tw-session-status');
 
   if (sessions.length === 0 || !tw.selectedUserId) {
-    // Show placeholder
+    // Show placeholder, disconnect WS
     if (placeholder) placeholder.style.display = '';
-    if (chatMessages) chatMessages.style.display = 'none';
+    if (chatMessagesEl) chatMessagesEl.style.display = 'none';
     if (chatInput) chatInput.style.display = 'none';
     if (sessionMeta) sessionMeta.style.display = 'none';
     if (sessionStatus) sessionStatus.style.display = 'none';
+    disconnectToryAgentWs();
+    _copilotSessionId = null;
+    _copilotMessages = [];
     return;
   }
 
-  // Show latest session
-  const latest = sessions[0];
+  // Determine which session to show
+  const targetSession = _copilotSessionId
+    ? sessions.find(s => s.id === _copilotSessionId) || sessions[0]
+    : sessions[0];
+
+  const needsReconnect = _copilotSessionId !== targetSession.id;
+
   if (placeholder) placeholder.style.display = 'none';
-  if (chatMessages) { chatMessages.style.display = ''; chatMessages.innerHTML = ''; }
+  if (chatMessagesEl) chatMessagesEl.style.display = '';
   if (chatInput) chatInput.style.display = '';
 
-  // Session meta
+  // Session metadata card
   if (sessionMeta) {
     sessionMeta.style.display = '';
+    const shortId = (targetSession.id || '').substring(0, 10);
+    const date = (targetSession.created_at || '').substring(0, 19);
+    const confidence = targetSession.confidence != null ? `${targetSession.confidence}%` : '—';
     sessionMeta.innerHTML = `
-      <span style="font-size:var(--font-size-xs);color:var(--text-secondary)">
-        Session: ${esc(latest.id.substring(0, 8))}... · ${latest.tool_call_count || 0} tool calls
-      </span>
+      <div class="tw-copilot-meta">
+        <div class="tw-copilot-meta-name">${esc(getUserNameFromState())}'s Agent</div>
+        <div class="tw-copilot-meta-stats">
+          <span>${targetSession.tool_call_count || 0} tool calls</span>
+          <span>Conf: ${confidence}</span>
+          <span>${date}</span>
+        </div>
+        <div class="tw-copilot-meta-ws" id="tw-copilot-ws-status">
+          ${_copilotWsConnected ? '<span class="tw-ws-dot connected"></span> Connected' : '<span class="tw-ws-dot"></span> Disconnected'}
+        </div>
+      </div>
     `;
   }
+
+  // Session status badge
   if (sessionStatus) {
     sessionStatus.style.display = '';
-    const cls = latest.status === 'completed' ? 'completed' : latest.status === 'running' ? 'running' : 'error';
+    const cls = targetSession.status === 'completed' ? 'completed' : targetSession.status === 'running' ? 'running' : 'error';
     sessionStatus.className = `tw-session-badge ${cls}`;
-    sessionStatus.textContent = latest.status;
+    sessionStatus.textContent = targetSession.status;
   }
 
-  // Add a welcome message
-  appendChatMessage('ai', `I've processed this user. You can ask me questions about their profile, learning path, or request changes.`);
+  // Restore chat messages from persistent buffer
+  if (chatMessagesEl) {
+    chatMessagesEl.innerHTML = '';
+    if (_copilotMessages.length === 0) {
+      // Welcome message for new session
+      _copilotMessages.push({ role: 'ai', content: "I've processed this user. You can ask me questions about their profile, learning path, or request changes." });
+    }
+    for (const msg of _copilotMessages) {
+      renderChatMessageEl(chatMessagesEl, msg.role, msg.content);
+    }
+    if (_copilotStreaming) {
+      renderStreamingIndicator(chatMessagesEl);
+    }
+  }
 
-  // Connect WebSocket for this session
-  connectCopilotWs(latest.id);
+  // Connect WebSocket (with auto-reconnect) if session changed
+  if (needsReconnect) {
+    _copilotSessionId = targetSession.id;
+    connectCopilotSession(targetSession.id);
+  }
+}
+
+function connectCopilotSession(sessionId) {
+  connectToryAgentWs(sessionId, handleCopilotMessage);
+  _copilotWsConnected = true;
+  updateCopilotWsStatus(true);
+}
+
+function handleCopilotMessage(data) {
+  switch (data.type) {
+    case 'agent_message':
+    case 'TORY_AGENT_MESSAGE':
+      if (data.content) {
+        // If streaming, replace the last streaming message
+        if (_copilotStreaming && _copilotMessages.length > 0) {
+          const last = _copilotMessages[_copilotMessages.length - 1];
+          if (last._streaming) {
+            last.content += data.content;
+            refreshChatDisplay();
+            break;
+          }
+        }
+        appendChatMessage('ai', data.content);
+      }
+      break;
+
+    case 'TORY_AGENT_PROGRESS':
+    case 'agent_progress': {
+      // Append to agent log timeline if visible
+      const event = data.event || data.payload || data;
+      appendTimelineEvent(event);
+
+      // Show tool calls as system messages in copilot
+      if (event.type === 'tool_call') {
+        appendChatMessage('system', `Using tool: ${event.tool || event.name || 'unknown'}`);
+      }
+      break;
+    }
+
+    case 'agent_tool_use':
+    case 'TORY_AGENT_TOOL':
+      appendChatMessage('system', `Using tool: ${data.tool || data.name || 'unknown'}`);
+      // Also add to agent log
+      appendTimelineEvent({ type: 'tool_call', tool: data.tool || data.name, input: data.input, timestamp: new Date().toISOString() });
+      break;
+
+    case 'TORY_AGENT_STREAMING_START':
+    case 'agent_streaming_start':
+      _copilotStreaming = true;
+      _copilotMessages.push({ role: 'ai', content: '', _streaming: true });
+      refreshChatDisplay();
+      break;
+
+    case 'TORY_AGENT_STREAMING_TOKEN':
+    case 'agent_token':
+    case 'token':
+      if (_copilotMessages.length > 0) {
+        const last = _copilotMessages[_copilotMessages.length - 1];
+        if (last._streaming) {
+          last.content += (data.token || data.content || '');
+          refreshChatDisplay();
+        }
+      }
+      break;
+
+    case 'TORY_AGENT_STREAMING_END':
+    case 'agent_streaming_end':
+      _copilotStreaming = false;
+      if (_copilotMessages.length > 0) {
+        const last = _copilotMessages[_copilotMessages.length - 1];
+        delete last._streaming;
+      }
+      refreshChatDisplay();
+      break;
+
+    case 'agent_complete':
+    case 'TORY_AGENT_COMPLETE':
+    case 'TORY_AGENT_COMPLETED':
+      _copilotStreaming = false;
+      appendChatMessage('ai', data.summary || 'Processing complete.');
+      // Refresh sessions + user detail
+      const tw = getState().toryWorkspace;
+      if (tw.selectedUserId) {
+        loadUserDetail(tw.selectedUserId);
+      }
+      break;
+
+    case 'agent_error':
+    case 'TORY_AGENT_ERROR':
+      _copilotStreaming = false;
+      appendChatMessage('ai', `Error: ${data.error || data.message || 'Unknown error'}`);
+      break;
+
+    case 'ws_connected':
+      _copilotWsConnected = true;
+      updateCopilotWsStatus(true);
+      break;
+
+    case 'ws_disconnected':
+      _copilotWsConnected = false;
+      updateCopilotWsStatus(false);
+      break;
+
+    default:
+      break;
+  }
 }
 
 function appendChatMessage(role, content) {
-  const chatMessages = document.getElementById('tw-chat-messages');
-  if (!chatMessages) return;
+  _copilotMessages.push({ role, content });
+  const chatMessagesEl = document.getElementById('tw-chat-messages');
+  if (!chatMessagesEl) return;
+  renderChatMessageEl(chatMessagesEl, role, content);
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+}
 
+function renderChatMessageEl(container, role, content) {
   const msg = h('div', { class: `tw-chat-message ${role}` });
+
+  if (role === 'system') {
+    msg.innerHTML = `<span class="tw-chat-system">${esc(content)}</span>`;
+    container.appendChild(msg);
+    return;
+  }
 
   const avatar = h('div', { class: `tw-chat-avatar ${role}` });
   avatar.textContent = role === 'ai' ? 'AI' : 'You';
@@ -1247,72 +1633,48 @@ function appendChatMessage(role, content) {
 
   msg.appendChild(avatar);
   msg.appendChild(bubble);
-  chatMessages.appendChild(msg);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  container.appendChild(msg);
 }
 
-function connectCopilotWs(sessionId) {
-  if (_copilotWs) {
-    _copilotWs.close();
-    _copilotWs = null;
-  }
-
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url = `${protocol}//${window.location.host}/ws/tory-agent?session=${sessionId}`;
-
-  try {
-    _copilotWs = new WebSocket(url);
-
-    _copilotWs.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleCopilotMessage(data);
-      } catch (err) {
-        console.error('Copilot WS parse error:', err);
-      }
-    };
-
-    _copilotWs.onclose = () => {
-      _copilotWs = null;
-    };
-
-    _copilotWs.onerror = (err) => {
-      console.error('Copilot WS error:', err);
-    };
-  } catch (err) {
-    console.error('Failed to connect copilot WS:', err);
-  }
+function renderStreamingIndicator(container) {
+  const indicator = h('div', { class: 'tw-chat-message ai', id: 'tw-streaming-indicator' });
+  indicator.innerHTML = `
+    <div class="tw-chat-avatar ai">AI</div>
+    <div class="tw-chat-bubble tw-chat-streaming">
+      <span class="tw-typing-dots"><span>.</span><span>.</span><span>.</span></span>
+    </div>
+  `;
+  container.appendChild(indicator);
 }
 
-function handleCopilotMessage(data) {
-  switch (data.type) {
-    case 'agent_message':
-    case 'TORY_AGENT_MESSAGE':
-      if (data.content) {
-        appendChatMessage('ai', data.content);
-      }
-      break;
-    case 'agent_tool_use':
-    case 'TORY_AGENT_TOOL':
-      // Show tool usage as system message
-      appendChatMessage('ai', `_Using tool: ${data.tool || data.name || 'unknown'}_`);
-      break;
-    case 'agent_complete':
-    case 'TORY_AGENT_COMPLETE':
-      appendChatMessage('ai', data.summary || 'Processing complete.');
-      // Refresh sessions + detail
-      const tw = getState().toryWorkspace;
-      if (tw.selectedUserId) {
-        loadUserDetail(tw.selectedUserId);
-      }
-      break;
-    case 'agent_error':
-    case 'TORY_AGENT_ERROR':
-      appendChatMessage('ai', `Error: ${data.error || data.message || 'Unknown error'}`);
-      break;
-    default:
-      break;
+function refreshChatDisplay() {
+  const chatMessagesEl = document.getElementById('tw-chat-messages');
+  if (!chatMessagesEl) return;
+  chatMessagesEl.innerHTML = '';
+  for (const msg of _copilotMessages) {
+    renderChatMessageEl(chatMessagesEl, msg.role, msg.content);
   }
+  if (_copilotStreaming) {
+    renderStreamingIndicator(chatMessagesEl);
+  }
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+}
+
+function updateCopilotWsStatus(connected) {
+  const el = document.getElementById('tw-copilot-ws-status');
+  if (!el) return;
+  el.innerHTML = connected
+    ? '<span class="tw-ws-dot connected"></span> Connected'
+    : '<span class="tw-ws-dot"></span> Reconnecting...';
+}
+
+function getUserNameFromState() {
+  const tw = getState().toryWorkspace;
+  const detail = tw.selectedUserDetail;
+  if (!detail) return 'User';
+  const profile = detail.learner?.profile || detail.learner || {};
+  const parts = [profile.first_name, profile.last_name].filter(Boolean);
+  return parts.length > 0 ? parts.join(' ') : profile.email || `User ${tw.selectedUserId}`;
 }
 
 async function sendChatMessage() {
@@ -1334,19 +1696,19 @@ async function sendChatMessage() {
     return;
   }
 
-  const latest = sessions[0];
+  const sessionId = _copilotSessionId || sessions[0].id;
 
-  // Send via WebSocket if connected
-  if (_copilotWs && _copilotWs.readyState === WebSocket.OPEN) {
-    _copilotWs.send(JSON.stringify({ type: 'message', text }));
-    return;
-  }
+  // Send via WebSocket if connected (uses WebSocketManager from api.js)
+  sendToryAgentMessage({ type: 'message', text });
 
-  // Fallback: REST API
+  // Also POST as fallback (server handles dedup)
   try {
-    await api.chatWithToryAgent(tw.selectedUserId, latest.id, text);
+    await api.chatWithToryAgent(tw.selectedUserId, sessionId, text);
   } catch (err) {
-    appendChatMessage('ai', `Failed to send message: ${err.message}`);
+    // WS send may have worked, only show error if both fail
+    if (!_copilotWsConnected) {
+      appendChatMessage('ai', `Failed to send message: ${err.message}`);
+    }
   }
 }
 
@@ -1357,12 +1719,11 @@ function openSessionInCopilot(sessionId) {
     toggleRightDrawer();
   }
 
-  // Load this specific session's events
-  const tw = getState().toryWorkspace;
-  const session = tw.agentSessions.find(s => s.id === sessionId);
-  if (session) {
-    renderCopilotDrawer();
-  }
+  // Switch copilot to this session
+  _copilotSessionId = sessionId;
+  _copilotMessages = [];
+  _copilotStreaming = false;
+  renderCopilotDrawer();
 }
 
 // ── User Processing ─────────────────────────────────────────────────────────
