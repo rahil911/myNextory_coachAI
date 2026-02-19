@@ -113,6 +113,12 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request('GET', `/api/dashboard/timeline${qs ? '?' + qs : ''}`).then(r => r.events || []);
   },
+
+  // Tory — Learner path, profile, feedback
+  getToryPath:     (learnerId) => request('GET', `/api/tory/path/${learnerId}`),
+  getToryProfile:  (learnerId) => request('GET', `/api/tory/profile/${learnerId}`),
+  submitToryFeedback: (learnerId, type, comment) =>
+    request('POST', '/api/tory/feedback', { learner_id: learnerId, type, comment }),
 };
 
 // ── WebSocket Manager ──────────────────────────────────────────────────────

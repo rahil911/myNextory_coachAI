@@ -4,10 +4,10 @@ routes/tory.py — Tory learner profile and feedback endpoints.
 POST /api/tory/profile          — Generate learner profile from EPP + Q&A
 GET  /api/tory/profile/{id}     — Retrieve learner profile
 POST /api/tory/feedback         — Submit 'not_like_me' feedback
+GET  /api/tory/path/{id}        — Full learner path (profile + recommendations + coach flags)
 """
 
 import json
-import subprocess
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
@@ -162,3 +162,24 @@ async def submit_feedback(req: FeedbackRequest):
 
     feedback = svc.create_feedback(req.learner_id, req.type, req.comment)
     return FeedbackResponse(**feedback)
+
+
+@router.get("/path/{learner_id}")
+async def get_path(learner_id: int):
+    """Get the full learner path: profile + ordered recommendations + coach flags.
+
+    Returns everything the frontend Tory roadmap view needs in a single call.
+    """
+    svc = _get_tory_service()
+
+    if not svc.user_exists(learner_id):
+        raise HTTPException(status_code=404, detail=f"User {learner_id} not found")
+
+    path = svc.get_path(learner_id)
+    if not path:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No path data found for learner {learner_id}",
+        )
+
+    return path

@@ -31,7 +31,8 @@ export function navigate(hash) {
     timeline: 'Timeline',
     agents: 'Agents',
     epics: 'Epics',
-    approvals: 'Approvals'
+    approvals: 'Approvals',
+    tory: 'Learning Path'
   };
   const titleEl = document.getElementById('topbar-title');
   if (titleEl) titleEl.textContent = titles[view] || view;
