@@ -21,8 +21,12 @@ import asyncio
 import json
 import math
 import os
+import re
 import subprocess
 import sys
+import time
+import uuid as _uuid
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -74,6 +78,166 @@ BACKPACK_SIGNAL_THRESHOLD = 10  # Number of new interactions to trigger reassess
 DRIFT_THRESHOLD_PCT = 15  # Profile drift % to trigger path re-ranking
 CRITERIA_CORP_MAX_RETRIES = 3
 CRITERIA_CORP_BASE_DELAY = 1.0  # seconds, for exponential backoff
+
+# ---------------------------------------------------------------------------
+# Rate Limiting (per-user, in-memory token bucket)
+# ---------------------------------------------------------------------------
+
+RATE_LIMIT_RPM = 100  # requests per minute per user
+RATE_LIMIT_WINDOW = 60  # seconds
+
+
+class RateLimiter:
+    """Simple in-memory sliding-window rate limiter per user."""
+
+    def __init__(self, max_requests: int = RATE_LIMIT_RPM, window: int = RATE_LIMIT_WINDOW):
+        self._max = max_requests
+        self._window = window
+        self._requests: dict[str, list[float]] = defaultdict(list)
+
+    def check(self, user_key: str) -> bool:
+        """Return True if the request is allowed, False if rate limited."""
+        now = time.monotonic()
+        # Prune old entries
+        self._requests[user_key] = [
+            t for t in self._requests[user_key] if now - t < self._window
+        ]
+        if len(self._requests[user_key]) >= self._max:
+            return False
+        self._requests[user_key].append(now)
+        return True
+
+
+_rate_limiter = RateLimiter()
+
+
+# ---------------------------------------------------------------------------
+# Structured Logging with Correlation IDs
+# ---------------------------------------------------------------------------
+
+
+def _log(level: str, message: str, correlation_id: str = "", **extra):
+    """Emit structured log line to stderr."""
+    entry = {
+        "ts": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
+        "level": level,
+        "service": "tory-engine",
+        "msg": message,
+    }
+    if correlation_id:
+        entry["correlation_id"] = correlation_id
+    entry.update(extra)
+    print(json.dumps(entry), file=sys.stderr)
+
+
+def _new_correlation_id() -> str:
+    return _uuid.uuid4().hex[:12]
+
+
+# ---------------------------------------------------------------------------
+# Input Validation Helpers
+# ---------------------------------------------------------------------------
+
+# Allowed identifier patterns (prevent SQL injection via parameter values)
+_VALID_ID = re.compile(r"^\d+$")
+_VALID_BATCH_ID = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+_VALID_STATUS = {"pending", "in_progress", "completed", "approved", "needs_review",
+                 "rejected", "dismissed"}
+_VALID_EVENT_TYPE = {"reordered", "swapped", "locked", "reassessed", "generated"}
+_VALID_PEDAGOGY_MODE = {"balanced", "gap_fill", "strength_lead"}
+
+
+def validate_user_id(nx_user_id) -> int:
+    """Validate and return a safe integer user ID."""
+    try:
+        uid = int(nx_user_id)
+    except (ValueError, TypeError):
+        raise ValueError(f"Invalid user ID: {nx_user_id!r}")
+    if uid <= 0 or uid > 2_000_000_000:
+        raise ValueError(f"User ID out of range: {uid}")
+    return uid
+
+
+def validate_positive_int(value, name: str, max_val: int = 2_000_000_000) -> int:
+    """Validate a positive integer parameter."""
+    try:
+        v = int(value)
+    except (ValueError, TypeError):
+        raise ValueError(f"Invalid {name}: {value!r}")
+    if v <= 0 or v > max_val:
+        raise ValueError(f"{name} out of range: {v}")
+    return v
+
+
+def validate_string(value, name: str, max_len: int = 10000) -> str:
+    """Validate a string parameter. Rejects null bytes and excessive length."""
+    if value is None:
+        raise ValueError(f"{name} is required")
+    s = str(value)
+    if "\x00" in s:
+        raise ValueError(f"{name} contains null bytes")
+    if len(s) > max_len:
+        raise ValueError(f"{name} exceeds max length ({max_len})")
+    return s
+
+
+def validate_enum(value, name: str, allowed: set) -> str:
+    """Validate value is in the allowed set."""
+    s = str(value).lower().strip()
+    if s not in allowed:
+        raise ValueError(f"Invalid {name}: {s!r}. Allowed: {', '.join(sorted(allowed))}")
+    return s
+
+
+# ---------------------------------------------------------------------------
+# Circuit Breaker for External APIs
+# ---------------------------------------------------------------------------
+
+CIRCUIT_BREAKER_THRESHOLD = 3  # consecutive failures to trip
+CIRCUIT_BREAKER_RESET_TIME = 300  # seconds before half-open retry
+
+
+class CircuitBreaker:
+    """Simple circuit breaker for external API calls."""
+
+    def __init__(self, threshold: int = CIRCUIT_BREAKER_THRESHOLD,
+                 reset_time: int = CIRCUIT_BREAKER_RESET_TIME):
+        self._threshold = threshold
+        self._reset_time = reset_time
+        self._failures = 0
+        self._last_failure_time = 0.0
+        self._state = "closed"  # closed, open, half_open
+
+    @property
+    def state(self) -> str:
+        if self._state == "open":
+            if time.monotonic() - self._last_failure_time > self._reset_time:
+                self._state = "half_open"
+        return self._state
+
+    def allow_request(self) -> bool:
+        s = self.state
+        if s == "closed":
+            return True
+        if s == "half_open":
+            return True  # allow one test request
+        return False  # open
+
+    def record_success(self):
+        self._failures = 0
+        self._state = "closed"
+
+    def record_failure(self):
+        self._failures += 1
+        self._last_failure_time = time.monotonic()
+        if self._failures >= self._threshold:
+            self._state = "open"
+            _log("warn", f"Circuit breaker OPEN after {self._failures} consecutive failures",
+                 component="circuit_breaker")
+
+
+_criteria_corp_breaker = CircuitBreaker()
+
 
 # ---------------------------------------------------------------------------
 # MySQL helpers (mirrors db_tools.py pattern)
@@ -387,7 +551,8 @@ def get_last_reassessment(nx_user_id: int, reassessment_type: str | None = None)
         f"AND deleted_at IS NULL"
     )
     if reassessment_type:
-        where += f" AND type = '{reassessment_type}'"
+        safe_type = escape_sql(reassessment_type)
+        where += f" AND type = {safe_type}"
     _, rows = mysql_query(
         f"SELECT * FROM tory_reassessments {where} ORDER BY completed_at DESC LIMIT 1"
     )
@@ -434,15 +599,22 @@ def _load_criteria_credentials() -> dict | None:
 def criteria_corp_fetch_scores(
     order_id: str,
     credentials: dict | None = None,
+    correlation_id: str = "",
 ) -> dict | None:
     """Fetch updated EPP scores from Criteria Corp API.
 
     Implements retry with exponential backoff (3 retries, 1s/2s/4s delays).
+    Uses circuit breaker to avoid hammering a down API.
     Returns parsed scores dict or None on failure.
     """
-    import time
     import urllib.request
     import urllib.error
+
+    # Circuit breaker check
+    if not _criteria_corp_breaker.allow_request():
+        _log("warn", "Criteria Corp circuit breaker OPEN — skipping API call",
+             correlation_id=correlation_id, component="criteria_corp")
+        return None
 
     if credentials is None:
         credentials = _load_criteria_credentials()
@@ -466,18 +638,23 @@ def criteria_corp_fetch_scores(
             req = urllib.request.Request(url, headers=headers, method="GET")
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode())
+                _criteria_corp_breaker.record_success()
+                _log("info", "Criteria Corp API call succeeded",
+                     correlation_id=correlation_id, order_id=order_id,
+                     attempt=attempt + 1)
                 return data
         except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError) as e:
             last_error = e
+            _log("warn", f"Criteria Corp API attempt {attempt + 1} failed: {e}",
+                 correlation_id=correlation_id, order_id=order_id)
             if attempt < CRITERIA_CORP_MAX_RETRIES - 1:
                 delay = CRITERIA_CORP_BASE_DELAY * (2 ** attempt)
                 time.sleep(delay)
 
-    # All retries failed
-    print(
-        f"[tory-engine] Criteria Corp API failed after {CRITERIA_CORP_MAX_RETRIES} retries: {last_error}",
-        file=sys.stderr,
-    )
+    # All retries failed — record failure for circuit breaker
+    _criteria_corp_breaker.record_failure()
+    _log("error", f"Criteria Corp API failed after {CRITERIA_CORP_MAX_RETRIES} retries",
+         correlation_id=correlation_id, order_id=order_id, error=str(last_error))
     return None
 
 
@@ -3685,7 +3862,8 @@ async def _tool_review_queue(
     # Build WHERE clause
     where_parts = ["ct.deleted_at IS NULL"]
     if status_filter and status_filter != "all_pending":
-        where_parts.append(f"ct.review_status = '{status_filter}'")
+        safe_status = escape_sql(status_filter)
+        where_parts.append(f"ct.review_status = {safe_status}")
     else:
         where_parts.append("ct.review_status IN ('pending', 'needs_review')")
 
@@ -4086,140 +4264,194 @@ def _escape_sql(s: str | None) -> str:
 
 @server.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
-    """Dispatch tool calls."""
+    """Dispatch tool calls with validation, rate limiting, and structured logging."""
+    cid = _new_correlation_id()
+    start_time = time.monotonic()
+
+    # Extract user key for rate limiting (use nx_user_id if present, else "system")
+    user_key = str(arguments.get("nx_user_id", arguments.get("reviewer_id", "system")))
+
+    # Rate limit check
+    if not _rate_limiter.check(user_key):
+        _log("warn", "Rate limit exceeded", correlation_id=cid,
+             tool=name, user_key=user_key)
+        result = json.dumps({
+            "error": "Rate limit exceeded. Maximum 100 requests per minute per user.",
+            "retry_after_seconds": 60,
+        })
+        return [TextContent(type="text", text=result)]
+
+    _log("info", f"Tool call: {name}", correlation_id=cid,
+         tool=name, user_key=user_key)
+
     try:
+        # --- Input validation and dispatch ---
         if name == "tory_get_learner_data":
-            result = await _tool_get_learner_data(int(arguments["nx_user_id"]))
+            uid = validate_user_id(arguments["nx_user_id"])
+            result = await _tool_get_learner_data(uid)
+
         elif name == "tory_interpret_profile":
-            result = await _tool_interpret_profile(int(arguments["nx_user_id"]))
+            uid = validate_user_id(arguments["nx_user_id"])
+            result = await _tool_interpret_profile(uid)
+
         elif name == "tory_score_content":
-            result = await _tool_score_content(
-                int(arguments["nx_user_id"]),
-                int(arguments.get("max_lessons", 30)),
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            max_l = validate_positive_int(arguments.get("max_lessons", 30), "max_lessons", 500)
+            result = await _tool_score_content(uid, max_l)
+
         elif name == "tory_generate_roadmap":
-            result = await _tool_generate_roadmap(
-                int(arguments["nx_user_id"]),
-                arguments.get("mode", "discovery"),
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            mode = arguments.get("mode", "discovery")
+            if mode not in ("discovery", "full"):
+                raise ValueError(f"Invalid mode: {mode}. Must be 'discovery' or 'full'.")
+            result = await _tool_generate_roadmap(uid, mode)
+
         elif name == "tory_check_coach_compatibility":
-            result = await _tool_check_coach_compatibility(
-                int(arguments["nx_user_id"]),
-                int(arguments["coach_id"]),
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            coach = validate_positive_int(arguments["coach_id"], "coach_id")
+            result = await _tool_check_coach_compatibility(uid, coach)
+
         elif name == "tory_generate_path":
-            result = await _tool_generate_path(
-                int(arguments["nx_user_id"]),
-                int(arguments.get("max_recommendations", 20)),
-                arguments.get("coach_id"),
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            max_r = validate_positive_int(arguments.get("max_recommendations", 20), "max_recommendations", 100)
+            coach = None
+            if arguments.get("coach_id") is not None:
+                coach = validate_positive_int(arguments["coach_id"], "coach_id")
+            result = await _tool_generate_path(uid, max_r, coach)
+
         elif name == "tory_get_roadmap":
-            result = await _tool_get_roadmap(int(arguments["nx_user_id"]))
+            uid = validate_user_id(arguments["nx_user_id"])
+            result = await _tool_get_roadmap(uid)
+
         elif name == "tory_get_progress":
-            result = await _tool_get_progress(int(arguments["nx_user_id"]))
+            uid = validate_user_id(arguments["nx_user_id"])
+            result = await _tool_get_progress(uid)
+
         elif name == "tory_list_content_tags":
             result = await _tool_list_content_tags(
                 arguments.get("nx_lesson_id"),
                 arguments.get("review_status"),
             )
+
         elif name == "tory_set_pedagogy":
-            result = await _tool_set_pedagogy(
-                int(arguments["client_id"]),
-                arguments["mode"],
-                int(arguments.get("gap_ratio", 50)),
-                int(arguments.get("strength_ratio", 50)),
-            )
+            cid_val = validate_positive_int(arguments["client_id"], "client_id")
+            mode = validate_enum(arguments["mode"], "mode", _VALID_PEDAGOGY_MODE)
+            gr = validate_positive_int(arguments.get("gap_ratio", 50), "gap_ratio", 100)
+            sr = validate_positive_int(arguments.get("strength_ratio", 50), "strength_ratio", 100)
+            result = await _tool_set_pedagogy(cid_val, mode, gr, sr)
+
         elif name == "tory_coach_reorder":
-            result = await _tool_coach_reorder(
-                int(arguments["nx_user_id"]),
-                int(arguments["coach_id"]),
-                arguments["ordering"],
-                arguments["reason"],
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            coach = validate_positive_int(arguments["coach_id"], "coach_id")
+            ordering = arguments["ordering"]
+            if not isinstance(ordering, list) or not ordering:
+                raise ValueError("ordering must be a non-empty list")
+            reason = validate_string(arguments["reason"], "reason", 2000)
+            result = await _tool_coach_reorder(uid, coach, ordering, reason)
+
         elif name == "tory_coach_swap":
-            result = await _tool_coach_swap(
-                int(arguments["nx_user_id"]),
-                int(arguments["coach_id"]),
-                int(arguments["remove_lesson_id"]),
-                int(arguments["add_lesson_id"]),
-                arguments["reason"],
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            coach = validate_positive_int(arguments["coach_id"], "coach_id")
+            remove = validate_positive_int(arguments["remove_lesson_id"], "remove_lesson_id")
+            add = validate_positive_int(arguments["add_lesson_id"], "add_lesson_id")
+            reason = validate_string(arguments["reason"], "reason", 2000)
+            result = await _tool_coach_swap(uid, coach, remove, add, reason)
+
         elif name == "tory_coach_lock":
-            result = await _tool_coach_lock(
-                int(arguments["nx_user_id"]),
-                int(arguments["coach_id"]),
-                int(arguments["recommendation_id"]),
-                arguments["reason"],
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            coach = validate_positive_int(arguments["coach_id"], "coach_id")
+            rec = validate_positive_int(arguments["recommendation_id"], "recommendation_id")
+            reason = validate_string(arguments["reason"], "reason", 2000)
+            result = await _tool_coach_lock(uid, coach, rec, reason)
+
         elif name == "tory_get_path":
-            result = await _tool_get_path(int(arguments["nx_user_id"]))
+            uid = validate_user_id(arguments["nx_user_id"])
+            result = await _tool_get_path(uid)
+
         elif name == "tory_dashboard_snapshot":
             result = await _tool_dashboard_snapshot(
                 arguments.get("nx_user_id"),
                 arguments.get("client_id"),
                 arguments.get("department_id"),
             )
+
         elif name == "tory_schedule_quarterly_epp":
-            result = await _tool_schedule_quarterly_epp(
-                int(arguments["nx_user_id"]),
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            result = await _tool_schedule_quarterly_epp(uid)
+
         elif name == "tory_mini_assessment":
-            result = await _tool_mini_assessment(
-                int(arguments["nx_user_id"]),
-                arguments["responses"],
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            responses = arguments["responses"]
+            if not isinstance(responses, list):
+                raise ValueError("responses must be a list")
+            result = await _tool_mini_assessment(uid, responses)
+
         elif name == "tory_check_passive_signals":
-            result = await _tool_check_passive_signals(
-                int(arguments["nx_user_id"]),
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            result = await _tool_check_passive_signals(uid)
+
         elif name == "tory_reassessment_status":
-            result = await _tool_reassessment_status(
-                int(arguments["nx_user_id"]),
-            )
+            uid = validate_user_id(arguments["nx_user_id"])
+            result = await _tool_reassessment_status(uid)
+
         # ---- Coach Review Queue ----
         elif name == "tory_review_queue":
             result = await _tool_review_queue(
                 arguments.get("status_filter"),
                 arguments.get("min_confidence"),
                 arguments.get("max_confidence"),
-                int(arguments.get("limit", 20)),
+                validate_positive_int(arguments.get("limit", 20), "limit", 100),
                 int(arguments.get("offset", 0)),
             )
         elif name == "tory_review_approve":
-            result = await _tool_review_approve(
-                int(arguments["tag_id"]),
-                int(arguments["reviewer_id"]),
-                arguments.get("notes"),
-            )
+            tag = validate_positive_int(arguments["tag_id"], "tag_id")
+            rev = validate_positive_int(arguments["reviewer_id"], "reviewer_id")
+            result = await _tool_review_approve(tag, rev, arguments.get("notes"))
+
         elif name == "tory_review_correct":
+            tag = validate_positive_int(arguments["tag_id"], "tag_id")
+            rev = validate_positive_int(arguments["reviewer_id"], "reviewer_id")
+            tags = arguments["corrected_tags"]
+            if not isinstance(tags, list) or not tags:
+                raise ValueError("corrected_tags must be a non-empty list")
             result = await _tool_review_correct(
-                int(arguments["tag_id"]),
-                int(arguments["reviewer_id"]),
-                arguments["corrected_tags"],
+                tag, rev, tags,
                 arguments.get("corrected_difficulty"),
                 arguments.get("corrected_learning_style"),
                 arguments.get("notes"),
             )
+
         elif name == "tory_review_dismiss":
-            result = await _tool_review_dismiss(
-                int(arguments["tag_id"]),
-                int(arguments["reviewer_id"]),
-                arguments.get("notes"),
-            )
+            tag = validate_positive_int(arguments["tag_id"], "tag_id")
+            rev = validate_positive_int(arguments["reviewer_id"], "reviewer_id")
+            result = await _tool_review_dismiss(tag, rev, arguments.get("notes"))
+
         elif name == "tory_review_bulk_approve":
+            rev = validate_positive_int(arguments["reviewer_id"], "reviewer_id")
+            min_conf = validate_positive_int(arguments.get("min_confidence", 70), "min_confidence", 100)
             result = await _tool_review_bulk_approve(
-                int(arguments["reviewer_id"]),
-                int(arguments.get("min_confidence", 70)),
-                arguments.get("tag_ids"),
-                arguments.get("notes"),
+                rev, min_conf, arguments.get("tag_ids"), arguments.get("notes"),
             )
+
         elif name == "tory_review_queue_stats":
             result = await _tool_review_queue_stats()
+
         else:
             result = json.dumps({"error": f"Unknown tool: {name}"})
 
+    except ValueError as e:
+        # Input validation errors — return 400-style response
+        _log("warn", f"Validation error: {e}", correlation_id=cid, tool=name)
+        result = json.dumps({"error": f"Validation error: {e}"})
+
     except Exception as e:
+        _log("error", f"Tool error: {e}", correlation_id=cid, tool=name,
+             error_type=type(e).__name__)
         result = json.dumps({"error": str(e)})
+
+    elapsed_ms = round((time.monotonic() - start_time) * 1000)
+    _log("info", f"Tool completed: {name}", correlation_id=cid,
+         tool=name, elapsed_ms=elapsed_ms)
 
     return [TextContent(type="text", text=result)]
 
