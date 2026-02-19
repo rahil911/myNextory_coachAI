@@ -6,6 +6,7 @@
 - `.claude/db/migrations/002_coach_curation.sql` — Coach curation schema (tory_path_events + recommendation columns)
 - `test_generate_path.py` — E2E test for generate_path
 - `test_coach_curation.py` — E2E test for coach curation API
+- `test_review_queue.py` — E2E test for coach review queue
 
 ## Key Decisions
 - `signal` is a reserved word in MariaDB — renamed to `compat_signal` in tory_coach_flags
@@ -43,8 +44,21 @@ Content hierarchy: Journey > Chapter > Lesson > Slide/Video
 - Divergence detection: % of coach-modified items vs total; >30% flags as "coach insight" (not blocked)
 - All coach mutations create tory_path_events with reason text for audit trail
 - `source` column on tory_recommendations: 'tory' = algorithm, 'coach' = manually modified
+- Review queue is tory_content_tags filtered by review_status IN ('pending', 'needs_review') — no separate table
+- Corrected tags set confidence=100 (human-reviewed = highest confidence)
+- Correction records store original_tags in review_notes JSON for audit trail
+- nx_lessons.lesson is the lesson title column (not lesson_name)
+- Content hierarchy joins: nx_lessons → nx_journey_details (via nx_journey_detail_id), nx_chapter_details (via nx_chapter_detail_id)
 
 ## Recent Changes
+- baap-qkk.10: Built coach review queue UI for low-confidence tags
+  - 6 new MCP tools: tory_review_queue, tory_review_approve, tory_review_correct, tory_review_dismiss, tory_review_bulk_approve, tory_review_queue_stats
+  - Queue displays enriched items with lesson/journey/chapter context, sorted by confidence ASC
+  - Approve preserves trait_tags, correct stores originals in review_notes + sets confidence=100
+  - Dismiss marks dismissed without touching trait_tags
+  - Bulk approve by confidence threshold or specific IDs
+  - Stats: pending count, reviewed today, avg confidence, confidence distribution
+  - All 6 acceptance criteria verified via 83-test E2E suite
 - baap-qkk.5: Built coach curation API for path management
   - Created tory_path_events table (11 tory tables now)
   - Added locked_by_coach and source columns to tory_recommendations

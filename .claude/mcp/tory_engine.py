@@ -1891,6 +1891,195 @@ async def list_tools() -> list[Tool]:
                 "required": ["nx_user_id"],
             },
         ),
+        # ---- Coach Review Queue Tools ----
+        Tool(
+            name="tory_review_queue",
+            description=(
+                "GET /api/tory/review-queue — List pending content tag reviews for coaches. "
+                "Returns items from tory_content_tags with review_status='pending' or 'needs_review', "
+                "enriched with lesson title, journey context, trait tags, confidence score, "
+                "and pass agreement. Ordered by confidence ascending (lowest first). "
+                "Supports pagination via offset/limit."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "status_filter": {
+                        "type": "string",
+                        "description": "Filter by review status (default: both pending and needs_review)",
+                        "enum": ["pending", "needs_review", "all_pending"],
+                    },
+                    "min_confidence": {
+                        "type": "integer",
+                        "description": "Minimum confidence score filter (0-100)",
+                    },
+                    "max_confidence": {
+                        "type": "integer",
+                        "description": "Maximum confidence score filter (0-100)",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max items to return (default 20, max 100)",
+                        "default": 20,
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Pagination offset (default 0)",
+                        "default": 0,
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="tory_review_approve",
+            description=(
+                "POST /api/tory/review/:tagId/approve — Approve a content tag. "
+                "Sets review_status='approved', records reviewer ID and timestamp. "
+                "Preserves existing trait_tags as-is."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tag_id": {
+                        "type": "integer",
+                        "description": "The tory_content_tags.id to approve",
+                    },
+                    "reviewer_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the reviewing coach/admin",
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Optional reviewer notes",
+                    },
+                },
+                "required": ["tag_id", "reviewer_id"],
+            },
+        ),
+        Tool(
+            name="tory_review_correct",
+            description=(
+                "POST /api/tory/review/:tagId/correct — Correct a content tag. "
+                "Updates trait_tags with corrected values, sets review_status='corrected', "
+                "stores original tags in review_notes as correction JSON, records reviewer. "
+                "Also updates the tory_content_tags row with new dimension scores."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tag_id": {
+                        "type": "integer",
+                        "description": "The tory_content_tags.id to correct",
+                    },
+                    "reviewer_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the reviewing coach/admin",
+                    },
+                    "corrected_tags": {
+                        "type": "array",
+                        "description": "Corrected trait tags: [{trait, relevance_score, direction}]",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "trait": {"type": "string"},
+                                "relevance_score": {"type": "integer"},
+                                "direction": {
+                                    "type": "string",
+                                    "enum": ["builds", "leverages", "challenges"],
+                                },
+                            },
+                            "required": ["trait", "relevance_score", "direction"],
+                        },
+                    },
+                    "corrected_difficulty": {
+                        "type": "integer",
+                        "description": "Optional corrected difficulty (1-5)",
+                    },
+                    "corrected_learning_style": {
+                        "type": "string",
+                        "description": "Optional corrected learning style",
+                        "enum": ["visual", "reflective", "active", "theoretical", "blended"],
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Reviewer notes explaining the correction",
+                    },
+                },
+                "required": ["tag_id", "reviewer_id", "corrected_tags"],
+            },
+        ),
+        Tool(
+            name="tory_review_dismiss",
+            description=(
+                "POST /api/tory/review/:tagId/dismiss — Dismiss a content tag from the review queue. "
+                "Sets review_status='dismissed' without modifying the trait_tags. "
+                "Use for tags that are irrelevant or should be re-tagged from scratch."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tag_id": {
+                        "type": "integer",
+                        "description": "The tory_content_tags.id to dismiss",
+                    },
+                    "reviewer_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the reviewing coach/admin",
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Reason for dismissal",
+                    },
+                },
+                "required": ["tag_id", "reviewer_id"],
+            },
+        ),
+        Tool(
+            name="tory_review_bulk_approve",
+            description=(
+                "POST /api/tory/review/bulk-approve — Bulk approve content tags. "
+                "Approves all pending/needs_review tags matching the filter criteria. "
+                "Supports filtering by minimum confidence threshold."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "reviewer_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the reviewing coach/admin",
+                    },
+                    "min_confidence": {
+                        "type": "integer",
+                        "description": "Only approve tags with confidence >= this value (default 70)",
+                        "default": 70,
+                    },
+                    "tag_ids": {
+                        "type": "array",
+                        "description": "Optional: specific tag IDs to approve (overrides confidence filter)",
+                        "items": {"type": "integer"},
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Optional bulk approval notes",
+                    },
+                },
+                "required": ["reviewer_id"],
+            },
+        ),
+        Tool(
+            name="tory_review_queue_stats",
+            description=(
+                "GET /api/tory/review/stats — Get review queue statistics. "
+                "Returns total pending, reviewed today, avg confidence of pending items, "
+                "breakdown by review_status, and confidence distribution."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -3478,6 +3667,419 @@ async def _tool_reassessment_status(nx_user_id: int) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Coach Review Queue tool implementations
+# ---------------------------------------------------------------------------
+
+
+async def _tool_review_queue(
+    status_filter: str | None = None,
+    min_confidence: int | None = None,
+    max_confidence: int | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> str:
+    """List pending content tag reviews with enriched lesson context."""
+    limit = min(max(1, limit), 100)
+    offset = max(0, offset)
+
+    # Build WHERE clause
+    where_parts = ["ct.deleted_at IS NULL"]
+    if status_filter and status_filter != "all_pending":
+        where_parts.append(f"ct.review_status = '{status_filter}'")
+    else:
+        where_parts.append("ct.review_status IN ('pending', 'needs_review')")
+
+    if min_confidence is not None:
+        where_parts.append(f"ct.confidence >= {int(min_confidence)}")
+    if max_confidence is not None:
+        where_parts.append(f"ct.confidence <= {int(max_confidence)}")
+
+    where = " AND ".join(where_parts)
+
+    # Count total matching
+    _, count_rows = mysql_query(
+        f"SELECT COUNT(*) as total FROM tory_content_tags ct WHERE {where}"
+    )
+    total = int(count_rows[0]["total"]) if count_rows else 0
+
+    # Fetch enriched queue items
+    _, rows = mysql_query(
+        f"SELECT ct.id, ct.nx_lesson_id, ct.lesson_detail_id, "
+        f"ct.trait_tags, ct.difficulty, ct.learning_style, ct.prerequisites, "
+        f"ct.confidence, ct.review_status, ct.pass1_tags, ct.pass2_tags, "
+        f"ct.pass_agreement, ct.created_at, "
+        f"l.lesson as lesson_title, l.nx_journey_detail_id, "
+        f"l.nx_chapter_detail_id, "
+        f"j.journey as journey_title, "
+        f"ch.chapter as chapter_title "
+        f"FROM tory_content_tags ct "
+        f"LEFT JOIN nx_lessons l ON ct.nx_lesson_id = l.id "
+        f"LEFT JOIN nx_journey_details j ON l.nx_journey_detail_id = j.id "
+        f"LEFT JOIN nx_chapter_details ch ON l.nx_chapter_detail_id = ch.id "
+        f"WHERE {where} "
+        f"ORDER BY ct.confidence ASC, ct.created_at ASC "
+        f"LIMIT {limit} OFFSET {offset}"
+    )
+
+    # Parse JSON fields for each row
+    items = []
+    for row in rows:
+        trait_tags = []
+        if row.get("trait_tags") and row["trait_tags"] != "NULL":
+            try:
+                trait_tags = json.loads(row["trait_tags"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        items.append({
+            "tag_id": int(row["id"]),
+            "nx_lesson_id": int(row["nx_lesson_id"]),
+            "lesson_title": row.get("lesson_title") or f"Lesson #{row['nx_lesson_id']}",
+            "journey_title": row.get("journey_title") or None,
+            "chapter_title": row.get("chapter_title") or None,
+            "trait_tags": trait_tags,
+            "difficulty": int(row["difficulty"]) if row.get("difficulty") and row["difficulty"] != "NULL" else None,
+            "learning_style": row.get("learning_style") if row.get("learning_style") != "NULL" else None,
+            "confidence": int(row["confidence"]),
+            "review_status": row["review_status"],
+            "pass_agreement": int(row["pass_agreement"]) if row.get("pass_agreement") and row["pass_agreement"] != "NULL" else None,
+            "created_at": row.get("created_at"),
+        })
+
+    return json.dumps({
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+        "items": items,
+    }, indent=2, default=str)
+
+
+async def _tool_review_approve(
+    tag_id: int,
+    reviewer_id: int,
+    notes: str | None = None,
+) -> str:
+    """Approve a content tag — preserves existing trait_tags."""
+    # Verify tag exists and is reviewable
+    _, rows = mysql_query(
+        f"SELECT id, review_status, confidence FROM tory_content_tags "
+        f"WHERE id = {int(tag_id)} AND deleted_at IS NULL"
+    )
+    if not rows:
+        return json.dumps({"error": f"Tag {tag_id} not found"})
+
+    current = rows[0]
+    if current["review_status"] not in ("pending", "needs_review"):
+        return json.dumps({
+            "error": f"Tag {tag_id} has status '{current['review_status']}' — only pending/needs_review can be approved"
+        })
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    notes_sql = f", review_notes = '{_escape_sql(notes)}'" if notes else ""
+    mysql_query(
+        f"UPDATE tory_content_tags SET "
+        f"review_status = 'approved', "
+        f"reviewed_by = {int(reviewer_id)}, "
+        f"reviewed_at = '{now}', "
+        f"updated_at = '{now}'"
+        f"{notes_sql} "
+        f"WHERE id = {int(tag_id)}"
+    )
+
+    return json.dumps({
+        "action": "approved",
+        "tag_id": tag_id,
+        "reviewed_by": reviewer_id,
+        "reviewed_at": now,
+    }, indent=2)
+
+
+async def _tool_review_correct(
+    tag_id: int,
+    reviewer_id: int,
+    corrected_tags: list[dict],
+    corrected_difficulty: int | None = None,
+    corrected_learning_style: str | None = None,
+    notes: str | None = None,
+) -> str:
+    """Correct a content tag — updates trait_tags and stores correction history."""
+    # Verify tag exists and is reviewable
+    _, rows = mysql_query(
+        f"SELECT id, review_status, trait_tags, difficulty, learning_style, confidence "
+        f"FROM tory_content_tags "
+        f"WHERE id = {int(tag_id)} AND deleted_at IS NULL"
+    )
+    if not rows:
+        return json.dumps({"error": f"Tag {tag_id} not found"})
+
+    current = rows[0]
+    if current["review_status"] not in ("pending", "needs_review"):
+        return json.dumps({
+            "error": f"Tag {tag_id} has status '{current['review_status']}' — only pending/needs_review can be corrected"
+        })
+
+    # Validate corrected_tags format
+    for tag in corrected_tags:
+        if "trait" not in tag or "relevance_score" not in tag or "direction" not in tag:
+            return json.dumps({"error": "Each corrected tag must have trait, relevance_score, direction"})
+        if tag["direction"] not in ("builds", "leverages", "challenges"):
+            return json.dumps({"error": f"Invalid direction: {tag['direction']}"})
+        if not (0 <= int(tag["relevance_score"]) <= 100):
+            return json.dumps({"error": f"relevance_score must be 0-100, got {tag['relevance_score']}"})
+
+    # Build correction record (original → corrected)
+    original_tags = []
+    if current.get("trait_tags") and current["trait_tags"] != "NULL":
+        try:
+            original_tags = json.loads(current["trait_tags"])
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    correction_record = json.dumps({
+        "original_tags": original_tags,
+        "original_difficulty": current.get("difficulty"),
+        "original_learning_style": current.get("learning_style"),
+        "corrected_by": reviewer_id,
+        "correction_notes": notes or "",
+    })
+
+    new_tags_json = json.dumps(corrected_tags)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Build SET clause
+    set_parts = [
+        f"trait_tags = '{_escape_sql(new_tags_json)}'",
+        f"review_status = 'approved'",
+        f"reviewed_by = {int(reviewer_id)}",
+        f"reviewed_at = '{now}'",
+        f"review_notes = '{_escape_sql(correction_record)}'",
+        f"confidence = 100",
+        f"updated_at = '{now}'",
+    ]
+    if corrected_difficulty is not None:
+        if not (1 <= corrected_difficulty <= 5):
+            return json.dumps({"error": "difficulty must be 1-5"})
+        set_parts.append(f"difficulty = {int(corrected_difficulty)}")
+    if corrected_learning_style:
+        valid_styles = ("visual", "reflective", "active", "theoretical", "blended")
+        if corrected_learning_style not in valid_styles:
+            return json.dumps({"error": f"Invalid learning_style: {corrected_learning_style}"})
+        set_parts.append(f"learning_style = '{corrected_learning_style}'")
+
+    mysql_query(
+        f"UPDATE tory_content_tags SET {', '.join(set_parts)} "
+        f"WHERE id = {int(tag_id)}"
+    )
+
+    return json.dumps({
+        "action": "corrected",
+        "tag_id": tag_id,
+        "reviewed_by": reviewer_id,
+        "reviewed_at": now,
+        "corrected_tags": corrected_tags,
+        "original_tags": original_tags,
+        "confidence_set_to": 100,
+    }, indent=2, default=str)
+
+
+async def _tool_review_dismiss(
+    tag_id: int,
+    reviewer_id: int,
+    notes: str | None = None,
+) -> str:
+    """Dismiss a content tag — does NOT modify trait_tags."""
+    # Verify tag exists and is reviewable
+    _, rows = mysql_query(
+        f"SELECT id, review_status FROM tory_content_tags "
+        f"WHERE id = {int(tag_id)} AND deleted_at IS NULL"
+    )
+    if not rows:
+        return json.dumps({"error": f"Tag {tag_id} not found"})
+
+    current = rows[0]
+    if current["review_status"] not in ("pending", "needs_review"):
+        return json.dumps({
+            "error": f"Tag {tag_id} has status '{current['review_status']}' — only pending/needs_review can be dismissed"
+        })
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    notes_sql = f", review_notes = '{_escape_sql(notes)}'" if notes else ""
+    mysql_query(
+        f"UPDATE tory_content_tags SET "
+        f"review_status = 'dismissed', "
+        f"reviewed_by = {int(reviewer_id)}, "
+        f"reviewed_at = '{now}', "
+        f"updated_at = '{now}'"
+        f"{notes_sql} "
+        f"WHERE id = {int(tag_id)}"
+    )
+
+    return json.dumps({
+        "action": "dismissed",
+        "tag_id": tag_id,
+        "reviewed_by": reviewer_id,
+        "reviewed_at": now,
+    }, indent=2)
+
+
+async def _tool_review_bulk_approve(
+    reviewer_id: int,
+    min_confidence: int = 70,
+    tag_ids: list[int] | None = None,
+    notes: str | None = None,
+) -> str:
+    """Bulk approve content tags by confidence threshold or specific IDs."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    notes_sql = f", review_notes = '{_escape_sql(notes)}'" if notes else ""
+
+    if tag_ids:
+        # Approve specific IDs
+        id_list = ", ".join(str(int(i)) for i in tag_ids)
+        # Count how many are eligible
+        _, count_rows = mysql_query(
+            f"SELECT COUNT(*) as cnt FROM tory_content_tags "
+            f"WHERE id IN ({id_list}) AND deleted_at IS NULL "
+            f"AND review_status IN ('pending', 'needs_review')"
+        )
+        eligible = int(count_rows[0]["cnt"]) if count_rows else 0
+
+        if eligible == 0:
+            return json.dumps({"error": "No eligible tags found in the provided IDs"})
+
+        mysql_query(
+            f"UPDATE tory_content_tags SET "
+            f"review_status = 'approved', "
+            f"reviewed_by = {int(reviewer_id)}, "
+            f"reviewed_at = '{now}', "
+            f"updated_at = '{now}'"
+            f"{notes_sql} "
+            f"WHERE id IN ({id_list}) AND deleted_at IS NULL "
+            f"AND review_status IN ('pending', 'needs_review')"
+        )
+    else:
+        # Approve by confidence threshold
+        _, count_rows = mysql_query(
+            f"SELECT COUNT(*) as cnt FROM tory_content_tags "
+            f"WHERE deleted_at IS NULL "
+            f"AND review_status IN ('pending', 'needs_review') "
+            f"AND confidence >= {int(min_confidence)}"
+        )
+        eligible = int(count_rows[0]["cnt"]) if count_rows else 0
+
+        if eligible == 0:
+            return json.dumps({
+                "error": f"No pending tags with confidence >= {min_confidence}",
+                "suggestion": "Lower the min_confidence threshold or specify tag_ids",
+            })
+
+        mysql_query(
+            f"UPDATE tory_content_tags SET "
+            f"review_status = 'approved', "
+            f"reviewed_by = {int(reviewer_id)}, "
+            f"reviewed_at = '{now}', "
+            f"updated_at = '{now}'"
+            f"{notes_sql} "
+            f"WHERE deleted_at IS NULL "
+            f"AND review_status IN ('pending', 'needs_review') "
+            f"AND confidence >= {int(min_confidence)}"
+        )
+
+    return json.dumps({
+        "action": "bulk_approved",
+        "approved_count": eligible,
+        "reviewed_by": reviewer_id,
+        "reviewed_at": now,
+        "filter": {
+            "tag_ids": tag_ids,
+            "min_confidence": min_confidence if not tag_ids else None,
+        },
+    }, indent=2, default=str)
+
+
+async def _tool_review_queue_stats() -> str:
+    """Get review queue statistics."""
+    # Total by status
+    _, status_rows = mysql_query(
+        "SELECT review_status, COUNT(*) as cnt, AVG(confidence) as avg_conf "
+        "FROM tory_content_tags WHERE deleted_at IS NULL "
+        "GROUP BY review_status"
+    )
+
+    status_breakdown = {}
+    total_pending = 0
+    avg_pending_conf = 0.0
+    for row in status_rows:
+        status = row["review_status"]
+        cnt = int(row["cnt"])
+        avg = float(row["avg_conf"]) if row["avg_conf"] and row["avg_conf"] != "NULL" else 0.0
+        status_breakdown[status] = {"count": cnt, "avg_confidence": round(avg, 1)}
+        if status in ("pending", "needs_review"):
+            total_pending += cnt
+            avg_pending_conf += avg * cnt
+
+    if total_pending > 0:
+        avg_pending_conf = round(avg_pending_conf / total_pending, 1)
+    else:
+        avg_pending_conf = 0.0
+
+    # Reviewed today
+    today = datetime.now().strftime("%Y-%m-%d")
+    _, today_rows = mysql_query(
+        f"SELECT COUNT(*) as cnt FROM tory_content_tags "
+        f"WHERE deleted_at IS NULL "
+        f"AND reviewed_at >= '{today} 00:00:00' "
+        f"AND review_status IN ('approved', 'dismissed')"
+    )
+    reviewed_today = int(today_rows[0]["cnt"]) if today_rows else 0
+
+    # Corrected today (separate count since corrected is a distinct action)
+    _, corrected_rows = mysql_query(
+        f"SELECT COUNT(*) as cnt FROM tory_content_tags "
+        f"WHERE deleted_at IS NULL "
+        f"AND reviewed_at >= '{today} 00:00:00' "
+        f"AND review_notes IS NOT NULL AND review_notes LIKE '%original_tags%'"
+    )
+    corrected_today = int(corrected_rows[0]["cnt"]) if corrected_rows else 0
+
+    # Confidence distribution of pending items
+    _, dist_rows = mysql_query(
+        "SELECT "
+        "SUM(CASE WHEN confidence < 30 THEN 1 ELSE 0 END) as very_low, "
+        "SUM(CASE WHEN confidence >= 30 AND confidence < 50 THEN 1 ELSE 0 END) as low, "
+        "SUM(CASE WHEN confidence >= 50 AND confidence < 70 THEN 1 ELSE 0 END) as medium, "
+        "SUM(CASE WHEN confidence >= 70 THEN 1 ELSE 0 END) as high "
+        "FROM tory_content_tags "
+        "WHERE deleted_at IS NULL AND review_status IN ('pending', 'needs_review')"
+    )
+
+    confidence_dist = {}
+    if dist_rows:
+        d = dist_rows[0]
+        confidence_dist = {
+            "very_low_0_29": int(d["very_low"] or 0),
+            "low_30_49": int(d["low"] or 0),
+            "medium_50_69": int(d["medium"] or 0),
+            "high_70_plus": int(d["high"] or 0),
+        }
+
+    return json.dumps({
+        "total_pending": total_pending,
+        "reviewed_today": reviewed_today,
+        "corrected_today": corrected_today,
+        "avg_confidence_pending": avg_pending_conf,
+        "status_breakdown": status_breakdown,
+        "confidence_distribution": confidence_dist,
+    }, indent=2, default=str)
+
+
+def _escape_sql(s: str | None) -> str:
+    """Escape single quotes in SQL string values."""
+    if s is None:
+        return ""
+    return s.replace("\\", "\\\\").replace("'", "\\'")
+
+
+# ---------------------------------------------------------------------------
 # Tool dispatcher
 # ---------------------------------------------------------------------------
 
@@ -3574,6 +4176,45 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = await _tool_reassessment_status(
                 int(arguments["nx_user_id"]),
             )
+        # ---- Coach Review Queue ----
+        elif name == "tory_review_queue":
+            result = await _tool_review_queue(
+                arguments.get("status_filter"),
+                arguments.get("min_confidence"),
+                arguments.get("max_confidence"),
+                int(arguments.get("limit", 20)),
+                int(arguments.get("offset", 0)),
+            )
+        elif name == "tory_review_approve":
+            result = await _tool_review_approve(
+                int(arguments["tag_id"]),
+                int(arguments["reviewer_id"]),
+                arguments.get("notes"),
+            )
+        elif name == "tory_review_correct":
+            result = await _tool_review_correct(
+                int(arguments["tag_id"]),
+                int(arguments["reviewer_id"]),
+                arguments["corrected_tags"],
+                arguments.get("corrected_difficulty"),
+                arguments.get("corrected_learning_style"),
+                arguments.get("notes"),
+            )
+        elif name == "tory_review_dismiss":
+            result = await _tool_review_dismiss(
+                int(arguments["tag_id"]),
+                int(arguments["reviewer_id"]),
+                arguments.get("notes"),
+            )
+        elif name == "tory_review_bulk_approve":
+            result = await _tool_review_bulk_approve(
+                int(arguments["reviewer_id"]),
+                int(arguments.get("min_confidence", 70)),
+                arguments.get("tag_ids"),
+                arguments.get("notes"),
+            )
+        elif name == "tory_review_queue_stats":
+            result = await _tool_review_queue_stats()
         else:
             result = json.dumps({"error": f"Unknown tool: {name}"})
 
