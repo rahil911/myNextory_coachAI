@@ -24,8 +24,10 @@ from services.thinktank_service import ThinkTankService
 from services.command_service import CommandService
 from services.notification_bridge import get_notification_router
 from services.tory_service import ToryService
+from services.tory_agent_service import ToryAgentService
+from services.azure_blob_service import AzureBlobService
 
-from routes import agents, approvals, beads, attachments, thinktank, commands, dashboard, epics, tory, tory_admin, websocket
+from routes import agents, approvals, beads, attachments, thinktank, commands, dashboard, epics, tory, tory_admin, tory_workspace, websocket
 
 # ── Service singletons ────────────────────────────────────────────────────────
 
@@ -35,6 +37,8 @@ _attachment_service: AttachmentService | None = None
 _thinktank_service: ThinkTankService | None = None
 _command_service: CommandService | None = None
 _tory_service: ToryService | None = None
+_tory_agent_service: ToryAgentService | None = None
+_azure_blob_service: AzureBlobService | None = None
 
 
 def get_event_bus():
@@ -64,6 +68,14 @@ def get_tory_service() -> ToryService:
     assert _tory_service is not None
     return _tory_service
 
+def get_tory_agent_service() -> ToryAgentService:
+    assert _tory_agent_service is not None
+    return _tory_agent_service
+
+def get_azure_blob_service() -> AzureBlobService:
+    assert _azure_blob_service is not None
+    return _azure_blob_service
+
 
 # ── Background task: agent status polling ─────────────────────────────────────
 
@@ -84,6 +96,7 @@ async def _agent_poll_loop():
 async def lifespan(app: FastAPI):
     global _agent_service, _bead_service, _attachment_service
     global _thinktank_service, _command_service, _tory_service
+    global _tory_agent_service, _azure_blob_service
 
     # Startup: create services
     _notification_router = get_notification_router()
@@ -93,6 +106,11 @@ async def lifespan(app: FastAPI):
     _thinktank_service = ThinkTankService(event_bus=event_bus)
     _command_service = CommandService()
     _tory_service = ToryService()
+    _tory_agent_service = ToryAgentService(event_bus=event_bus)
+    try:
+        _azure_blob_service = AzureBlobService()
+    except ValueError:
+        _azure_blob_service = None  # Azure credentials not configured
 
     # Start background polling
     poll_task = asyncio.create_task(_agent_poll_loop())
@@ -106,6 +124,7 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     await _thinktank_service.cleanup()
+    await _tory_agent_service.cleanup()
 
 
 # ── Create app ────────────────────────────────────────────────────────────────
@@ -137,6 +156,7 @@ app.include_router(dashboard.router)
 app.include_router(epics.router)
 app.include_router(tory.router)
 app.include_router(tory_admin.router)
+app.include_router(tory_workspace.router)
 app.include_router(websocket.router)
 
 

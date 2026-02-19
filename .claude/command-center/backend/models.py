@@ -420,3 +420,27 @@ class ApprovalListResponse(BaseModel):
 
 class ApprovalRejectRequest(BaseModel):
     reason: str = ""
+
+
+# ── Tory Agent Models ────────────────────────────────────────────────────────
+
+class ToryAgentEvent(BaseModel):
+    type: str  # reasoning | tool_call | tool_result | error | complete
+    content: str | None = None
+    tool: str | None = None
+    input: dict | None = None
+    output: dict | None = None
+    timestamp: str
+
+
+class ToryAgentSession(BaseModel):
+    id: str
+    nx_user_id: int
+    status: str = "running"  # running | completed | failed | cancelled
+    events: list[ToryAgentEvent] = Field(default_factory=list)
+    tool_call_count: int = 0
+    error_message: str | None = None
+    pipeline_steps: list[str] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+    claude_session_id: str | None = None
