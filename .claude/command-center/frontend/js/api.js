@@ -311,6 +311,18 @@ function handleThinktankMessage(data) {
   const state = getState();
   const tt = { ...state.thinktank };
 
+  const pushDispatchEvent = (eventType, payload = {}) => {
+    const events = [
+      ...(tt.dispatchEvents || []),
+      {
+        ts: new Date().toISOString(),
+        type: eventType,
+        payload,
+      },
+    ].slice(-30);
+    return events;
+  };
+
   switch (data.type) {
     // Backend event bus types
     case 'THINKTANK_MESSAGE': {
@@ -375,10 +387,12 @@ function handleThinktankMessage(data) {
     case 'DISPATCH_COMPLETE':
     case 'DISPATCH_ERROR':
       if (data.payload) {
+        const dispatchEvents = pushDispatchEvent(data.type, data.payload);
         setState({
           thinktank: {
             ...tt,
             dispatchStatus: data.payload,
+            dispatchEvents,
           }
         });
       }

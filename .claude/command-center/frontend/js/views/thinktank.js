@@ -12,6 +12,7 @@ import { h } from '../utils/dom.js';
 import { timeAgo } from '../utils/format.js';
 
 let _currentMode = null; // 'history' | 'session'
+let _dispatchPollTimer = null;
 
 export function renderThinkTank(root) {
   const container = h('div', { class: 'thinktank-root', id: 'thinktank-root' });
@@ -28,6 +29,7 @@ function _doRender(container) {
   const tt = getState().thinktank;
 
   if (tt.sessionId) {
+    _ensureDispatchPolling(tt.sessionId, tt.phase >= 4);
     if (_currentMode !== 'session') {
       container.innerHTML = '';
       _renderSessionView(container);
@@ -36,6 +38,7 @@ function _doRender(container) {
       _updateSessionView(tt);
     }
   } else {
+    _stopDispatchPolling();
     if (_currentMode !== 'history') {
       container.innerHTML = '';
       _renderHistoryView(container);
@@ -198,6 +201,9 @@ async function _openSession(sessionId) {
         risks: [],
         sessionId: session.id,
         status: session.status,
+        dispatchStatus: null,
+        dispatchEvents: [],
+        dispatchHealth: null,
       }
     });
 
@@ -221,6 +227,9 @@ async function _startNewSession() {
         risks: [],
         sessionId: session.id,
         status: 'active',
+        dispatchStatus: null,
+        dispatchEvents: [],
+        dispatchHealth: null,
       }
     });
     connectThinktankWs(session.id);
@@ -317,6 +326,11 @@ function _renderSessionView(container) {
   };
   specPanel.appendChild(renderSpecKit(tt, onEdit));
 
+  // Always show dispatch observability once flow reaches confirm+ or if dispatch has started
+  if (tt.phase >= 4 || tt.dispatchStatus || (tt.dispatchEvents && tt.dispatchEvents.length)) {
+    specPanel.appendChild(_renderDispatchVisibility(tt));
+  }
+
   // Approval gate (Phase 4+ only, not read-only)
   if (tt.phase >= 4 && !isReadOnly) {
     const gate = h('div', { class: 'approval-gate' });
@@ -329,9 +343,8 @@ function _renderSessionView(container) {
     const previewPanel = h('div', { class: 'approval-preview-panel', style: { display: 'none' } });
     previewPanel.id = 'approval-preview-panel';
 
-    // State machine: 'preview' (initial) or 'confirm' (after dry-run)
-    let approvePhase = 'preview';
-    let confirmedSessionId = null;
+    let awaitingConfirm = false;
+    let confirmSessionId = null;
 
     const approveBtn = h('button', {
       class: 'approval-gate-btn',
@@ -341,52 +354,18 @@ function _renderSessionView(container) {
         errorPanel.style.display = 'none';
 
         try {
-          const sessionId = getState().thinktank.sessionId;
+          const sessionId = confirmSessionId || getState().thinktank.sessionId;
           if (!sessionId) throw new Error('No session ID');
 
-          if (approvePhase === 'preview') {
-            // Step 1: Dry-run preview
-            approveBtn.textContent = 'Approving...';
-            previewPanel.style.display = 'none';
-
-            const preview = await api.approveSpec(sessionId, { dryRun: true });
-
-            if (preview.dry_run && preview.preview) {
-              // Show preview for user confirmation
-              const tasks = preview.preview.tasks || [];
-              previewPanel.innerHTML = `
-                <h4 style="margin:0 0 8px">Build Plan Preview (${tasks.length} tasks)</h4>
-                <ul style="margin:0;padding-left:20px;font-size:13px">
-                  ${tasks.map(t => `<li><strong>Phase ${t.phase}:</strong> ${_escapeHtml(t.title)} <em>(${t.suggested_agent || 'auto'})</em></li>`).join('')}
-                </ul>
-              `;
-              previewPanel.style.display = 'block';
-
-              // Transition to confirm phase
-              approvePhase = 'confirm';
-              confirmedSessionId = sessionId;
-              approveBtn.textContent = 'Confirm Build \u2192';
-              approveBtn.disabled = false;
-              return;
-            }
-
-            // No preview returned — proceed directly
-            if (preview.success) {
-              approveBtn.textContent = 'Build queued! Agents dispatching...';
-              approveBtn.classList.add('approved');
-              approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
-              showToast('Build started!', 'success');
-            } else {
-              throw new Error(preview.error || 'Unknown error');
-            }
-
-          } else if (approvePhase === 'confirm') {
-            // Step 2: Actual build
+          if (awaitingConfirm) {
             approveBtn.textContent = 'Starting build...';
             previewPanel.style.display = 'none';
 
-            const result = await api.approveSpec(confirmedSessionId || sessionId);
+            const result = await api.approveSpec(sessionId);
             if (result.success) {
+              awaitingConfirm = false;
+              confirmSessionId = null;
+              setState({ thinktank: { ...getState().thinktank, dispatchStatus: result } });
               approveBtn.textContent = 'Build queued! Agents dispatching...';
               approveBtn.classList.add('approved');
               approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
@@ -394,12 +373,47 @@ function _renderSessionView(container) {
             } else {
               throw new Error(result.error || 'Unknown error');
             }
+            return;
+          }
+
+          approveBtn.textContent = 'Approving...';
+          previewPanel.style.display = 'none';
+
+          // Step 1: Dry-run preview
+          const preview = await api.approveSpec(sessionId, { dryRun: true });
+
+          if (preview.dry_run && preview.preview) {
+            // Show preview for user confirmation
+            const tasks = preview.preview.tasks || [];
+            previewPanel.innerHTML = `
+              <h4 style="margin:0 0 8px">Build Plan Preview (${tasks.length} tasks)</h4>
+              <ul style="margin:0;padding-left:20px;font-size:13px">
+                ${tasks.map(t => `<li><strong>Phase ${t.phase}:</strong> ${_escapeHtml(t.title)} <em>(${t.suggested_agent || 'auto'})</em></li>`).join('')}
+              </ul>
+            `;
+            previewPanel.style.display = 'block';
+
+            // Change button to "Confirm Build" and keep a single click handler
+            awaitingConfirm = true;
+            confirmSessionId = sessionId;
+            approveBtn.textContent = 'Confirm Build \u2192';
+            approveBtn.disabled = false;
+            return;
+          }
+
+          // No preview returned — proceed directly
+          if (preview.success) {
+            approveBtn.textContent = 'Build queued! Agents dispatching...';
+            approveBtn.classList.add('approved');
+            approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
+            showToast('Build started!', 'success');
+          } else {
+            throw new Error(preview.error || 'Unknown error');
           }
 
         } catch (err) {
-          // Reset to preview phase on error so user can retry
-          approvePhase = 'preview';
-          confirmedSessionId = null;
+          awaitingConfirm = false;
+          confirmSessionId = null;
           _showApprovalError(errorPanel, approveBtn, err.message);
         }
       }
@@ -460,6 +474,7 @@ function _renderSessionView(container) {
 
     // Check dispatch health on render — disable button if not ready
     api.checkDispatchHealth().then(health => {
+      setState({ thinktank: { ...getState().thinktank, dispatchHealth: health } });
       if (!health.ready) {
         approveBtn.disabled = true;
         approveBtn.title = `Missing: ${health.missing.join(', ')}`;
@@ -473,6 +488,7 @@ function _renderSessionView(container) {
   container.appendChild(thinktankEl);
 
   // D/A/G keyboard shortcuts
+  document.removeEventListener('keydown', _dagHandler);
   document.addEventListener('keydown', _dagHandler);
 }
 
@@ -490,10 +506,124 @@ function _updateSessionView(tt) {
 
 function _goToHistory() {
   disconnectThinktankWs();
+  document.removeEventListener('keydown', _dagHandler);
+  _stopDispatchPolling();
   _currentMode = null; // Force re-render
   setState({
-    thinktank: { phase: 1, messages: [], specKit: {}, risks: [], sessionId: null, status: null }
+    thinktank: {
+      phase: 1,
+      messages: [],
+      specKit: {},
+      risks: [],
+      sessionId: null,
+      status: null,
+      dispatchStatus: null,
+      dispatchEvents: [],
+      dispatchHealth: null,
+    }
   });
+}
+
+function _ensureDispatchPolling(sessionId, shouldPoll) {
+  if (!shouldPoll || !sessionId) {
+    _stopDispatchPolling();
+    return;
+  }
+
+  const activeSession = _dispatchPollTimer?.sessionId;
+  if (activeSession === sessionId) return;
+
+  _stopDispatchPolling();
+
+  const poll = async () => {
+    try {
+      const status = await api.getDispatchStatus(sessionId);
+      if (status && status.status && status.status !== 'not_dispatched') {
+        const state = getState();
+        if (state.thinktank.sessionId !== sessionId) return;
+
+        const events = [
+          ...(state.thinktank.dispatchEvents || []),
+          { ts: new Date().toISOString(), type: 'DISPATCH_SNAPSHOT', payload: status },
+        ].slice(-30);
+
+        setState({
+          thinktank: {
+            ...state.thinktank,
+            dispatchStatus: status,
+            dispatchEvents: events,
+          },
+        });
+      }
+    } catch {
+      // Best-effort polling; websocket remains primary channel.
+    }
+  };
+
+  poll();
+  const timerId = setInterval(poll, 5000);
+  _dispatchPollTimer = { sessionId, timerId };
+}
+
+function _stopDispatchPolling() {
+  if (_dispatchPollTimer?.timerId) {
+    clearInterval(_dispatchPollTimer.timerId);
+  }
+  _dispatchPollTimer = null;
+}
+
+function _renderDispatchVisibility(tt) {
+  const panel = h('div', { class: 'dispatch-visibility' });
+  const status = tt.dispatchStatus || {};
+  const total = Number(status.total || 0);
+  const completed = Number(status.completed || 0);
+  const failed = Number(status.failed || 0);
+  const running = Number(status.running || 0);
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  panel.innerHTML = `
+    <div class="dispatch-visibility-header">
+      <span>Build Control Tower</span>
+      <span class="dispatch-status-pill">${_escapeHtml(status.status || 'not_dispatched')}</span>
+    </div>
+    <div class="dispatch-visibility-grid">
+      <div><strong>${completed}</strong><label>Completed</label></div>
+      <div><strong>${running}</strong><label>Running</label></div>
+      <div><strong>${failed}</strong><label>Failed</label></div>
+      <div><strong>${total}</strong><label>Total</label></div>
+    </div>
+    <div class="dispatch-progress-bar"><span style="width:${pct}%"></span></div>
+    <div class="dispatch-progress-text">Progress: ${pct}%</div>
+  `;
+
+  const health = tt.dispatchHealth;
+  if (health) {
+    const healthEl = h('div', { class: 'dispatch-health' });
+    const checks = Object.entries(health.checks || {});
+    healthEl.innerHTML = `
+      <div class="dispatch-health-title">Readiness</div>
+      <ul>${checks.map(([k, ok]) => `<li>${ok ? '✅' : '❌'} ${_escapeHtml(k)}</li>`).join('')}</ul>
+    `;
+    panel.appendChild(healthEl);
+  }
+
+  const events = tt.dispatchEvents || [];
+  const feed = h('div', { class: 'dispatch-feed' });
+  feed.innerHTML = `
+    <div class="dispatch-feed-title">Live feed</div>
+    ${events.length ? `<ul>${events.slice(-8).reverse().map(ev => `<li><span>${_escapeHtml((ev.type || '').toLowerCase())}</span><em>${_escapeHtml(_dispatchEventSummary(ev.payload || {}))}</em></li>`).join('')}</ul>` : '<p>No dispatch events yet. Use preview to inspect the plan before launch.</p>'}
+  `;
+  panel.appendChild(feed);
+
+  return panel;
+}
+
+function _dispatchEventSummary(payload) {
+  if (payload.message) return payload.message;
+  if (payload.status) return `status=${payload.status}`;
+  if (payload.error) return payload.error;
+  if (payload.topic) return payload.topic;
+  return 'update received';
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -526,7 +656,10 @@ function getPhaseId(num) {
 }
 
 function _escapeHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function _showApprovalError(errorPanel, approveBtn, message) {

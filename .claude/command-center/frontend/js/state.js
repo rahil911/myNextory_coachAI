@@ -18,7 +18,10 @@ const _state = {
     specKit: {},
     risks: [],
     sessionId: null,
-    status: null
+    status: null,
+    dispatchStatus: null,
+    dispatchEvents: [],
+    dispatchHealth: null,
   },
   currentView: 'dashboard',
   selectedBeadId: null,
