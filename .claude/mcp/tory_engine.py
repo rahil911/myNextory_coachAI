@@ -2258,6 +2258,72 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        # ---- Workspace Data Tools ----
+        Tool(
+            name="tory_list_users_with_status",
+            description=(
+                "Paginated user list with Tory processing status. Returns users from "
+                "nx_users with computed status fields (processed/profiled/has_epp/no_data), "
+                "company name, and recommendation count. Supports search and filtering."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "page": {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "default": 1,
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Results per page (default 50, max 100)",
+                        "default": 50,
+                    },
+                    "search": {
+                        "type": "string",
+                        "description": "Search by email, first_name, or last_name (partial match)",
+                    },
+                    "status_filter": {
+                        "type": "string",
+                        "description": "Filter by Tory status",
+                        "enum": ["processed", "profiled", "has_epp", "no_data"],
+                    },
+                    "company_filter": {
+                        "type": "integer",
+                        "description": "Filter by client_id",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="tory_preview_lesson_impact",
+            description=(
+                "Dry-run impact simulation — what happens if we add/remove lessons "
+                "from a learner's path. Computes before/after metrics for gap coverage, "
+                "path balance, and journey mix. No database writes."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                    "add_lesson_ids": {
+                        "type": "array",
+                        "description": "Lesson IDs to simulate adding to the path",
+                        "items": {"type": "integer"},
+                    },
+                    "remove_lesson_ids": {
+                        "type": "array",
+                        "description": "Lesson IDs to simulate removing from the path",
+                        "items": {"type": "integer"},
+                    },
+                },
+                "required": ["nx_user_id"],
+            },
+        ),
     ]
 
 
@@ -4259,6 +4325,341 @@ def _escape_sql(s: str | None) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Workspace Data Tools
+# ---------------------------------------------------------------------------
+
+
+async def _tool_list_users_with_status(
+    page: int = 1,
+    limit: int = 50,
+    search: str | None = None,
+    status_filter: str | None = None,
+    company_filter: int | None = None,
+) -> str:
+    """Paginated user list with Tory processing status."""
+    offset = (page - 1) * limit
+
+    # Build WHERE clauses
+    where_parts = ["u.deleted_at IS NULL"]
+    if search:
+        safe_search = _escape_like(search)
+        where_parts.append(
+            f"(u.email LIKE '%{safe_search}%' "
+            f"OR nuo.first_name LIKE '%{safe_search}%' "
+            f"OR nuo.last_name LIKE '%{safe_search}%')"
+        )
+    if company_filter is not None:
+        where_parts.append(f"u.client_id = {int(company_filter)}")
+
+    where_clause = " AND ".join(where_parts)
+
+    # If status_filter is set, we need a HAVING clause
+    having_clause = ""
+    if status_filter:
+        having_clause = f"HAVING tory_status = '{status_filter}'"
+
+    # Main query with LEFT JOINs for status computation
+    data_sql = (
+        f"SELECT u.id, u.email, "
+        f"nuo.first_name, nuo.last_name, "
+        f"u.client_id, "
+        f"c.company_name, "
+        f"CASE "
+        f"  WHEN MAX(tr.id) IS NOT NULL THEN 'processed' "
+        f"  WHEN MAX(tlp.id) IS NOT NULL THEN 'profiled' "
+        f"  WHEN MAX(nuo.id) IS NOT NULL THEN 'has_epp' "
+        f"  ELSE 'no_data' "
+        f"END AS tory_status, "
+        f"COUNT(DISTINCT tr.id) AS recommendation_count "
+        f"FROM nx_users u "
+        f"LEFT JOIN clients c ON c.id = u.client_id AND c.deleted_at IS NULL "
+        f"LEFT JOIN nx_user_onboardings nuo ON nuo.nx_user_id = u.id AND nuo.deleted_at IS NULL "
+        f"LEFT JOIN tory_learner_profiles tlp ON tlp.nx_user_id = u.id AND tlp.deleted_at IS NULL "
+        f"LEFT JOIN tory_recommendations tr ON tr.nx_user_id = u.id AND tr.deleted_at IS NULL "
+        f"WHERE {where_clause} "
+        f"GROUP BY u.id, nuo.first_name, nuo.last_name "
+        f"{having_clause} "
+        f"ORDER BY u.id "
+        f"LIMIT {int(limit)} OFFSET {int(offset)}"
+    )
+
+    _, rows = mysql_query(data_sql)
+
+    # Count query — wrap the same grouped query as a subquery to get total
+    count_sql = (
+        f"SELECT COUNT(*) AS total FROM ("
+        f"SELECT u.id, "
+        f"CASE "
+        f"  WHEN MAX(tr.id) IS NOT NULL THEN 'processed' "
+        f"  WHEN MAX(tlp.id) IS NOT NULL THEN 'profiled' "
+        f"  WHEN MAX(nuo.id) IS NOT NULL THEN 'has_epp' "
+        f"  ELSE 'no_data' "
+        f"END AS tory_status "
+        f"FROM nx_users u "
+        f"LEFT JOIN nx_user_onboardings nuo ON nuo.nx_user_id = u.id AND nuo.deleted_at IS NULL "
+        f"LEFT JOIN tory_learner_profiles tlp ON tlp.nx_user_id = u.id AND tlp.deleted_at IS NULL "
+        f"LEFT JOIN tory_recommendations tr ON tr.nx_user_id = u.id AND tr.deleted_at IS NULL "
+        f"WHERE {where_clause} "
+        f"GROUP BY u.id "
+        f"{having_clause}"
+        f") sub"
+    )
+
+    _, count_rows = mysql_query(count_sql)
+    total = int(count_rows[0]["total"]) if count_rows else 0
+    total_pages = math.ceil(total / limit) if limit > 0 else 0
+
+    def _val(v, default=""):
+        """Return default for NULL/None values from mysql output."""
+        if v is None or v == "NULL":
+            return default
+        return v
+
+    users = []
+    for r in rows:
+        cid = r.get("client_id")
+        users.append({
+            "id": int(r["id"]),
+            "email": _val(r.get("email")),
+            "first_name": _val(r.get("first_name")),
+            "last_name": _val(r.get("last_name")),
+            "client_id": int(cid) if cid and cid != "NULL" else None,
+            "company_name": _val(r.get("company_name")),
+            "tory_status": r.get("tory_status", "no_data"),
+            "recommendation_count": int(r.get("recommendation_count", 0)),
+        })
+
+    return json.dumps({
+        "users": users,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": total_pages,
+    }, indent=2, default=str)
+
+
+def _escape_like(value: str) -> str:
+    """Escape a string for use in a SQL LIKE pattern."""
+    s = str(value)
+    s = s.replace("\\", "\\\\")
+    s = s.replace("'", "\\'")
+    s = s.replace("%", "\\%")
+    s = s.replace("_", "\\_")
+    s = s.replace("\x00", "")
+    return s
+
+
+def _compute_path_metrics(
+    lesson_ids: list[int],
+    profile: dict,
+    content_tags_map: dict[int, dict],
+    journey_map: dict[int, int],
+) -> dict:
+    """Compute gap coverage, path balance, and journey mix for a set of lesson IDs."""
+    # Parse profile traits
+    try:
+        trait_vector = json.loads(profile.get("trait_vector", "{}"))
+    except (json.JSONDecodeError, TypeError):
+        trait_vector = {}
+
+    try:
+        strengths = json.loads(profile.get("strengths", "[]"))
+    except (json.JSONDecodeError, TypeError):
+        strengths = []
+
+    try:
+        gaps = json.loads(profile.get("gaps", "[]"))
+    except (json.JSONDecodeError, TypeError):
+        gaps = []
+
+    # Normalize strengths/gaps to lists of trait names
+    strength_set = set()
+    for s in strengths:
+        if isinstance(s, dict):
+            strength_set.add(s.get("trait", s.get("name", "")))
+        elif isinstance(s, str):
+            strength_set.add(s)
+
+    gap_set = set()
+    for g in gaps:
+        if isinstance(g, dict):
+            gap_set.add(g.get("trait", g.get("name", "")))
+        elif isinstance(g, str):
+            gap_set.add(g)
+
+    # Compute gap coverage: for each gap trait, how many lessons address it
+    gap_coverage = {}
+    gap_lesson_count = 0
+    strength_lesson_count = 0
+    journey_mix = {}
+
+    for lid in lesson_ids:
+        tags = content_tags_map.get(lid)
+        if not tags:
+            continue
+
+        # Parse trait_tags
+        try:
+            trait_tags = json.loads(tags.get("trait_tags", "[]"))
+        except (json.JSONDecodeError, TypeError):
+            trait_tags = []
+
+        lesson_addresses_gap = False
+        lesson_addresses_strength = False
+
+        for tt in trait_tags:
+            trait_name = tt.get("trait", "") if isinstance(tt, dict) else str(tt)
+            direction = tt.get("direction", "") if isinstance(tt, dict) else ""
+
+            if trait_name in gap_set:
+                gap_coverage[trait_name] = gap_coverage.get(trait_name, 0) + 1
+                if direction == "builds":
+                    lesson_addresses_gap = True
+            if trait_name in strength_set:
+                if direction == "leverages":
+                    lesson_addresses_strength = True
+
+        if lesson_addresses_gap:
+            gap_lesson_count += 1
+        if lesson_addresses_strength:
+            strength_lesson_count += 1
+
+        # Journey mix
+        jid = journey_map.get(lid, 0)
+        if jid:
+            journey_mix[jid] = journey_mix.get(jid, 0) + 1
+
+    total = len(lesson_ids)
+    # Normalize gap coverage to 0-1 range (proportion of lessons addressing each gap)
+    gap_coverage_normalized = {}
+    for trait, count in gap_coverage.items():
+        gap_coverage_normalized[trait] = round(count / total, 2) if total > 0 else 0.0
+
+    # Add gaps that aren't covered at all
+    for g in gap_set:
+        if g and g not in gap_coverage_normalized:
+            gap_coverage_normalized[g] = 0.0
+
+    # Path balance
+    gap_pct = round((gap_lesson_count / total) * 100) if total > 0 else 0
+    strength_pct = round((strength_lesson_count / total) * 100) if total > 0 else 0
+
+    # Get journey names
+    if journey_mix:
+        jids = ",".join(str(j) for j in journey_mix.keys())
+        _, jrows = mysql_query(
+            f"SELECT id, journey FROM nx_journey_details "
+            f"WHERE id IN ({jids}) AND deleted_at IS NULL"
+        )
+        jname_map = {int(r["id"]): r["journey"] for r in jrows}
+    else:
+        jname_map = {}
+
+    journey_mix_named = {}
+    for jid, count in journey_mix.items():
+        name = jname_map.get(jid, f"Journey {jid}")
+        journey_mix_named[name] = count
+
+    return {
+        "gap_coverage": gap_coverage_normalized,
+        "path_balance": {"gap_pct": gap_pct, "strength_pct": strength_pct},
+        "journey_mix": journey_mix_named,
+        "total_lessons": total,
+    }
+
+
+async def _tool_preview_lesson_impact(
+    nx_user_id: int,
+    add_lesson_ids: list[int],
+    remove_lesson_ids: list[int],
+) -> str:
+    """Dry-run impact simulation for adding/removing lessons from a path."""
+    # Load current path
+    recs = get_active_recommendations(nx_user_id)
+    if not recs:
+        return json.dumps({"error": f"No active path for user {nx_user_id}"})
+
+    # Load learner profile
+    profile = get_current_profile(nx_user_id)
+    if not profile:
+        return json.dumps({"error": f"No profile for user {nx_user_id}"})
+
+    # Current lesson IDs in path
+    current_ids = [int(r["nx_lesson_id"]) for r in recs]
+
+    # Collect all lesson IDs we need tags for (current + adds)
+    all_ids = set(current_ids) | set(add_lesson_ids)
+    if not all_ids:
+        return json.dumps({"error": "No lessons to analyze"})
+
+    # Load content tags for all relevant lessons
+    ids_str = ",".join(str(i) for i in all_ids)
+    _, tag_rows = mysql_query(
+        f"SELECT * FROM tory_content_tags "
+        f"WHERE nx_lesson_id IN ({ids_str}) AND deleted_at IS NULL "
+        f"AND review_status != 'rejected'"
+    )
+    content_tags_map = {int(r["nx_lesson_id"]): r for r in tag_rows}
+
+    # Load journey mapping
+    journey_map = get_lesson_journey_map()
+
+    # BEFORE metrics
+    before_metrics = _compute_path_metrics(
+        current_ids, profile, content_tags_map, journey_map,
+    )
+
+    # Apply add/remove to get AFTER lesson list
+    after_ids = list(current_ids)
+    removed_count = 0
+    for rid in remove_lesson_ids:
+        if rid in after_ids:
+            after_ids.remove(rid)
+            removed_count += 1
+
+    added_count = 0
+    for aid in add_lesson_ids:
+        if aid not in after_ids:
+            after_ids.append(aid)
+            added_count += 1
+
+    # AFTER metrics
+    after_metrics = _compute_path_metrics(
+        after_ids, profile, content_tags_map, journey_map,
+    )
+
+    # Compute delta
+    gap_coverage_changes = {}
+    all_traits = set(before_metrics["gap_coverage"].keys()) | set(after_metrics["gap_coverage"].keys())
+    for trait in all_traits:
+        before_val = before_metrics["gap_coverage"].get(trait, 0.0)
+        after_val = after_metrics["gap_coverage"].get(trait, 0.0)
+        diff = round(after_val - before_val, 2)
+        if diff != 0:
+            gap_coverage_changes[trait] = f"+{diff}" if diff > 0 else str(diff)
+
+    gap_shift = after_metrics["path_balance"]["gap_pct"] - before_metrics["path_balance"]["gap_pct"]
+    str_shift = after_metrics["path_balance"]["strength_pct"] - before_metrics["path_balance"]["strength_pct"]
+    balance_shift = (
+        f"{'+' if gap_shift >= 0 else ''}{gap_shift}% gap, "
+        f"{'+' if str_shift >= 0 else ''}{str_shift}% strength"
+    )
+
+    delta = {
+        "gap_coverage_changes": gap_coverage_changes,
+        "balance_shift": balance_shift,
+        "lessons_added": added_count,
+        "lessons_removed": removed_count,
+    }
+
+    return json.dumps({
+        "before": before_metrics,
+        "after": after_metrics,
+        "delta": delta,
+    }, indent=2, default=str)
+
+
+# ---------------------------------------------------------------------------
 # Tool dispatcher
 # ---------------------------------------------------------------------------
 
@@ -4436,6 +4837,39 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
         elif name == "tory_review_queue_stats":
             result = await _tool_review_queue_stats()
+
+        # ---- Workspace Data Tools ----
+        elif name == "tory_list_users_with_status":
+            page = validate_positive_int(arguments.get("page", 1), "page", 10000)
+            limit = validate_positive_int(arguments.get("limit", 50), "limit", 100)
+            search = arguments.get("search")
+            status_filter = arguments.get("status_filter")
+            if status_filter is not None:
+                status_filter = validate_enum(
+                    status_filter, "status_filter",
+                    {"processed", "profiled", "has_epp", "no_data"},
+                )
+            company_filter = None
+            if arguments.get("company_filter") is not None:
+                company_filter = validate_positive_int(
+                    arguments["company_filter"], "company_filter",
+                )
+            result = await _tool_list_users_with_status(
+                page, limit, search, status_filter, company_filter,
+            )
+
+        elif name == "tory_preview_lesson_impact":
+            uid = validate_user_id(arguments["nx_user_id"])
+            add_ids = arguments.get("add_lesson_ids") or []
+            remove_ids = arguments.get("remove_lesson_ids") or []
+            if not isinstance(add_ids, list) or not isinstance(remove_ids, list):
+                raise ValueError("add_lesson_ids and remove_lesson_ids must be lists")
+            if not add_ids and not remove_ids:
+                raise ValueError("At least one of add_lesson_ids or remove_lesson_ids is required")
+            # Validate each ID
+            add_ids = [validate_positive_int(i, "add_lesson_id") for i in add_ids]
+            remove_ids = [validate_positive_int(i, "remove_lesson_id") for i in remove_ids]
+            result = await _tool_preview_lesson_impact(uid, add_ids, remove_ids)
 
         else:
             result = json.dumps({"error": f"Unknown tool: {name}"})
