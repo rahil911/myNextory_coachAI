@@ -1,166 +1,176 @@
-# Command Center Build Orchestration Spec (Fictional, Narrative)
+# Command Center Think Tank → Build Orchestration Spec
 
-This document is a product-facing, narrative specification of how the Think Tank to Build pipeline works in Baap Command Center today, why it works, where it is probabilistic, where it is deterministic, and what production-grade behaviors are expected at each stage.
+This is a narrative product specification for humans operating Command Center. It describes exactly what should happen after pressing Approve and Build, what the language model is responsible for, what the deterministic control plane is responsible for, and what must be visible in UI so operators are never blind.
 
-The scope of this spec is the journey from a user pressing “Approve & Start Building” in Think Tank through autonomous dispatch, monitoring, retries, and completion reporting. It is intentionally written as an operational story and not as implementation code.
+This document is intentionally non-code and written as an operational fiction spec that mirrors real behavior.
 
-## 1) System Intent
+## Product Promise
 
-The system intent is to convert an approved product conversation into executable work with minimal manual coordination while preserving operator control, traceability, and failure containment.
+When a human approves a Think Tank session, the system must do three things at once:
 
-From a systems perspective, this means blending two classes of computation:
+- Preserve intent fidelity from conversation to executable tasks.
+- Keep launch behavior deterministic and auditable.
+- Keep the human continuously informed in the UI, from first click to terminal state.
 
-- Probabilistic intelligence steps, where language-model output may vary between runs and must be bounded by contracts and fallback behavior.
-- Deterministic control-plane steps, where every side effect should be explicit, observable, and recoverable.
+The operator should never need to inspect logs to answer: what is happening, what happened, what failed, and what to do next.
 
-The production quality bar is reached only when probabilistic steps are constrained and deterministic steps are auditable.
+## Runtime Story: What Happens After Approve
 
-## 2) End-to-End Runtime Sequence
+### Stage 0 — Readiness and Visibility Setup
 
-### Phase A: Human Approval Intent
+Before any side effect starts, the UI obtains readiness status for dispatch prerequisites. The UI presents readiness checks in the Think Tank panel as a control-tower card.
 
-A human operating in Think Tank reaches confirm mode and triggers build intent. The user interface first asks the backend for dispatch readiness and then invokes a dry-run approval flow to preview planned tasks. If preview exists, the UI requires a second confirmation click. Only then does it trigger real dispatch.
+If requirements are missing, the launch action is disabled and the missing checks are explicitly named.
 
-This creates a two-stage commitment:
+### Stage 1 — Two-Step Approval Intent
 
-- “Show me what will happen.”
-- “Now execute it.”
+The first click is a planning confirmation, not execution.
 
-The design objective is to avoid accidental launches and give operators a chance to inspect decomposition quality before side effects begin.
+The system performs a dry-run to generate a build preview. The human sees phased tasks and intended agent mapping. This is the last non-destructive checkpoint.
 
-### Phase B: API Validation and Idempotent Gatekeeping
+The second click is explicit execution commitment.
 
-The backend approval route validates the target session by explicit session ID, performs readiness checks for required runtime dependencies, and applies idempotency semantics to reduce duplicate processing risk for repeated client calls.
+### Stage 2 — Session-Scoped Approval
 
-If prerequisites are missing, the route should refuse execution with a service-unavailable style response that names what is missing, so the operator can fix environment state before retrying.
+Approval is bound to an explicit session identity. The backend validates session existence and enforces idempotency semantics so repeated client calls do not accidentally duplicate launch intent.
 
-### Phase C: Think Tank State Transition
+If identical intent is replayed inside the idempotency window, the backend returns cached launch outcome.
 
-For non-dry-run calls, session state transitions from conversational confirmation to build-approved execution mode. The event bus emits progression events so real-time clients can update status surfaces.
+### Stage 3 — Think Tank State Transition
 
-For dry-run calls, no build side effects should occur; the user receives preview data only.
+For real execution, Think Tank transitions into building mode and emits real-time events.
 
-### Phase D: Plan Synthesis
+For dry-run, session state remains conversational and side effects are suppressed.
 
-The dispatch engine requests a plan from bead generation.
+### Stage 4 — Probabilistic Planning
 
-This stage contains probabilistic behavior:
+A language model decomposes the spec-kit into phased tasks. This is probabilistic and can vary by run.
 
-- The model interprets spec-kit material and proposes phased tasks.
-- Output quality may vary due to model behavior, context shape, and prompt adherence.
+To make this production-safe, deterministic wrappers apply:
 
-To preserve reliability, this stage must be wrapped by deterministic controls:
+- strict output-format contract,
+- parser validation,
+- bounded retries,
+- fallback plan if parsing or generation fails.
 
-- strict output format expectations,
-- parse validation,
-- retry strategy,
-- bounded fallback plan generation when model output is malformed or unavailable.
+Probabilistic generation is never allowed to bypass deterministic validation gates.
 
-### Phase E: Deterministic Task Materialization
+### Stage 5 — Deterministic Materialization
 
-Once a plan exists, the system performs deterministic side effects:
+After plan acceptance, deterministic operations create and wire execution artifacts:
 
-- create epic and task beads,
-- assign dependencies,
-- assign candidate agents,
-- persist dispatch state for recovery,
-- schedule background dispatch loop.
+- epic and task records,
+- dependency relationships,
+- assignee hints,
+- persisted dispatch metadata,
+- background dispatch scheduling.
 
-At this point, observable state should be enough for postmortem reconstruction even if the process restarts.
+These side effects are observable and recoverable.
 
-### Phase F: Agent Dispatch and Monitoring
+### Stage 6 — Autonomous Dispatch Loop
 
-A background loop dispatches ready task beads only, obeying concurrency limits, dependency constraints, and retry policy. Each dispatch spawns an agent process with explicit identity context and captures metadata for monitoring.
+The dispatcher continuously evaluates which tasks are unblocked and launches agents under concurrency limits.
 
-Status reconciliation combines deterministic checks such as:
+Monitoring reconciles multiple deterministic signals:
 
-- bead lifecycle state from tracking system,
+- task state updates,
 - agent exit artifacts,
 - heartbeat freshness,
-- timeout windows,
-- optional acceptance criteria verification.
+- timeout thresholds,
+- retry counters,
+- optional acceptance checks.
 
-When failures occur, failure-recovery routines handle cleanup, annotation, retry decisions, and escalation events.
+Failures trigger recovery routines with clear retry or escalation outcomes.
 
-### Phase G: Completion and Hand-off
+### Stage 7 — Completion Contract
 
-When all tasks resolve to complete or failed terminal states, the system emits completion events with totals and disposition summary. Session-level dispatch status remains queryable for dashboards and operator follow-up.
+Completion status is terminal only when every task is either completed or failed with explicit accounting.
 
-## 3) Probabilistic vs Deterministic Responsibility Map
+The UI must show totals, completion percentage, current running count, and recent dispatch feed entries.
 
-### Probabilistic Components
+## Responsibility Map
 
-- spec understanding and task decomposition,
-- natural-language requirement interpretation,
-- semantic routing hints from generated task descriptors,
-- optional confidence judgments tied to output quality.
+### Probabilistic LLM Layer
 
-### Deterministic Components
+The LLM layer is responsible for:
 
-- request routing and input validation,
-- session lookup and state transitions,
-- environment readiness checks,
-- idempotency cache checks,
-- bead creation/update side effects,
-- dependency DAG wiring,
-- spawn command construction,
-- polling, timeouts, retry counts,
-- persistence of dispatch metadata,
-- websocket event fan-out,
-- cancellation and cleanup actions.
+- semantic decomposition of goals into tasks,
+- requirement interpretation,
+- draft ordering hints,
+- language-level quality variability.
 
-Production reliability requires deterministic layers to compensate for probabilistic variability, never the reverse.
+The LLM layer is not trusted for correctness by default; it is trusted for proposal generation under constraints.
 
-## 4) Failure Semantics (Operational Expectations)
+### Deterministic Control Plane Layer
 
-The system should be considered healthy only when all of the following are true:
+The deterministic layer is responsible for:
 
-- Missing dependencies are caught before launch.
-- Duplicate client submissions do not produce duplicate dispatches for the same intent window.
-- Restart does not erase critical execution history.
-- Operator can explain “what happened” from persisted and streamed evidence.
-- LLM malformation does not crash the pipeline; fallback path remains valid.
+- request validation,
+- session routing,
+- idempotency checks,
+- readiness preflight,
+- task/epic side effects,
+- dependency wiring,
+- process spawn parameters,
+- retries and timeout policy,
+- status persistence and recovery,
+- event propagation,
+- cancellation and cleanup.
 
-## 5) Think Tank Mode Improvements (Product Direction)
+This layer owns correctness and auditability.
 
-Inspired by orchestrated product-delivery frameworks that emphasize clear role boundaries and quality gates, Think Tank can become more robust by introducing explicit mode contracts:
+## UI Visibility Contract (Never Blind)
 
-- Discovery Mode: maximize problem understanding and evidence collection, no execution proposals.
-- Optioning Mode: generate alternatives with explicit tradeoffs and confidence bands.
-- Scoping Mode: force boundary commitments, reject ambiguous ownership.
-- Execution Preview Mode: deterministic dry-run artifact and cost/risk summary.
-- Launch Mode: idempotent, observable, reversible dispatch trigger.
+The Think Tank UI must provide all of the following during build orchestration:
 
-Each mode should have entry criteria, exit criteria, and anti-goals. This prevents conversational drift and reduces hidden state assumptions.
+- launch readiness checks,
+- dry-run preview before commit,
+- explicit commit transition indicator,
+- current dispatch status pill,
+- completed/running/failed/total counters,
+- progress bar percentage,
+- live event feed entries,
+- retry and failure context,
+- clear disabled-state explanation when launch is blocked.
 
-## 6) Recommended Production Guardrails
+The operator should have enough information to make go/no-go decisions without opening terminal tools.
 
-- Persist idempotency records with session scoping and bounded retention.
-- Add replay-safe execution audit events with correlation IDs across route, dispatch, and agent layers.
-- Introduce explicit “plan quality score” before allowing launch from preview.
-- Add end-to-end chaos drills for dependency outage, stuck agent, malformed model output, and restart during active dispatch.
-- Add operator-facing “why blocked” and “why retried” explanations in timeline.
-- Add session isolation assertions in websocket pathways to prevent cross-session bleed.
+## Failure Semantics
 
-## 7) Operator Mental Model
+The pipeline is considered resilient when:
 
-A practical operator mental model is:
+- missing prerequisites block launch with actionable messages,
+- duplicate clicks are harmless,
+- websocket interruption does not erase status awareness,
+- backend restart does not erase critical dispatch context,
+- malformed LLM output yields fallback behavior rather than crash,
+- each failure has a visible next action path.
 
-- Dry-run is proposal.
-- Confirm-build is commitment.
-- Dispatch is asynchronous orchestration.
-- Event stream is near-real-time narrative.
-- Dispatch status endpoint is source-of-truth snapshot.
-- Bead records are canonical task state.
+## Think Tank Mode Evolution (Product Direction)
 
-If those six statements are consistently true in production, the system behavior remains legible even under stress.
+To harden product behavior, Think Tank should explicitly enforce five operational modes:
 
-## 8) Definition of “Prod Grade” for This Pipeline
+- Discovery mode, focused on understanding and evidence.
+- Optioning mode, focused on alternatives and tradeoffs.
+- Scoping mode, focused on constraints, boundaries, and dependencies.
+- Preview mode, focused on deterministic dry-run visibility.
+- Launch mode, focused on idempotent execution and continuous observability.
 
-Prod grade means this pipeline remains correct and understandable when people double-click, refresh mid-run, lose websocket connection, restart backend, or receive imperfect LLM output.
+Each mode should have entry criteria, exit criteria, and anti-goals so the conversation cannot drift into ambiguous execution.
 
-In other words: resilience under ordinary operator chaos.
+## Definition of Production Grade
 
----
+Production grade means the system remains understandable and safe under normal human chaos:
 
-This specification should be kept current whenever approval routing, dispatch semantics, failure handling, or Think Tank mode behavior changes.
+- repeated clicks,
+- reconnects,
+- partial failures,
+- timing races,
+- imperfect model responses,
+- restarts during active dispatch.
+
+If the operator can always answer what is happening and why, the system is operating at production quality.
+
+## Living Spec Rule
+
+Any future change to approval routing, launch policy, dispatch behavior, retries, visibility surfaces, or mode semantics must update this document in the same change set.
