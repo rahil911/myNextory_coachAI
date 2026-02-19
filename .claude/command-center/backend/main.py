@@ -25,7 +25,7 @@ from services.command_service import CommandService
 from services.notification_bridge import get_notification_router
 from services.tory_service import ToryService
 
-from routes import agents, approvals, beads, attachments, thinktank, commands, dashboard, epics, tory, websocket
+from routes import agents, approvals, beads, attachments, thinktank, commands, dashboard, epics, tory, tory_admin, websocket
 
 # ── Service singletons ────────────────────────────────────────────────────────
 
@@ -136,6 +136,7 @@ app.include_router(commands.router)
 app.include_router(dashboard.router)
 app.include_router(epics.router)
 app.include_router(tory.router)
+app.include_router(tory_admin.router)
 app.include_router(websocket.router)
 
 
