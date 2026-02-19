@@ -1,16 +1,19 @@
 """
-routes/tory.py — Tory learner profile and feedback endpoints.
+routes/tory.py — Tory learner profile, feedback, and content endpoints.
 
-POST /api/tory/profile          — Generate learner profile from EPP + Q&A
-GET  /api/tory/profile/{id}     — Retrieve learner profile
-POST /api/tory/feedback         — Submit 'not_like_me' feedback
-GET  /api/tory/path/{id}        — Full learner path (profile + recommendations + coach flags)
+POST /api/tory/profile                     — Generate learner profile from EPP + Q&A
+GET  /api/tory/profile/{id}                — Retrieve learner profile
+POST /api/tory/feedback                    — Submit 'not_like_me' feedback
+GET  /api/tory/path/{id}                   — Full learner path (profile + recommendations + coach flags)
+GET  /api/tory/blob/{container}/{path}     — Generate SAS URL and redirect to blob
+GET  /api/tory/lesson/{id}/slides          — Get lesson slides with resolved Azure Blob URLs
 """
 
 import json
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from typing import Any
 
@@ -183,3 +186,45 @@ async def get_path(learner_id: int):
         )
 
     return path
+
+
+# ── Azure Blob / Lesson Slides endpoints ────────────────────────────────────
+
+_azure_blob_service = None
+
+def _get_azure_blob_service():
+    global _azure_blob_service
+    if _azure_blob_service is None:
+        from services.azure_blob_service import AzureBlobService
+        _azure_blob_service = AzureBlobService()
+    return _azure_blob_service
+
+
+@router.get("/blob/{container}/{path:path}")
+async def get_blob_url(container: str, path: str):
+    """Generate a SAS URL for an Azure Blob and redirect to it.
+
+    The SAS token is valid for 1 hour. The redirect allows browsers and
+    media players to load content directly from Azure Blob Storage.
+    """
+    svc = _get_azure_blob_service()
+    try:
+        url = svc.generate_sas_url(path, container=container)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate SAS URL: {e}")
+    return RedirectResponse(url=url)
+
+
+@router.get("/lesson/{lesson_detail_id}/slides")
+async def get_lesson_slides(lesson_detail_id: int):
+    """Get all slides for a lesson with resolved Azure Blob URLs.
+
+    Returns slide content with background_image, audio, and video paths
+    replaced by time-limited signed Azure Blob URLs.
+    """
+    svc = _get_azure_blob_service()
+    try:
+        slides = svc.get_lesson_slides_with_urls(lesson_detail_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch slides: {e}")
+    return {"slides": slides, "count": len(slides)}
