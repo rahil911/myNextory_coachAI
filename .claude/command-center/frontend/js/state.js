@@ -23,6 +23,13 @@ const _state = {
     dispatchEvents: [],
     dispatchHealth: null,
   },
+  tory: {
+    learnerId: null,
+    path: null,       // { profile, recommendations, coach, discovery_count, total_count }
+    loading: false,
+    error: null,
+    feedbackSent: false,
+  },
   currentView: 'dashboard',
   selectedBeadId: null,
   selectedAgentId: null,

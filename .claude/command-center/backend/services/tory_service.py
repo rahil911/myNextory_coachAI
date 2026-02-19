@@ -170,3 +170,88 @@ class ToryService:
             "profile_version": profile_version,
             "created_at": row.get("created_at", now),
         }
+
+    def get_path(self, learner_id: int) -> dict | None:
+        """Get the full learner path: recommendations with lesson/journey info, coach flags."""
+        profile = self.get_profile(learner_id)
+        if not profile:
+            return None
+
+        # Recommendations with lesson + journey context
+        recs = _mysql_query(
+            f"SELECT r.id, r.nx_lesson_id, r.sequence, r.match_score, r.is_discovery, "
+            f"r.source, r.locked_by_coach, r.match_rationale, r.matching_traits, "
+            f"r.confidence, r.batch_id, r.created_at, "
+            f"l.lesson AS lesson_title, jd.journey AS journey_title "
+            f"FROM tory_recommendations r "
+            f"LEFT JOIN nx_lessons l ON r.nx_lesson_id = l.id "
+            f"LEFT JOIN nx_journey_details jd ON l.nx_journey_detail_id = jd.id "
+            f"WHERE r.nx_user_id = {int(learner_id)} AND r.deleted_at IS NULL "
+            f"ORDER BY r.sequence"
+        )
+
+        recommendations = []
+        for r in recs:
+            recommendations.append({
+                "id": int(r["id"]),
+                "nx_lesson_id": int(r["nx_lesson_id"]),
+                "sequence": int(r["sequence"]),
+                "match_score": float(r.get("match_score", 0)),
+                "is_discovery": r.get("is_discovery") == "1",
+                "source": r.get("source", "tory"),
+                "locked_by_coach": r.get("locked_by_coach") == "1",
+                "match_rationale": r.get("match_rationale"),
+                "matching_traits": _parse_json_field(r.get("matching_traits")),
+                "confidence": int(r.get("confidence", 0)) if r.get("confidence") else None,
+                "lesson_title": r.get("lesson_title"),
+                "journey_title": r.get("journey_title"),
+                "created_at": r.get("created_at"),
+            })
+
+        # Coach flags
+        flags = _mysql_query(
+            f"SELECT cf.*, c.username AS coach_name "
+            f"FROM tory_coach_flags cf "
+            f"LEFT JOIN coaches c ON cf.coach_id = c.id "
+            f"WHERE cf.nx_user_id = {int(learner_id)} AND cf.deleted_at IS NULL "
+            f"ORDER BY cf.id DESC LIMIT 1"
+        )
+
+        coach = None
+        if flags:
+            f = flags[0]
+            coach = {
+                "coach_id": int(f["coach_id"]),
+                "coach_name": f.get("coach_name"),
+                "compat_signal": f.get("compat_signal", "green"),
+                "compat_message": f.get("compat_message"),
+            }
+
+        # Path events (coach overrides = path modifications)
+        path_events = []
+        overrides = _mysql_query(
+            f"SELECT co.action, co.reason, co.created_at, c.username AS coach_name "
+            f"FROM tory_coach_overrides co "
+            f"LEFT JOIN coaches c ON co.coach_id = c.id "
+            f"WHERE co.roadmap_id IN ("
+            f"  SELECT rm.id FROM tory_roadmaps rm "
+            f"  WHERE rm.nx_user_id = {int(learner_id)} AND rm.deleted_at IS NULL"
+            f") AND co.deleted_at IS NULL "
+            f"ORDER BY co.created_at DESC LIMIT 10"
+        )
+        for o in overrides:
+            path_events.append({
+                "type": o.get("action", "modified"),
+                "reason": o.get("reason"),
+                "coach_name": o.get("coach_name"),
+                "created_at": o.get("created_at"),
+            })
+
+        return {
+            "profile": profile,
+            "recommendations": recommendations,
+            "coach": coach,
+            "path_events": path_events,
+            "discovery_count": sum(1 for r in recommendations if r["is_discovery"]),
+            "total_count": len(recommendations),
+        }

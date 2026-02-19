@@ -1,0 +1,402 @@
+/* ==========================================================================
+   TORY.CSS — Learner Roadmap & Profile View
+   ========================================================================== */
+
+/* ── Layout ────────────────────────────────────────────────────────────── */
+.tory-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .tory-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Learner Selector ──────────────────────────────────────────────────── */
+.tory-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tory-selector input {
+  width: 120px;
+}
+
+/* ── Profile Card ──────────────────────────────────────────────────────── */
+.tory-profile {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  position: sticky;
+  top: var(--space-4);
+}
+
+.tory-profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.tory-profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--accent-dim);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--font-size-md);
+  flex-shrink: 0;
+}
+
+.tory-profile-name {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.tory-profile-email {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.tory-profile-narrative {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  background: var(--bg-2);
+  border-radius: var(--radius-md);
+}
+
+.tory-profile-section {
+  margin-bottom: var(--space-4);
+}
+
+.tory-profile-section-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
+}
+
+.tory-trait-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tory-trait {
+  font-size: var(--font-size-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+}
+
+.tory-trait-strength {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.tory-trait-gap {
+  background: var(--yellow-dim);
+  color: var(--yellow);
+}
+
+.tory-profile-feedback {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.tory-feedback-btn {
+  width: 100%;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.tory-feedback-btn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.tory-feedback-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tory-feedback-sent {
+  font-size: var(--font-size-sm);
+  color: var(--green);
+  text-align: center;
+  padding: var(--space-2);
+}
+
+/* ── Coach Badge ───────────────────────────────────────────────────────── */
+.tory-coach {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-2);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+}
+
+.tory-coach-signal {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tory-coach-name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.tory-coach-message {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+/* ── Discovery Banner ──────────────────────────────────────────────────── */
+.tory-discovery-banner {
+  background: var(--purple-dim);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tory-discovery-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tory-discovery-text {
+  font-size: var(--font-size-sm);
+  color: var(--purple);
+  line-height: 1.5;
+}
+
+.tory-discovery-text strong {
+  color: var(--text-strong);
+}
+
+/* ── Path Change Notification ──────────────────────────────────────────── */
+.tory-path-change {
+  background: var(--blue-dim);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.tory-path-change-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.tory-path-change-text {
+  font-size: var(--font-size-sm);
+  color: var(--blue);
+  line-height: 1.5;
+}
+
+/* ── Roadmap Timeline ──────────────────────────────────────────────────── */
+.tory-roadmap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+
+/* Vertical line connecting cards */
+.tory-roadmap::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 24px;
+  bottom: 24px;
+  width: 2px;
+  background: var(--border);
+}
+
+/* ── Lesson Card ───────────────────────────────────────────────────────── */
+.tory-lesson {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  position: relative;
+}
+
+.tory-lesson-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: var(--bg-4);
+  border: 2px solid var(--border-hover);
+  flex-shrink: 0;
+  margin-top: 4px;
+  z-index: var(--z-base);
+  position: relative;
+  left: 14px;
+}
+
+.tory-lesson.discovery .tory-lesson-dot {
+  background: var(--purple);
+  border-color: var(--purple);
+}
+
+.tory-lesson.coach-modified .tory-lesson-dot {
+  background: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.tory-lesson-card {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-left: var(--space-3);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.tory-lesson-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+}
+
+.tory-lesson-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.tory-lesson-sequence {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  min-width: 24px;
+}
+
+.tory-lesson-title {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-strong);
+  flex: 1;
+}
+
+.tory-lesson-badges {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.tory-lesson-journey {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
+}
+
+.tory-lesson-rationale {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.tory-lesson-score {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--space-2);
+}
+
+.tory-lesson-score-bar {
+  width: 60px;
+  height: 4px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.tory-lesson-score-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+/* ── Discovery separator ───────────────────────────────────────────────── */
+.tory-discovery-separator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  margin-left: 40px;
+}
+
+.tory-discovery-separator-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--purple) 0%, transparent 100%);
+}
+
+.tory-discovery-separator-text {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--purple);
+  white-space: nowrap;
+}
+
+/* ── Stats row ─────────────────────────────────────────────────────────── */
+.tory-stats {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.tory-stat {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.tory-stat strong {
+  color: var(--text-strong);
+  font-weight: 600;
+}
