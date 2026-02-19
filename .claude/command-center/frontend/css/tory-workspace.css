@@ -861,3 +861,408 @@
   animation: pulse-dot 1.5s infinite;
   margin-right: 4px;
 }
+
+/* ==========================================================================
+   PATH TAB: 4-Column Kanban Board
+   ========================================================================== */
+
+/* ── Board Layout ─────────────────────────────────────────────────────── */
+
+/* When path tab is active, fill the tab content area */
+.tw-tab-content:has(.tw-path-board) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.tw-path-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+}
+
+.tw-path-col {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  min-height: 200px;
+  max-height: calc(100vh - 200px);
+  overflow: hidden;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.tw-path-col.tw-drag-over {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.tw-path-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tw-path-col-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tw-path-col-count {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  background: var(--bg-3);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+.tw-path-cards {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tw-path-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Path Card ────────────────────────────────────────────────────────── */
+
+.tw-path-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  cursor: grab;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.tw-path-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.tw-path-card.locked {
+  cursor: not-allowed;
+  opacity: 0.85;
+  border-left: 3px solid var(--yellow);
+}
+
+.tw-path-card.tw-dragging {
+  opacity: 0.3;
+}
+
+.tw-path-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.tw-path-journey {
+  display: inline-flex;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.tw-path-score {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.tw-path-card-title {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tw-path-seq {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.tw-path-lock {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.tw-path-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tw-path-source {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.tw-path-source.tory {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.tw-path-source.coach {
+  background: var(--yellow-dim);
+  color: var(--yellow);
+}
+
+.tw-path-source.pool {
+  background: var(--bg-3);
+  color: var(--text-tertiary);
+}
+
+/* ── Difficulty Dots ──────────────────────────────────────────────────── */
+
+.tw-diff-dots {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.tw-diff-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bg-4);
+}
+
+.tw-diff-dot.filled {
+  background: var(--text-secondary);
+}
+
+/* ── Drop Placeholder ─────────────────────────────────────────────────── */
+
+.tw-path-drop-ph {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+  margin: var(--space-1) 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+/* ==========================================================================
+   IMPACT PREVIEW PANEL
+   ========================================================================== */
+
+.tw-impact-preview {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.2);
+  margin: var(--space-3) 0 0;
+  animation: tw-slide-up 0.25s var(--ease-out);
+}
+
+@keyframes tw-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.tw-impact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.tw-impact-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tw-impact-action {
+  font-size: var(--font-size-xs);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.tw-impact-body {
+  padding: var(--space-3);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tw-impact-section {
+  margin-bottom: var(--space-3);
+}
+
+.tw-impact-section:last-child {
+  margin-bottom: 0;
+}
+
+.tw-impact-section-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-1);
+}
+
+/* ── Trait Coverage Rows ──────────────────────────────────────────────── */
+
+.tw-impact-trait {
+  display: grid;
+  grid-template-columns: 100px 40px 16px 40px 1fr auto;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: var(--font-size-xs);
+}
+
+.tw-impact-trait-name {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tw-impact-trait-before,
+.tw-impact-trait-after {
+  text-align: right;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.tw-impact-arrow {
+  color: var(--text-tertiary);
+  text-align: center;
+  font-size: 8px;
+}
+
+.tw-impact-bar {
+  height: 6px;
+  background: var(--bg-4);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tw-impact-bar-before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--text-tertiary);
+  border-radius: 3px;
+  opacity: 0.4;
+}
+
+.tw-impact-bar-after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+.tw-impact-diff {
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tw-impact-diff.positive { color: var(--green); }
+.tw-impact-diff.negative { color: var(--red); }
+.tw-impact-diff.neutral  { color: var(--text-tertiary); }
+
+/* ── Balance / Journey Mix ────────────────────────────────────────────── */
+
+.tw-impact-balance {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.tw-impact-journey-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tw-impact-journey-item {
+  display: inline-flex;
+  padding: 1px 6px;
+  background: var(--bg-3);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.tw-impact-error {
+  font-size: var(--font-size-xs);
+  color: var(--red);
+  padding: var(--space-2);
+}
+
+.tw-impact-neutral {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: var(--space-2);
+}
+
+/* ── Impact Footer ────────────────────────────────────────────────────── */
+
+.tw-impact-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+/* ── Responsive: Stack columns on narrow screens ──────────────────────── */
+
+@media (max-width: 900px) {
+  .tw-path-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .tw-path-board {
+    grid-template-columns: 1fr;
+  }
+}

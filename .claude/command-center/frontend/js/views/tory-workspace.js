@@ -555,7 +555,29 @@ function renderProfileTab(el, detail) {
   }
 }
 
-// ── Path Tab ────────────────────────────────────────────────────────────────
+// ── Path Tab: 4-Column Kanban ─────────────────────────────────────────────
+
+// Journey color palette for badges
+const JOURNEY_COLORS = [
+  '#58a6ff', '#d29922', '#bc8cff', '#3fb950', '#f85149',
+  '#ff7b72', '#79c0ff', '#e3b341', '#d2a8ff', '#56d364',
+];
+function journeyColor(journeyId) {
+  return JOURNEY_COLORS[(journeyId || 0) % JOURNEY_COLORS.length];
+}
+
+function difficultyDots(level) {
+  const n = Math.max(1, Math.min(5, Math.round(level || 3)));
+  return '<span class="tw-diff-dots">' +
+    Array.from({ length: 5 }, (_, i) =>
+      `<span class="tw-diff-dot${i < n ? ' filled' : ''}"></span>`
+    ).join('') + '</span>';
+}
+
+// Module-level DnD state
+let _pathDraggedCard = null;
+let _pathPreDragState = null;  // snapshot for cancel
+let _impactDebounce = null;
 
 function renderPathTab(el, detail) {
   el.innerHTML = '';
@@ -571,7 +593,7 @@ function renderPathTab(el, detail) {
     return;
   }
 
-  const recs = pathData.recommendations || [];
+  const recs = pathData.path || pathData.recommendations || [];
   if (recs.length === 0) {
     el.innerHTML = `
       <div class="tw-placeholder">
@@ -582,45 +604,523 @@ function renderPathTab(el, detail) {
     return;
   }
 
-  // Stats row
-  const statsDiv = h('div', { class: 'tw-profile-stats', style: { marginBottom: '16px' } });
-  statsDiv.innerHTML = `
-    <div class="tw-profile-stat"><div class="tw-profile-stat-value">${recs.length}</div><div class="tw-profile-stat-label">Lessons</div></div>
-    <div class="tw-profile-stat"><div class="tw-profile-stat-value">${recs.filter(r => r.is_discovery).length}</div><div class="tw-profile-stat-label">Discovery</div></div>
-    <div class="tw-profile-stat"><div class="tw-profile-stat-value">${recs.filter(r => r.locked_by_coach).length}</div><div class="tw-profile-stat-label">Coach Locked</div></div>
-  `;
-  el.appendChild(statsDiv);
+  // Partition into columns
+  const discovery = recs.filter(r => r.is_discovery);
+  const mainPath = recs.filter(r => !r.is_discovery);
+  // Available pool = loaded asynchronously from content library
+  // Completed = empty for now
 
-  // Lesson cards
-  for (const rec of recs) {
-    const card = h('div', { class: 'tw-profile-card', style: { marginBottom: '8px', padding: '12px 16px' } });
+  // Build kanban board
+  const board = h('div', { class: 'tw-path-board' });
 
-    let badges = '';
-    if (rec.is_discovery) badges += '<span class="badge badge-purple">Discovery</span> ';
-    if (rec.locked_by_coach) badges += '<span class="badge badge-yellow">Locked</span> ';
-    if (rec.source && rec.source !== 'tory') badges += `<span class="badge badge-blue">${esc(rec.source)}</span> `;
+  const columns = [
+    { id: 'pool', title: 'Available Pool', items: [], accepts: true },
+    { id: 'discovery', title: 'Discovery', items: discovery, accepts: true, maxSlots: 5 },
+    { id: 'main', title: 'Main Path', items: mainPath, accepts: true },
+    { id: 'completed', title: 'Completed', items: [], accepts: false },
+  ];
 
-    const score = Math.min(Math.round(rec.match_score || 0), 100);
-
-    card.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:var(--font-size-xs);color:var(--text-tertiary)">#${rec.sequence}</span>
-          <span style="font-weight:500;color:var(--text-primary)">${esc(rec.lesson_title || `Lesson ${rec.nx_lesson_id}`)}</span>
-        </div>
-        <div>${badges}</div>
-      </div>
-      ${rec.journey_title ? `<div style="font-size:var(--font-size-xs);color:var(--text-secondary);margin-bottom:4px">${esc(rec.journey_title)}</div>` : ''}
-      ${rec.match_rationale ? `<div style="font-size:var(--font-size-xs);color:var(--text-tertiary);margin-bottom:4px">${esc(rec.match_rationale)}</div>` : ''}
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:var(--font-size-xs);color:var(--text-secondary)">Match ${score}%</span>
-        <div style="flex:1;height:4px;background:var(--bg-4);border-radius:2px;overflow:hidden">
-          <div style="width:${score}%;height:100%;background:var(--accent);border-radius:2px"></div>
-        </div>
+  for (const col of columns) {
+    const column = h('div', { class: 'tw-path-col', dataset: { col: col.id } });
+    column.innerHTML = `
+      <div class="tw-path-col-header">
+        <span class="tw-path-col-title">${col.title}</span>
+        <span class="tw-path-col-count">${col.items.length}${col.maxSlots ? '/' + col.maxSlots : ''}</span>
       </div>
     `;
 
-    el.appendChild(card);
+    const cardsContainer = h('div', { class: 'tw-path-cards' });
+
+    for (let i = 0; i < col.items.length; i++) {
+      const rec = col.items[i];
+      cardsContainer.appendChild(buildPathCard(rec, col.id, i));
+    }
+
+    // Empty slot indicator
+    if (col.items.length === 0 && col.id !== 'pool') {
+      const empty = h('div', { class: 'tw-path-empty' });
+      empty.textContent = col.id === 'completed' ? 'No completed lessons yet' : 'Drop lessons here';
+      cardsContainer.appendChild(empty);
+    }
+
+    column.appendChild(cardsContainer);
+    board.appendChild(column);
+
+    // Drop zone handlers (reuse kanban.js pattern)
+    if (col.accepts) {
+      column.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        column.classList.add('tw-drag-over');
+
+        const afterEl = pathGetDragAfterElement(cardsContainer, e.clientY);
+        const placeholder = pathGetOrCreatePlaceholder();
+        if (afterEl) {
+          cardsContainer.insertBefore(placeholder, afterEl);
+        } else {
+          cardsContainer.appendChild(placeholder);
+        }
+      });
+
+      column.addEventListener('dragleave', (e) => {
+        if (!column.contains(e.relatedTarget)) {
+          column.classList.remove('tw-drag-over');
+          column.querySelector('.tw-path-drop-ph')?.remove();
+        }
+      });
+
+      column.addEventListener('drop', (e) => {
+        e.preventDefault();
+        column.classList.remove('tw-drag-over');
+        const placeholder = column.querySelector('.tw-path-drop-ph');
+        if (!_pathDraggedCard || !placeholder) return;
+
+        // Remove empty slot placeholder if present
+        const emptySlot = cardsContainer.querySelector('.tw-path-empty');
+        if (emptySlot) emptySlot.remove();
+
+        cardsContainer.insertBefore(_pathDraggedCard, placeholder);
+        placeholder.remove();
+
+        // Fire move callback
+        const lessonId = _pathDraggedCard.dataset.lessonId;
+        const fromCol = _pathDraggedCard.dataset.fromCol;
+        const toCol = col.id;
+        const position = [...cardsContainer.querySelectorAll('.tw-path-card')].indexOf(_pathDraggedCard);
+
+        _pathDraggedCard.dataset.fromCol = toCol; // update origin
+        onLessonMove(lessonId, fromCol, toCol, position);
+      });
+    }
+  }
+
+  el.appendChild(board);
+
+  // Impact preview panel (hidden until drag)
+  const preview = h('div', { class: 'tw-impact-preview', id: 'tw-impact-preview' });
+  preview.style.display = 'none';
+  preview.innerHTML = `
+    <div class="tw-impact-header">
+      <span class="tw-impact-title">Impact Preview</span>
+      <span class="tw-impact-action" id="tw-impact-action"></span>
+    </div>
+    <div class="tw-impact-body" id="tw-impact-body">
+      <div class="tw-loading"><div class="tw-spinner"></div> Calculating impact...</div>
+    </div>
+    <div class="tw-impact-footer">
+      <button class="btn btn-ghost btn-sm" id="tw-impact-cancel">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="tw-impact-apply">Apply Change</button>
+    </div>
+  `;
+  el.appendChild(preview);
+
+  // Wire cancel/apply
+  preview.querySelector('#tw-impact-cancel').addEventListener('click', cancelPathChange);
+  preview.querySelector('#tw-impact-apply').addEventListener('click', applyPathChange);
+
+  // Load available pool asynchronously
+  loadAvailablePool(recs);
+}
+
+function buildPathCard(rec, colId, idx) {
+  const isLocked = rec.locked_by_coach;
+  const card = h('div', {
+    class: `tw-path-card${isLocked ? ' locked' : ''}`,
+    dataset: {
+      lessonId: String(rec.nx_lesson_id),
+      recId: String(rec.recommendation_id || ''),
+      fromCol: colId,
+    },
+    draggable: isLocked ? 'false' : 'true',
+  });
+
+  const score = Math.min(Math.round(rec.match_score || 0), 100);
+  const jColor = journeyColor(rec.journey_id);
+  const seqBadge = (colId === 'discovery' || colId === 'main')
+    ? `<span class="tw-path-seq">#${rec.sequence || idx + 1}</span>` : '';
+  const lockIcon = isLocked ? '<span class="tw-path-lock" title="Locked by coach">&#128274;</span>' : '';
+
+  card.innerHTML = `
+    <div class="tw-path-card-top">
+      <span class="tw-path-journey" style="background:${jColor}20;color:${jColor}">${esc(rec.journey_name || rec.journey_title || 'J' + (rec.journey_id || '?'))}</span>
+      <span class="tw-path-score">Score ${score}</span>
+    </div>
+    <div class="tw-path-card-title">${seqBadge}${lockIcon}${esc(rec.lesson_name || rec.lesson_title || 'Lesson ' + rec.nx_lesson_id)}</div>
+    <div class="tw-path-card-bottom">
+      ${difficultyDots(rec.difficulty)}
+      <span class="tw-path-source ${rec.source || 'tory'}">${esc(rec.source || 'tory')}</span>
+    </div>
+  `;
+
+  // Drag handlers (reuse kanban.js:204-217 pattern)
+  if (!isLocked) {
+    card.addEventListener('dragstart', (e) => {
+      _pathDraggedCard = card;
+      // Snapshot the board state for cancel
+      _pathPreDragState = snapshotBoardState();
+      card.classList.add('tw-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', rec.nx_lesson_id);
+      requestAnimationFrame(() => { card.style.opacity = '0.3'; });
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('tw-dragging');
+      card.style.opacity = '1';
+      _pathDraggedCard = null;
+      document.querySelectorAll('.tw-path-drop-ph').forEach(p => p.remove());
+      document.querySelectorAll('.tw-drag-over').forEach(c => c.classList.remove('tw-drag-over'));
+    });
+  }
+
+  return card;
+}
+
+// ── Path DnD Helpers (adapted from kanban.js:329-353) ─────────────────────
+
+function pathGetDragAfterElement(container, y) {
+  const cards = [...container.querySelectorAll('.tw-path-card:not(.tw-dragging)')];
+  let closest = null;
+  let closestOffset = Number.NEGATIVE_INFINITY;
+
+  cards.forEach(card => {
+    const box = card.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closestOffset) {
+      closestOffset = offset;
+      closest = card;
+    }
+  });
+
+  return closest;
+}
+
+function pathGetOrCreatePlaceholder() {
+  let ph = document.querySelector('.tw-path-drop-ph');
+  if (!ph) {
+    ph = document.createElement('div');
+    ph.className = 'tw-path-drop-ph';
+  }
+  return ph;
+}
+
+// ── Board State Snapshot / Restore ────────────────────────────────────────
+
+function snapshotBoardState() {
+  const state = {};
+  document.querySelectorAll('.tw-path-col').forEach(col => {
+    const colId = col.dataset.col;
+    const cards = [...col.querySelectorAll('.tw-path-card')];
+    state[colId] = cards.map(c => c.outerHTML);
+  });
+  return state;
+}
+
+function restoreBoardState(snapshot) {
+  if (!snapshot) return;
+  document.querySelectorAll('.tw-path-col').forEach(col => {
+    const colId = col.dataset.col;
+    const cardsContainer = col.querySelector('.tw-path-cards');
+    if (!cardsContainer || !snapshot[colId]) return;
+
+    cardsContainer.innerHTML = '';
+    for (const html of snapshot[colId]) {
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      const card = temp.firstChild;
+      // Re-attach drag handlers
+      if (card.getAttribute('draggable') === 'true') {
+        card.addEventListener('dragstart', (e) => {
+          _pathDraggedCard = card;
+          _pathPreDragState = snapshotBoardState();
+          card.classList.add('tw-dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', card.dataset.lessonId);
+          requestAnimationFrame(() => { card.style.opacity = '0.3'; });
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('tw-dragging');
+          card.style.opacity = '1';
+          _pathDraggedCard = null;
+          document.querySelectorAll('.tw-path-drop-ph').forEach(p => p.remove());
+          document.querySelectorAll('.tw-drag-over').forEach(c => c.classList.remove('tw-drag-over'));
+        });
+      }
+      cardsContainer.appendChild(card);
+    }
+
+    // Re-add empty slot if no cards
+    if (snapshot[colId].length === 0 && colId !== 'pool') {
+      const empty = h('div', { class: 'tw-path-empty' });
+      empty.textContent = colId === 'completed' ? 'No completed lessons yet' : 'Drop lessons here';
+      cardsContainer.appendChild(empty);
+    }
+  });
+}
+
+// ── Lesson Move + Impact Preview ──────────────────────────────────────────
+
+function onLessonMove(lessonId, fromCol, toCol, position) {
+  const preview = document.getElementById('tw-impact-preview');
+  if (!preview) return;
+
+  // Show impact preview
+  preview.style.display = '';
+  const actionEl = document.getElementById('tw-impact-action');
+  const bodyEl = document.getElementById('tw-impact-body');
+
+  const cardTitle = _pathDraggedCard?.querySelector('.tw-path-card-title')?.textContent || `Lesson ${lessonId}`;
+  const colNames = { pool: 'Available Pool', discovery: 'Discovery', main: 'Main Path', completed: 'Completed' };
+  actionEl.textContent = `+ ${cardTitle.replace(/^#\d+/, '').replace(/^[\u{1F512}]/u, '').trim()} \u2192 ${colNames[toCol] || toCol} (position ${position + 1})`;
+  bodyEl.innerHTML = '<div class="tw-loading"><div class="tw-spinner"></div> Calculating impact...</div>';
+
+  // Store move context for apply
+  preview.dataset.lessonId = lessonId;
+  preview.dataset.fromCol = fromCol;
+  preview.dataset.toCol = toCol;
+  preview.dataset.position = position;
+
+  // Debounced impact fetch
+  clearTimeout(_impactDebounce);
+  _impactDebounce = setTimeout(() => fetchImpactPreview(lessonId, fromCol, toCol), DEBOUNCE_MS);
+}
+
+async function fetchImpactPreview(lessonId, fromCol, toCol) {
+  const bodyEl = document.getElementById('tw-impact-body');
+  if (!bodyEl) return;
+
+  const tw = getState().toryWorkspace;
+  const userId = tw.selectedUserId;
+  if (!userId) return;
+
+  try {
+    const addIds = (fromCol === 'pool' && toCol !== 'pool') ? lessonId : '';
+    const removeIds = (toCol === 'pool' && fromCol !== 'pool') ? lessonId : '';
+
+    const data = await api.getToryPreviewImpact({
+      user_id: userId,
+      add_lesson_ids: addIds,
+      remove_lesson_ids: removeIds,
+    });
+
+    renderImpactData(bodyEl, data);
+  } catch (err) {
+    bodyEl.innerHTML = `<div class="tw-impact-error">Failed to calculate impact: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderImpactData(bodyEl, data) {
+  if (!data || data.error) {
+    bodyEl.innerHTML = `<div class="tw-impact-error">${esc(data?.error || 'No data')}</div>`;
+    return;
+  }
+
+  const before = data.before || {};
+  const after = data.after || {};
+  const delta = data.delta || {};
+
+  let html = '';
+
+  // Trait coverage bars
+  const gapBefore = before.gap_coverage || {};
+  const gapAfter = after.gap_coverage || {};
+  const allTraits = [...new Set([...Object.keys(gapBefore), ...Object.keys(gapAfter)])];
+
+  if (allTraits.length > 0) {
+    html += '<div class="tw-impact-section"><div class="tw-impact-section-label">Trait Coverage</div>';
+    for (const trait of allTraits.slice(0, 6)) {
+      const bv = Math.round((gapBefore[trait] || 0) * 100);
+      const av = Math.round((gapAfter[trait] || 0) * 100);
+      const diff = av - bv;
+      const diffStr = diff > 0 ? `+${diff}%` : diff < 0 ? `${diff}%` : 'no change';
+      const diffClass = diff > 0 ? 'positive' : diff < 0 ? 'negative' : 'neutral';
+
+      html += `
+        <div class="tw-impact-trait">
+          <span class="tw-impact-trait-name">${esc(trait)}</span>
+          <span class="tw-impact-trait-before">${bv}%</span>
+          <span class="tw-impact-arrow">\u25B6</span>
+          <span class="tw-impact-trait-after">${av}%</span>
+          <div class="tw-impact-bar">
+            <div class="tw-impact-bar-before" style="width:${bv}%"></div>
+            <div class="tw-impact-bar-after" style="width:${av}%"></div>
+          </div>
+          <span class="tw-impact-diff ${diffClass}">(${diffStr})</span>
+        </div>
+      `;
+    }
+    html += '</div>';
+  }
+
+  // Path balance
+  const balBefore = before.path_balance || {};
+  const balAfter = after.path_balance || {};
+  html += `
+    <div class="tw-impact-section">
+      <div class="tw-impact-section-label">Path Balance</div>
+      <div class="tw-impact-balance">
+        <span>${balBefore.gap_pct || 0}% gap / ${balBefore.strength_pct || 0}% strength</span>
+        <span class="tw-impact-arrow">\u25B6</span>
+        <span>${balAfter.gap_pct || 0}% gap / ${balAfter.strength_pct || 0}% strength</span>
+      </div>
+    </div>
+  `;
+
+  // Journey mix
+  const jBefore = before.journey_mix || {};
+  const jAfter = after.journey_mix || {};
+  const allJourneys = [...new Set([...Object.keys(jBefore), ...Object.keys(jAfter)])];
+  if (allJourneys.length > 0) {
+    html += '<div class="tw-impact-section"><div class="tw-impact-section-label">Journey Mix</div><div class="tw-impact-journey-list">';
+    for (const j of allJourneys) {
+      const bCount = jBefore[j] || 0;
+      const aCount = jAfter[j] || 0;
+      const diff = aCount - bCount;
+      if (diff !== 0) {
+        html += `<span class="tw-impact-journey-item">${diff > 0 ? '+' : ''}${diff} ${esc(j)} (now ${aCount})</span>`;
+      }
+    }
+    html += '</div></div>';
+  }
+
+  bodyEl.innerHTML = html || '<div class="tw-impact-neutral">No significant changes detected</div>';
+}
+
+// ── Apply / Cancel ────────────────────────────────────────────────────────
+
+function cancelPathChange() {
+  // Revert DOM to pre-drag state
+  restoreBoardState(_pathPreDragState);
+  _pathPreDragState = null;
+
+  const preview = document.getElementById('tw-impact-preview');
+  if (preview) preview.style.display = 'none';
+}
+
+async function applyPathChange() {
+  const preview = document.getElementById('tw-impact-preview');
+  if (!preview) return;
+
+  const lessonId = parseInt(preview.dataset.lessonId, 10);
+  const fromCol = preview.dataset.fromCol;
+  const toCol = preview.dataset.toCol;
+
+  const tw = getState().toryWorkspace;
+  const userId = tw.selectedUserId;
+  if (!userId) return;
+
+  const applyBtn = document.getElementById('tw-impact-apply');
+  if (applyBtn) { applyBtn.disabled = true; applyBtn.textContent = 'Applying...'; }
+
+  try {
+    if (fromCol === 'pool' && (toCol === 'discovery' || toCol === 'main')) {
+      // Adding a lesson from pool — swap with nothing (add)
+      await api.swapToryLesson(userId, {
+        coach_id: 0,
+        remove_lesson_id: 0,
+        add_lesson_id: lessonId,
+        reason: 'Added via path builder kanban',
+      });
+    } else if ((fromCol === 'discovery' || fromCol === 'main') && toCol === 'pool') {
+      // Removing a lesson back to pool
+      await api.swapToryLesson(userId, {
+        coach_id: 0,
+        remove_lesson_id: lessonId,
+        add_lesson_id: 0,
+        reason: 'Removed via path builder kanban',
+      });
+    } else {
+      // Reorder within or between discovery/main — collect current ordering
+      const ordering = [];
+      let seq = 1;
+      for (const colId of ['discovery', 'main']) {
+        const colEl = document.querySelector(`.tw-path-col[data-col="${colId}"] .tw-path-cards`);
+        if (!colEl) continue;
+        const cards = colEl.querySelectorAll('.tw-path-card');
+        cards.forEach(card => {
+          const recId = parseInt(card.dataset.recId, 10);
+          if (recId) {
+            ordering.push({ recommendation_id: recId, new_sequence: seq++ });
+          }
+        });
+      }
+
+      if (ordering.length > 0) {
+        await api.reorderToryPath(userId, {
+          coach_id: 0,
+          ordering,
+          reason: 'Reordered via path builder kanban',
+        });
+      }
+    }
+
+    showToast('Path updated successfully', 'success');
+    _pathPreDragState = null;
+    preview.style.display = 'none';
+
+    // Reload detail to reflect new state
+    loadUserDetail(userId);
+  } catch (err) {
+    showToast(`Failed to update path: ${err.message}`, 'error');
+    if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = 'Apply Change'; }
+  }
+}
+
+// ── Available Pool Loader ─────────────────────────────────────────────────
+
+async function loadAvailablePool(currentRecs) {
+  const poolCol = document.querySelector('.tw-path-col[data-col="pool"] .tw-path-cards');
+  if (!poolCol) return;
+
+  poolCol.innerHTML = '<div class="tw-loading"><div class="tw-spinner"></div> Loading lessons...</div>';
+
+  try {
+    const data = await api.getToryContentLibrary();
+    const journeys = data.journeys || [];
+
+    // Build set of lesson IDs already in the path
+    const inPath = new Set(currentRecs.map(r => parseInt(r.nx_lesson_id, 10)));
+
+    // Flatten all lessons from the content library (deduplicate by lesson ID)
+    const poolLessons = [];
+    const seen = new Set();
+    for (const journey of journeys) {
+      const lessons = journey.lessons || [];
+      for (const lesson of lessons) {
+        const lid = parseInt(lesson.nx_lesson_id || lesson.lesson_id, 10);
+        if (!inPath.has(lid) && !seen.has(lid)) {
+          seen.add(lid);
+          poolLessons.push({
+            nx_lesson_id: lid,
+            lesson_name: lesson.lesson_name || lesson.name || `Lesson ${lid}`,
+            journey_id: lesson.journey_detail_id || journey.journey_detail_id || 0,
+            journey_name: lesson.journey_name || journey.journey_name || '',
+            match_score: lesson.match_score || 0,
+            difficulty: lesson.difficulty || 3,
+            source: 'pool',
+          });
+        }
+      }
+    }
+
+    // Sort by match_score descending
+    poolLessons.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
+
+    // Update count
+    const countEl = document.querySelector('.tw-path-col[data-col="pool"] .tw-path-col-count');
+    if (countEl) countEl.textContent = String(poolLessons.length);
+
+    poolCol.innerHTML = '';
+    if (poolLessons.length === 0) {
+      poolCol.innerHTML = '<div class="tw-path-empty">All lessons are in the path</div>';
+      return;
+    }
+
+    for (let i = 0; i < poolLessons.length; i++) {
+      poolCol.appendChild(buildPathCard(poolLessons[i], 'pool', i));
+    }
+  } catch (err) {
+    poolCol.innerHTML = `<div class="tw-path-empty">Failed to load: ${esc(err.message)}</div>`;
   }
 }
 
