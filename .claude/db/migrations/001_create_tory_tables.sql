@@ -241,6 +241,66 @@ CREATE TABLE IF NOT EXISTS tory_progress_snapshots (
     KEY idx_tory_snap_user_date (nx_user_id, snapshot_date)
 ) ENGINE=InnoDB ROW_FORMAT=Dynamic;
 
+-- ---------------------------------------------------------------------------
+-- 9. tory_recommendations
+--    Raw scored recommendations per learner (output of similarity engine)
+--    Written by tory_generate_path, consumed by roadmap generation
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tory_recommendations (
+    id              int(11)       NOT NULL AUTO_INCREMENT,
+    nx_user_id      bigint(20)    NOT NULL COMMENT 'FK → nx_users.id',
+    profile_id      int(11)       NOT NULL COMMENT 'FK → tory_learner_profiles.id (profile used for scoring)',
+    nx_lesson_id    int(11)       NOT NULL COMMENT 'FK → nx_lessons.id',
+    content_tag_id  int(11)       NULL COMMENT 'FK → tory_content_tags.id (tag used for matching)',
+    nx_journey_detail_id int(11)  NULL COMMENT 'FK → nx_journey_details.id (denormalized for diversity rules)',
+    match_score     decimal(8,4)  NOT NULL DEFAULT 0 COMMENT 'Similarity score 0-100',
+    gap_contribution decimal(8,4) NULL COMMENT 'Gap-fill score contribution',
+    strength_contribution decimal(8,4) NULL COMMENT 'Strength-lead score contribution',
+    adjusted_score  decimal(8,4)  NULL COMMENT 'Score after diversity/diminishing returns adjustments',
+    sequence        int(11)       NOT NULL DEFAULT 0 COMMENT 'Rank order (1 = best match)',
+    match_rationale longtext      NULL COMMENT 'Human-readable explanation referencing EPP dimensions',
+    matching_traits longtext      NULL COMMENT 'JSON: [{trait, type, direction}] traits this lesson targets',
+    is_discovery    int(11)       NOT NULL DEFAULT 0 COMMENT '1 = part of discovery phase (first 3-5)',
+    pedagogy_mode   varchar(20)   NULL COMMENT 'Pedagogy mode used for scoring',
+    pedagogy_ratio  varchar(10)   NULL COMMENT 'Gap/strength ratio used',
+    confidence      int(11)       NULL COMMENT 'Content tag confidence at time of scoring',
+    batch_id        varchar(50)   NULL COMMENT 'Batch identifier for this scoring run',
+    created_at      datetime      NULL,
+    updated_at      datetime      NULL,
+    deleted_at      datetime      NULL,
+    PRIMARY KEY (id),
+    KEY idx_tory_rec_user (nx_user_id),
+    KEY idx_tory_rec_lesson (nx_lesson_id),
+    KEY idx_tory_rec_score (nx_user_id, match_score),
+    KEY idx_tory_rec_batch (batch_id),
+    KEY idx_tory_rec_sequence (nx_user_id, sequence)
+) ENGINE=InnoDB ROW_FORMAT=Dynamic;
+
+-- ---------------------------------------------------------------------------
+-- 10. tory_coach_flags
+--     Coach-learner compatibility flags (traffic light signals)
+--     Computed from EPP heuristics when coach is assigned
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tory_coach_flags (
+    id              int(11)       NOT NULL AUTO_INCREMENT,
+    nx_user_id      bigint(20)    NOT NULL COMMENT 'FK → nx_users.id (learner)',
+    coach_id        bigint(20)    NOT NULL COMMENT 'FK → coaches.id',
+    profile_id      int(11)       NULL COMMENT 'FK → tory_learner_profiles.id (profile used)',
+    compat_signal   varchar(10)   NOT NULL DEFAULT 'green' COMMENT 'green | yellow | red',
+    compat_message  varchar(255)  NULL COMMENT 'Summary message for the signal',
+    warnings        longtext      NULL COMMENT 'JSON: list of warning strings',
+    learner_low_traits longtext   NULL COMMENT 'JSON: traits below threshold',
+    learner_high_traits longtext  NULL COMMENT 'JSON: traits above threshold',
+    created_at      datetime      NULL,
+    updated_at      datetime      NULL,
+    deleted_at      datetime      NULL,
+    PRIMARY KEY (id),
+    KEY idx_tory_flag_user (nx_user_id),
+    KEY idx_tory_flag_coach (coach_id),
+    KEY idx_tory_flag_signal (compat_signal),
+    KEY idx_tory_flag_user_coach (nx_user_id, coach_id)
+) ENGINE=InnoDB ROW_FORMAT=Dynamic;
+
 -- =============================================================================
 -- VERIFICATION
 -- =============================================================================
