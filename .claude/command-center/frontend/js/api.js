@@ -124,6 +124,30 @@ export const api = {
   getToryAdminCohort:   (qs) => request('GET', `/api/tory/admin/cohort${qs ? '?' + qs : ''}`),
   getToryAdminLearner:  (id) => request('GET', `/api/tory/admin/learner/${id}`),
   getToryAdminMetrics:  () => request('GET', '/api/tory/admin/metrics'),
+
+  // Tory Content Library
+  getContentLibrary:    (reviewStatus) => {
+    const qs = reviewStatus ? `?review_status=${reviewStatus}` : '';
+    return request('GET', `/api/tory/content-library${qs}`);
+  },
+  getLessonSlides:      (lessonDetailId) => request('GET', `/api/tory/lesson/${lessonDetailId}/slides`, null, 30000),
+
+  // Tory Content Review
+  reviewApprove:        (tagId, reviewerId, notes) =>
+    request('POST', `/api/tory/review/${tagId}/approve`, { reviewer_id: reviewerId, notes }),
+  reviewCorrect:        (tagId, reviewerId, correctedTags, opts = {}) =>
+    request('POST', `/api/tory/review/${tagId}/correct`, {
+      reviewer_id: reviewerId,
+      corrected_tags: correctedTags,
+      corrected_difficulty: opts.difficulty,
+      corrected_learning_style: opts.learningStyle,
+      notes: opts.notes,
+    }),
+  reviewDismiss:        (tagId, reviewerId, notes) =>
+    request('POST', `/api/tory/review/${tagId}/dismiss`, { reviewer_id: reviewerId, notes }),
+  reviewBulkApprove:    (reviewerId, minConfidence = 70) =>
+    request('POST', '/api/tory/review/bulk-approve', { reviewer_id: reviewerId, min_confidence: minConfidence }),
+  getReviewStats:       () => request('GET', '/api/tory/review/stats'),
 };
 
 // ── WebSocket Manager ──────────────────────────────────────────────────────
