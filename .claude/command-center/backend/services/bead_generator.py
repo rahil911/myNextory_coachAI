@@ -45,6 +45,7 @@ class BeadPlan:
     tasks: list[TaskBead] = field(default_factory=list)
     dependency_map: dict = field(default_factory=dict)
     agent_hints: dict = field(default_factory=dict)
+    token_usage: dict = field(default_factory=dict)  # {"input": N, "output": N}
 
 
 class BeadGenerator:
@@ -101,7 +102,7 @@ class BeadGenerator:
         spec_context = self._extract_spec_context(session)
 
         # Step 2: Ask Claude to decompose into tasks
-        task_plan = await self._decompose_with_claude(session.topic, spec_context)
+        task_plan, token_usage = await self._decompose_with_claude(session.topic, spec_context)
 
         # Dry-run: return preview without creating real beads
         if dry_run:
@@ -109,6 +110,7 @@ class BeadGenerator:
                 epic_id="dry-run-preview",
                 session_id=session.id,
                 topic=session.topic,
+                token_usage=token_usage,
             )
             for i, task in enumerate(task_plan):
                 task.id = f"preview-{i+1}"
@@ -134,6 +136,7 @@ class BeadGenerator:
             epic_id=epic_id,
             session_id=session.id,
             topic=session.topic,
+            token_usage=token_usage,
         )
 
         phase_bead_ids: dict[int, list[str]] = {}
@@ -192,11 +195,13 @@ class BeadGenerator:
 
         return "\n\n".join(parts)
 
-    async def _decompose_with_claude(self, topic: str, spec_context: str) -> list[TaskBead]:
+    async def _decompose_with_claude(self, topic: str, spec_context: str) -> tuple[list[TaskBead], dict]:
         """Ask Claude to decompose the spec into phased tasks.
 
         Retries up to DECOMPOSE_MAX_RETRIES times with backoff.
         Falls back to a single-task plan if all retries fail.
+
+        Returns (tasks, token_usage) where token_usage is {"input": N, "output": N}.
         """
         os.environ.pop("CLAUDECODE", None)
 
@@ -243,6 +248,7 @@ Respond ONLY with raw JSON array, no markdown:"""
             max_turns=1,
         )
 
+        token_usage = {"input": 0, "output": 0}
         last_error = None
         for attempt in range(1, DECOMPOSE_MAX_RETRIES + 1):
             raw = ""
@@ -252,6 +258,10 @@ Respond ONLY with raw JSON array, no markdown:"""
                         for block in msg.content:
                             if isinstance(block, TextBlock):
                                 raw += block.text
+                        # Capture token usage if available from SDK
+                        if hasattr(msg, "usage") and msg.usage:
+                            token_usage["input"] += getattr(msg.usage, "input_tokens", 0)
+                            token_usage["output"] += getattr(msg.usage, "output_tokens", 0)
             except Exception as e:
                 last_error = e
                 logger.warning(f"Claude decomposition attempt {attempt}/{DECOMPOSE_MAX_RETRIES} failed: {e}")
@@ -262,8 +272,8 @@ Respond ONLY with raw JSON array, no markdown:"""
             tasks = self._parse_task_json(raw, topic)
             # Check if we got real tasks (not a fallback)
             if tasks and not (len(tasks) == 1 and tasks[0].title.startswith("Implement:")):
-                logger.info(f"Claude decomposition succeeded on attempt {attempt}: {len(tasks)} tasks")
-                return tasks
+                logger.info(f"Claude decomposition succeeded on attempt {attempt}: {len(tasks)} tasks, tokens={token_usage}")
+                return (tasks, token_usage)
 
             logger.warning(f"Claude decomposition attempt {attempt} returned unparseable response")
             if attempt < DECOMPOSE_MAX_RETRIES:
@@ -271,7 +281,7 @@ Respond ONLY with raw JSON array, no markdown:"""
 
         # All retries exhausted — build best-effort fallback from spec-kit
         logger.warning(f"All {DECOMPOSE_MAX_RETRIES} decomposition attempts failed. Using fallback.")
-        return self._build_fallback_tasks(topic, spec_context)
+        return (self._build_fallback_tasks(topic, spec_context), token_usage)
 
     def _parse_task_json(self, raw: str, topic: str) -> list[TaskBead]:
         """Parse Claude's JSON response into TaskBead objects."""

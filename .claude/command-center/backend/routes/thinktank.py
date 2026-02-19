@@ -201,6 +201,18 @@ async def cancel_dispatch(session_id: str):
     return {"cancelled": success}
 
 
+@router.get("/dispatch/{session_id}/audit")
+async def get_dispatch_audit(session_id: str, limit: int = 100):
+    """Get durable audit trail for a dispatch session.
+
+    Returns timestamped events that survive server restarts.
+    """
+    svc = _get_thinktank_service()
+    dispatch = svc._get_dispatch_engine()
+    entries = [e for e in dispatch._audit_log if e.get("session_id") == session_id]
+    return {"session_id": session_id, "entries": entries[-limit:], "total": len(entries)}
+
+
 @router.post("/dispatch/{session_id}/retry")
 async def retry_dispatch(session_id: str):
     """Retry dispatch for an approved session."""

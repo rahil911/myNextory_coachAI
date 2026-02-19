@@ -380,6 +380,13 @@
       "timestamp": "2026-02-18T22:37:00.019164+00:00",
       "phase": "confirm",
       "attachments": []
+    },
+    {
+      "role": "human",
+      "content": "Approved. Start building.",
+      "timestamp": "2026-02-19T01:31:01.578203+00:00",
+      "phase": "building",
+      "attachments": []
     }
   ],
   "spec_kit": {
@@ -421,7 +428,7 @@
     }
   },
   "started_at": "2026-02-17T23:53:33.968827+00:00",
-  "updated_at": "2026-02-18T22:37:00.019135+00:00",
-  "status": "approved",
+  "updated_at": "2026-02-19T01:52:31.397752+00:00",
+  "status": "active",
   "epic_id": "baap-dz8"
 }

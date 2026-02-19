@@ -448,12 +448,13 @@ def get_lesson_journey_map() -> dict[int, int]:
 
 
 def get_user_coach(nx_user_id: int) -> dict | None:
-    """Fetch the coach assigned to a user (if any)."""
+    """Fetch the coach assigned to a user via client_coach_mappings (if any)."""
     _, rows = mysql_query(
         f"SELECT c.id as coach_id FROM coaches c "
-        f"JOIN coach_users cu ON cu.coach_id = c.id "
-        f"WHERE cu.nx_user_id = {int(nx_user_id)} "
-        f"AND cu.deleted_at IS NULL AND c.deleted_at IS NULL "
+        f"JOIN client_coach_mappings ccm ON ccm.coach_id = c.id "
+        f"JOIN nx_users u ON u.client_id = ccm.client_id "
+        f"WHERE u.id = {int(nx_user_id)} "
+        f"AND ccm.deleted_at IS NULL AND c.deleted_at IS NULL "
         f"LIMIT 1"
     )
     return rows[0] if rows else None

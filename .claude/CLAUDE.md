@@ -307,7 +307,14 @@ When you receive a request for a capability that doesn't map to any existing age
 
 ## External API Safety
 
-- ALWAYS check `.claude/integrations/{service}/credentials.json` before calling any API
+- **Environment variables** are auto-loaded from `$PROJECT/.env` by spawn.sh. Available keys:
+  - `ANTHROPIC_API_KEY` — Claude/Anthropic API
+  - `OPENAI_API_KEY` — OpenAI API
+  - `AZURE_STORAGE_KEY`, `AZURE_STORAGE_URL`, `AZURE_STORAGE_CONNECTION_STRING` — Azure Blob Storage
+  - `AZURE_STORAGE_NAME` — Storage account name (`productionmynextory`)
+  - `CONTAINER` — Azure container (`staging`)
+- Access via `os.environ["KEY_NAME"]` in Python or `$KEY_NAME` in bash
+- ALSO check `.claude/integrations/{service}/credentials.json` for service-specific rate limits and budgets
 - NEVER hardcode API keys in source code
 - NEVER loop API calls without backoff (minimum 100ms between calls)
 - RESPECT rate_limit_rpm from credentials.json

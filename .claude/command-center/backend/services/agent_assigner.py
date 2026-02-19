@@ -102,9 +102,18 @@ class AgentAssigner:
             return list(self._agents.keys())
         return list(AGENT_CAPABILITIES.keys())
 
-    def score_agent_for_task(self, agent_id: str, task) -> float:
-        """Score how well an agent matches a task (0.0 - 1.0)."""
+    def score_agent_for_task(self, agent_id: str, task) -> tuple[float, dict]:
+        """Score how well an agent matches a task.
+
+        Returns (score, breakdown) where breakdown explains the scoring.
+        """
         score = 0.0
+        breakdown = {
+            "keyword_matches": 0,
+            "capability_matches": 0,
+            "suggested_bonus": False,
+            "file_ownership": 0,
+        }
         text = f"{task.title} {task.description} {' '.join(task.requirements)}".lower()
 
         # Check domain keywords
@@ -112,26 +121,28 @@ class AgentAssigner:
             if agent_id == kw_agent:
                 matches = sum(1 for kw in keywords if kw in text)
                 if matches > 0:
+                    breakdown["keyword_matches"] = matches
                     score += min(matches * 0.15, 0.6)
 
         # Check capabilities overlap
         caps = self.get_agent_capabilities(agent_id)
-        for cap in caps:
-            if cap.lower() in text:
-                score += 0.1
+        cap_matches = sum(1 for cap in caps if cap.lower() in text)
+        breakdown["capability_matches"] = cap_matches
+        score += cap_matches * 0.1
 
         # Bonus if this was the suggested agent
         if hasattr(task, "suggested_agent") and task.suggested_agent == agent_id:
+            breakdown["suggested_bonus"] = True
             score += 0.2
 
         # Check affected files against KG file ownership
         if hasattr(task, "affected_files") and task.affected_files:
             owned_files = self._get_agent_files(agent_id)
-            for f in task.affected_files:
-                if any(f in owned for owned in owned_files):
-                    score += 0.15
+            file_matches = sum(1 for f in task.affected_files if any(f in owned for owned in owned_files))
+            breakdown["file_ownership"] = file_matches
+            score += file_matches * 0.15
 
-        return min(score, 1.0)
+        return (min(score, 1.0), breakdown)
 
     def _get_agent_files(self, agent_id: str) -> list[str]:
         """Get files owned by this agent from KG."""
@@ -145,41 +156,59 @@ class AgentAssigner:
                     files.append(edge.get("to", edge.get("target", "")))
         return files
 
-    def find_best_agent(self, task) -> str:
-        """Find the best agent for a given task."""
+    def find_best_agent(self, task) -> tuple[str, dict]:
+        """Find the best agent for a given task.
+
+        Returns (agent_id, all_scores) where all_scores maps each candidate
+        agent to {score, ...breakdown} for transparency.
+        """
         agents = self.get_available_agents()
         if not agents:
-            return getattr(task, "suggested_agent", None) or "platform-agent"
+            fallback = getattr(task, "suggested_agent", None) or "platform-agent"
+            return (fallback, {fallback: {"score": 0, "reason": "no agents available"}})
 
-        scores = {}
+        all_scores = {}
         for agent_id in agents:
             # Skip orchestrator and review-agent for implementation tasks
             if agent_id in ("orchestrator", "review-agent"):
                 continue
-            scores[agent_id] = self.score_agent_for_task(agent_id, task)
+            score, breakdown = self.score_agent_for_task(agent_id, task)
+            all_scores[agent_id] = {"score": round(score, 3), **breakdown}
 
-        if not scores:
-            return getattr(task, "suggested_agent", None) or "platform-agent"
+        if not all_scores:
+            fallback = getattr(task, "suggested_agent", None) or "platform-agent"
+            return (fallback, {fallback: {"score": 0, "reason": "no candidate agents"}})
 
-        best = max(scores, key=scores.get)
-        best_score = scores[best]
+        best = max(all_scores, key=lambda k: all_scores[k]["score"])
+        best_score = all_scores[best]["score"]
 
         # If best score is too low, fall back to platform-agent
         if best_score < 0.1:
-            return "platform-agent"
+            logger.info(f"Task '{task.title}' -> platform-agent (all scores < 0.1)")
+            return ("platform-agent", all_scores)
 
-        logger.info(f"Task '{task.title}' -> {best} (score: {best_score:.2f})")
-        return best
+        logger.info(f"Task '{task.title}' -> {best} (score: {best_score:.3f})")
+        return (best, all_scores)
 
     async def assign_beads(self, plan) -> None:
         """Assign all beads in a plan to agents.
 
-        Updates task.suggested_agent and calls bd update --assignee.
+        Updates task.suggested_agent, calls bd update --assignee, and stores
+        assignment reasoning on the plan for Control Tower visibility.
         """
+        if not hasattr(plan, "assignment_reasoning"):
+            plan.assignment_reasoning = {}
+
         for task in plan.tasks:
-            agent = self.find_best_agent(task)
+            agent, scores = self.find_best_agent(task)
             task.suggested_agent = agent
             plan.agent_hints[task.id] = agent
+
+            # Store reasoning for UI transparency
+            plan.assignment_reasoning[task.id] = {
+                "chosen": agent,
+                "scores": scores,
+            }
 
             # Update bead assignment via CLI
             if task.id:

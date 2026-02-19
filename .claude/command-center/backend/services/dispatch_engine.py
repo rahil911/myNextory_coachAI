@@ -62,6 +62,9 @@ class DispatchEngine:
         self._running_agents: dict[str, dict] = {}     # bead_id -> {agent, process, started_at}
         self._dispatch_tasks: dict[str, asyncio.Task] = {}
 
+        # Durable audit log — survives restarts via dispatch_state.json
+        self._audit_log: list[dict] = []
+
         # Idempotency cache: idempotency_key -> (cached_response, timestamp)
         self._idempotency_cache: dict[str, tuple[dict, float]] = {}
         self._idempotency_ttl = 300  # 5 minutes
@@ -86,11 +89,85 @@ class DispatchEngine:
                         "epic_id": dispatch_data.get("epic_id"),
                         "task_count": dispatch_data.get("task_count", 0),
                     }
+                    # Restore plan from persisted task data (or reconstruct from bd CLI)
+                    persisted_tasks = dispatch_data.get("tasks", [])
+                    if not persisted_tasks:
+                        # Fallback: reconstruct from bd CLI if epic_id exists
+                        epic_id = dispatch_data.get("epic_id")
+                        if epic_id:
+                            persisted_tasks = self._reconstruct_tasks_from_bd(epic_id)
+                    if persisted_tasks:
+                        from .bead_generator import TaskBead, BeadPlan
+                        plan = BeadPlan(
+                            epic_id=dispatch_data.get("epic_id", ""),
+                            session_id=session_id,
+                            topic="(restored from state)",
+                        )
+                        for td in persisted_tasks:
+                            task = TaskBead(title=td.get("title", ""))
+                            task.id = td.get("id", "")
+                            task.phase = td.get("phase", 1)
+                            task.suggested_agent = td.get("suggested_agent")
+                            task.type = td.get("type", "task")
+                            plan.tasks.append(task)
+                        plan.dependency_map = dispatch_data.get("dependency_map", {})
+                        plan.agent_hints = dispatch_data.get("agent_hints", {})
+                        self._active_dispatches[session_id]["plan"] = plan
+
                 for bead_id, agent_data in data.get("running_agents", {}).items():
                     self._running_agents[bead_id] = agent_data
-                _log(logging.INFO, f"Loaded dispatch state: {len(self._active_dispatches)} dispatches, {len(self._running_agents)} agents")
+                self._audit_log = data.get("audit_log", [])
+
+                # Mark stale dispatches (stuck >1 hour with no running agents)
+                for session_id, dispatch in self._active_dispatches.items():
+                    if dispatch["status"] == "dispatching" and not any(
+                        info.get("session_id") == session_id for info in self._running_agents.values()
+                    ):
+                        started = dispatch.get("started_at", "")
+                        if started:
+                            try:
+                                start_dt = datetime.fromisoformat(started)
+                                if (datetime.now(timezone.utc) - start_dt).total_seconds() > 3600:
+                                    dispatch["status"] = "stale"
+                                    _log(logging.WARNING, f"Marked stale dispatch (>1h, no agents)", session_id=session_id)
+                            except (ValueError, TypeError):
+                                pass
+
+                _log(logging.INFO, f"Loaded dispatch state: {len(self._active_dispatches)} dispatches, {len(self._running_agents)} agents, {len(self._audit_log)} audit entries")
             except Exception as e:
                 _log(logging.WARNING, f"Failed to load dispatch state: {e}")
+
+    def _reconstruct_tasks_from_bd(self, epic_id: str) -> list[dict]:
+        """Reconstruct task list from bd CLI when no persisted tasks exist."""
+        import subprocess
+        bd_path = Path.home() / ".local" / "bin" / "bd"
+        bd_cmd = str(bd_path) if bd_path.exists() else "bd"
+        env = {**__import__("os").environ, "PATH": f"{Path.home() / '.local' / 'bin'}:{__import__('os').environ.get('PATH', '')}"}
+        try:
+            result = subprocess.run(
+                [bd_cmd, "list", "--json"],
+                capture_output=True, text=True, timeout=10, env=env,
+            )
+            if result.returncode != 0:
+                return []
+            all_beads = json.loads(result.stdout)
+            tasks = []
+            for b in all_beads:
+                bead_id = b.get("id", "")
+                # Include child beads of this epic (format: epic_id.N)
+                if bead_id.startswith(f"{epic_id}.") and b.get("issue_type") != "epic":
+                    tasks.append({
+                        "id": bead_id,
+                        "title": b.get("title", ""),
+                        "phase": 1,  # Cannot reconstruct phase; default to 1
+                        "suggested_agent": b.get("assignee"),
+                        "type": b.get("issue_type", "task"),
+                    })
+            _log(logging.INFO, f"Reconstructed {len(tasks)} tasks from bd for epic {epic_id}")
+            return tasks
+        except Exception as e:
+            _log(logging.WARNING, f"Failed to reconstruct tasks from bd: {e}")
+            return []
 
     def _persist_dispatch_state(self) -> None:
         """Save dispatch state to disk for crash recovery."""
@@ -101,15 +178,33 @@ class DispatchEngine:
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
             for session_id, dispatch in self._active_dispatches.items():
+                plan = dispatch.get("plan")
                 data["dispatches"][session_id] = {
                     "started_at": dispatch.get("started_at"),
                     "status": dispatch.get("status"),
                     "completed_beads": list(dispatch.get("completed_beads", set())),
                     "failed_beads": list(dispatch.get("failed_beads", set())),
                     "retry_counts": dispatch.get("retry_counts", {}),
-                    "epic_id": dispatch.get("epic_id") or (dispatch.get("plan") and dispatch["plan"].epic_id),
-                    "task_count": dispatch.get("task_count") or (dispatch.get("plan") and len(dispatch["plan"].tasks)),
+                    "epic_id": dispatch.get("epic_id") or (plan.epic_id if plan else None),
+                    "task_count": dispatch.get("task_count") or (len(plan.tasks) if plan else 0),
+                    "tasks": [
+                        {
+                            "id": t.id,
+                            "title": t.title,
+                            "phase": getattr(t, "phase", 1),
+                            "suggested_agent": getattr(t, "suggested_agent", None),
+                            "type": getattr(t, "type", "task"),
+                        }
+                        for t in (plan.tasks if plan else [])
+                    ],
+                    "dependency_map": {
+                        k: list(v) for k, v in
+                        (plan.dependency_map.items() if plan else {}.items())
+                    },
+                    "agent_hints": dict(plan.agent_hints) if plan else {},
                 }
+            # Include last 500 audit entries for durability
+            data["audit_log"] = self._audit_log[-500:]
             DISPATCH_STATE_FILE.write_text(json.dumps(data, indent=2, default=str))
         except Exception as e:
             _log(logging.WARNING, f"Failed to persist dispatch state: {e}")
@@ -305,12 +400,20 @@ class DispatchEngine:
             }
             self._persist_dispatch_state()
 
+            # Build assignment detail with reasoning
+            reasoning = getattr(plan, "assignment_reasoning", {})
+            task_assignments = {}
+            for t in plan.tasks:
+                if t.id:
+                    task_assignments[t.id] = {
+                        "agent": t.suggested_agent,
+                        "reasoning": reasoning.get(t.id, {}),
+                    }
+
             await self._publish("DISPATCH_PROGRESS", {
                 "session_id": session_id,
                 "status": "spawning_agents",
-                "task_assignments": {
-                    t.id: t.suggested_agent for t in plan.tasks if t.id
-                },
+                "task_assignments": task_assignments,
             })
 
             # Step 5: Start the dispatch loop
@@ -326,7 +429,21 @@ class DispatchEngine:
             })
 
     async def _publish(self, event_type_name: str, payload: dict) -> None:
-        """Publish an event via the event bus, handling both enum and string types."""
+        """Publish an event via the event bus and append to durable audit log."""
+        # Append to audit log (skip cycle snapshots to avoid noise)
+        if not payload.get("cycle"):
+            entry = {
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "type": event_type_name,
+                "session_id": payload.get("session_id", ""),
+                "bead_id": payload.get("bead_id", ""),
+                "agent": payload.get("agent", ""),
+                "summary": payload.get("message") or payload.get("status") or payload.get("error") or "",
+            }
+            self._audit_log.append(entry)
+            if len(self._audit_log) > 2000:
+                self._audit_log = self._audit_log[-1500:]
+
         if not self._event_bus:
             return
         try:
@@ -334,7 +451,6 @@ class DispatchEngine:
             event_type = WSEventType(event_type_name)
             await self._event_bus.publish(event_type, payload)
         except (ValueError, KeyError):
-            # Event type not yet registered in WSEventType enum — log and skip
             logger.debug(f"Skipping unregistered event type: {event_type_name}")
 
     async def _dispatch_loop(self, session_id: str) -> None:
@@ -374,6 +490,14 @@ class DispatchEngine:
 
                 # Persist state after every check cycle
                 self._persist_dispatch_state()
+
+                # Emit continuous progress snapshot for Control Tower
+                status_snapshot = self.get_dispatch_status(session_id)
+                if status_snapshot:
+                    await self._publish("DISPATCH_PROGRESS", {
+                        **status_snapshot,
+                        "cycle": True,
+                    })
 
                 # Check if all done
                 done = dispatch["completed_beads"] | dispatch["failed_beads"]
@@ -772,7 +896,11 @@ class DispatchEngine:
             })
 
     def get_dispatch_status(self, session_id: str) -> dict | None:
-        """Get current dispatch status for a session."""
+        """Get current dispatch status for a session.
+
+        Returns aggregate counters plus a per-task breakdown with status,
+        elapsed time, and retry count for full Control Tower visibility.
+        """
         dispatch = self._active_dispatches.get(session_id)
         if not dispatch:
             return None
@@ -780,6 +908,54 @@ class DispatchEngine:
         plan = dispatch.get("plan")
         epic_id = dispatch.get("epic_id") or (plan.epic_id if plan else None)
         total = dispatch.get("task_count") or (len(plan.tasks) if plan else 0)
+
+        # Build per-task breakdown
+        tasks_detail = []
+        if plan:
+            reasoning = getattr(plan, "assignment_reasoning", {})
+            for task in plan.tasks:
+                if not task.id:
+                    continue
+                if getattr(task, "type", "task") == "epic":
+                    continue
+                bead_id = task.id
+                agent_info = self._running_agents.get(bead_id)
+
+                if bead_id in dispatch["completed_beads"]:
+                    status = "completed"
+                elif bead_id in dispatch["failed_beads"]:
+                    status = "failed"
+                elif agent_info:
+                    status = "running"
+                else:
+                    deps = getattr(plan, "dependency_map", {}).get(bead_id, [])
+                    any_dep_failed = any(d in dispatch["failed_beads"] for d in deps)
+                    all_deps_done = all(d in dispatch["completed_beads"] for d in deps)
+                    if any_dep_failed:
+                        status = "blocked_by_failure"
+                    elif not all_deps_done:
+                        status = "waiting"
+                    else:
+                        status = "ready"
+
+                elapsed_s = None
+                if agent_info and "started_at" in agent_info:
+                    started = agent_info["started_at"]
+                    if isinstance(started, (int, float)):
+                        elapsed_s = int(time.time() - started)
+
+                task_entry = {
+                    "bead_id": bead_id,
+                    "title": task.title,
+                    "agent": (agent_info or {}).get("agent") or getattr(task, "suggested_agent", None),
+                    "status": status,
+                    "elapsed_s": elapsed_s,
+                    "retry_count": dispatch["retry_counts"].get(bead_id, 0),
+                }
+                # Include assignment scores if available
+                if bead_id in reasoning:
+                    task_entry["assignment_scores"] = reasoning[bead_id]
+                tasks_detail.append(task_entry)
 
         return {
             "session_id": session_id,
@@ -793,6 +969,9 @@ class DispatchEngine:
                 if info["session_id"] == session_id
             ),
             "started_at": dispatch["started_at"],
+            "tasks": tasks_detail,
+            "health": self.check_dispatch_health(),
+            "token_usage": getattr(plan, "token_usage", {}) if plan else {},
         }
 
     async def cancel_dispatch(self, session_id: str) -> bool:
@@ -826,6 +1005,10 @@ class DispatchEngine:
 
         self._persist_dispatch_state()
         _log(logging.INFO, "Dispatch cancelled", session_id=session_id)
+        await self._publish("DISPATCH_CANCELLED", {
+            "session_id": session_id,
+            "message": "Dispatch cancelled by user",
+        })
         return True
 
     async def cleanup(self) -> None:

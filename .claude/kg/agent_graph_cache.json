@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "built_at": "2026-02-18T22:43:53.347581+00:00",
-    "node_count": 50,
-    "edge_count": 257,
+    "built_at": "2026-02-19T02:36:50.520444+00:00",
+    "node_count": 55,
+    "edge_count": 262,
     "agent_count": 10,
     "module_count": 8,
     "concept_count": 32,
@@ -969,6 +969,41 @@
         "db-agent",
         "tory-agent"
       ]
+    },
+    {
+      "id": ".claude/mcp/tag_content.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/db/migrations/002_coach_curation.sql",
+      "type": "file",
+      "language": "sql",
+      "module": "content-module",
+      "locked_by": null
+    },
+    {
+      "id": "test_coach_curation.py",
+      "type": "file",
+      "language": "python",
+      "module": "content-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/mcp/tory_engine.py",
+      "type": "file",
+      "language": "python",
+      "module": "content-module",
+      "locked_by": null
+    },
+    {
+      "id": "test_review_queue.py",
+      "type": "file",
+      "language": "python",
+      "module": "content-module",
+      "locked_by": null
     }
   ],
   "edges": [
@@ -2278,6 +2313,36 @@
       "type": "DEPENDS_ON",
       "dependency_type": "schema",
       "inferred_from": "tory dispatches SMS/email nudges via existing comms layer for path changes, stalls, reassessments"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/mcp/tag_content.py",
+      "type": "OWNS",
+      "inferred_from": "Content tagging pipeline is core Tory bootstrap layer functionality. tory_content_tags table is owned by tory-agent, and the tagging pipeline generates data for it. This is the L1-L3 defense pipeline described in the agent spec."
+    },
+    {
+      "from": "content-agent",
+      "to": ".claude/db/migrations/002_coach_curation.sql",
+      "type": "OWNS",
+      "inferred_from": "Schema migration for coach curation API (tory_path_events table, tory_recommendations columns) - bead baap-qkk.5"
+    },
+    {
+      "from": "content-agent",
+      "to": "test_coach_curation.py",
+      "type": "OWNS",
+      "inferred_from": "E2E test for coach curation API - bead baap-qkk.5"
+    },
+    {
+      "from": "content-agent",
+      "to": ".claude/mcp/tory_engine.py",
+      "type": "OWNS",
+      "inferred_from": "Content-agent has built and maintained tory_engine.py across beads baap-qkk.4, baap-qkk.5, and baap-qkk.6. Memory file confirms ownership."
+    },
+    {
+      "from": "content-agent",
+      "to": "test_review_queue.py",
+      "type": "OWNS",
+      "inferred_from": "E2E test for coach review queue (baap-qkk.10), created by content-agent"
     }
   ]
 }

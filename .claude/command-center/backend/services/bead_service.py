@@ -121,7 +121,7 @@ class BeadService:
                 priority=b.get("priority"),
                 epic=b.get("epic") or b.get("parent"),
                 type=b.get("type") or b.get("issue_type") or "task",
-                deps=b.get("dependencies") or b.get("deps") or b.get("blocked_by") or [],
+                deps=[d["depends_on_id"] for d in (b.get("dependencies") or []) if isinstance(d, dict) and "depends_on_id" in d] or b.get("deps") or b.get("blocked_by") or [],
                 notes=b.get("notes", ""),
                 created_at=b.get("created_at") or b.get("created"),
                 updated_at=b.get("updated_at") or b.get("updated") or b.get("last_update"),

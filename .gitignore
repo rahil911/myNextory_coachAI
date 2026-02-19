@@ -26,6 +26,8 @@ Thumbs.db
 .claude/logs/
 
 # Credentials (NEVER commit)
+.env
+.env.*
 .claude/integrations/*/credentials.json
 .claude/integrations/*/secrets.*
 

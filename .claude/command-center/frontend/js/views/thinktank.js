@@ -552,6 +552,7 @@ function _ensureDispatchPolling(sessionId, shouldPoll) {
             ...state.thinktank,
             dispatchStatus: status,
             dispatchEvents: events,
+            dispatchHealth: status.health || state.thinktank.dispatchHealth,
           },
         });
       }
@@ -596,6 +597,49 @@ function _renderDispatchVisibility(tt) {
     <div class="dispatch-progress-text">Progress: ${pct}%</div>
   `;
 
+  // Per-task breakdown table
+  const tasks = status.tasks || [];
+  if (tasks.length > 0) {
+    const tableWrap = h('div', { class: 'dispatch-task-table' });
+    tableWrap.innerHTML = `
+      <div class="dispatch-feed-title">Task Breakdown</div>
+      <table class="dt-table">
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Agent</th>
+            <th>Status</th>
+            <th>Elapsed</th>
+            <th>Retries</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tasks.map(t => {
+            const scores = t.assignment_scores || {};
+            const chosen = scores.chosen || '';
+            const allScores = scores.scores || {};
+            const scoreLines = Object.entries(allScores)
+              .sort((a, b) => (b[1].score || 0) - (a[1].score || 0))
+              .slice(0, 5)
+              .map(([a, s]) => `${a}: ${s.score}`)
+              .join('\n');
+            const agentTitle = scoreLines ? `Assignment scores:\n${scoreLines}` : '';
+            return `
+            <tr class="dt-row dt-status-${t.status}">
+              <td class="dt-cell-title" title="${_escapeHtml(t.bead_id || '')}">${_escapeHtml(t.title || 'Untitled')}</td>
+              <td title="${_escapeHtml(agentTitle)}">${_escapeHtml(t.agent || 'unassigned')}</td>
+              <td><span class="dt-status-badge dt-badge-${t.status}">${_escapeHtml(t.status || 'unknown')}</span></td>
+              <td>${t.elapsed_s != null ? _formatElapsed(t.elapsed_s) : '-'}</td>
+              <td>${t.retry_count || 0}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+    panel.appendChild(tableWrap);
+  }
+
+  // Health checks (refreshed every poll cycle)
   const health = tt.dispatchHealth;
   if (health) {
     const healthEl = h('div', { class: 'dispatch-health' });
@@ -607,15 +651,42 @@ function _renderDispatchVisibility(tt) {
     panel.appendChild(healthEl);
   }
 
+  // Token usage / cost estimate
+  const tokenUsage = status.token_usage;
+  if (tokenUsage && (tokenUsage.input || tokenUsage.output)) {
+    const input = tokenUsage.input || 0;
+    const output = tokenUsage.output || 0;
+    const estCost = ((input * 3 + output * 15) / 1_000_000).toFixed(3);
+    const costEl = h('div', { class: 'dispatch-health' });
+    costEl.innerHTML = `
+      <div class="dispatch-health-title">Token Usage</div>
+      <div style="font-size:12px;padding:4px 0">
+        Input: ${input.toLocaleString()} | Output: ${output.toLocaleString()}
+        | Est. cost: ~$${estCost}
+      </div>
+    `;
+    panel.appendChild(costEl);
+  }
+
+  // Live event feed
   const events = tt.dispatchEvents || [];
   const feed = h('div', { class: 'dispatch-feed' });
+  const feedEvents = events.filter(ev => !(ev.payload && ev.payload.cycle));
   feed.innerHTML = `
     <div class="dispatch-feed-title">Live feed</div>
-    ${events.length ? `<ul>${events.slice(-8).reverse().map(ev => `<li><span>${_escapeHtml((ev.type || '').toLowerCase())}</span><em>${_escapeHtml(_dispatchEventSummary(ev.payload || {}))}</em></li>`).join('')}</ul>` : '<p>No dispatch events yet. Use preview to inspect the plan before launch.</p>'}
+    ${feedEvents.length ? `<ul>${feedEvents.slice(-8).reverse().map(ev => `<li><span>${_escapeHtml((ev.type || '').toLowerCase())}</span><em>${_escapeHtml(_dispatchEventSummary(ev.payload || {}))}</em></li>`).join('')}</ul>` : '<p>No dispatch events yet. Use preview to inspect the plan before launch.</p>'}
   `;
   panel.appendChild(feed);
 
   return panel;
+}
+
+function _formatElapsed(seconds) {
+  if (seconds == null) return '-';
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}m ${s}s`;
 }
 
 function _dispatchEventSummary(payload) {

@@ -67,10 +67,43 @@ class BeadsBridge:
         if not epic_id:
             return {"epic_id": None, "total": 0, "completed": 0, "percent": 0, "tasks": []}
 
-        return {
-            "epic_id": epic_id,
-            "status": "in_progress",
-        }
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "bd", "list", f"--parent={epic_id}",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=str(self._baap_root),
+            )
+            stdout, _ = await proc.communicate()
+            output = stdout.decode()
+
+            tasks = []
+            total = 0
+            completed = 0
+            for line in output.strip().split("\n"):
+                if not line.strip():
+                    continue
+                parts = line.split()
+                if len(parts) >= 2:
+                    bead_id = parts[0]
+                    status = parts[1] if len(parts) > 1 else "open"
+                    total += 1
+                    if status in ("closed", "resolved", "done"):
+                        completed += 1
+                    tasks.append({"bead_id": bead_id, "status": status})
+
+            pct = round((completed / total * 100), 1) if total > 0 else 0
+            return {
+                "epic_id": epic_id,
+                "status": "completed" if completed == total and total > 0 else "in_progress",
+                "total": total,
+                "completed": completed,
+                "percent": pct,
+                "tasks": tasks,
+            }
+        except Exception as e:
+            logger.warning(f"get_epic_progress failed: {e}")
+            return {"epic_id": epic_id, "status": "unknown", "total": 0, "completed": 0, "percent": 0, "tasks": []}
 
     async def start_monitoring(self, session_id: str, bead_ids: list[str], poll_interval: float = 5.0) -> None:
         """Start polling bead statuses and pushing updates to UI."""

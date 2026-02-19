@@ -20,6 +20,11 @@ PROJECT="${3:-$(pwd)}"
 BEAD_ID=""
 AGENT_NAME=""
 
+# Source project env vars (credentials for Azure, OpenAI, etc.)
+if [ -f "$PROJECT/.env" ]; then
+  set -a; source "$PROJECT/.env"; set +a
+fi
+
 # Parse optional flags
 shift 3 2>/dev/null || shift $#
 while [[ $# -gt 0 ]]; do
@@ -88,8 +93,8 @@ if [ -n "$AGENT_NAME" ]; then
   fi
 fi
 
-# -- Build Claude command ----------------------------------------------------
-CLAUDE_CMD="cd $AGENT_DIR/$NAME"
+# -- Build launcher script (avoids shell quoting issues with long prompts) ----
+LAUNCHER="$AGENT_DIR/$NAME/.agent_launcher.sh"
 
 # MCP config (use project's if exists)
 if [ -f "$AGENT_DIR/$NAME/.mcp.json" ]; then
@@ -98,39 +103,70 @@ else
   MCP_FLAG=""
 fi
 
-# Escape prompt for shell embedding
-ESCAPED_PROMPT="${PROMPT//\'/\\\'}"
-ESCAPED_CHECKPOINT="${CHECKPOINT_INSTRUCTION//\'/\\\'}"
-ESCAPED_IDENTITY="${AGENT_IDENTITY//\'/\\\'}"
-
 # Combine system prompt: identity + checkpoint instructions
-SYSTEM_PROMPT="${ESCAPED_IDENTITY}${ESCAPED_CHECKPOINT}"
+SYSTEM_PROMPT="${AGENT_IDENTITY}${CHECKPOINT_INSTRUCTION}"
 
+# Write prompt and system prompt to files (avoids all quoting issues)
+echo "$PROMPT" > "$AGENT_DIR/$NAME/.agent_prompt.txt"
+echo "$SYSTEM_PROMPT" > "$AGENT_DIR/$NAME/.agent_sysprompt.txt"
+echo "$BEAD_ID" > "$AGENT_DIR/$NAME/.agent_bead_id"
+echo "$TYPE" > "$AGENT_DIR/$NAME/.agent_type"
+echo "$PROMPT" > "$AGENT_DIR/$NAME/.agent_original_prompt"
+
+# Generate launcher script
 case "$TYPE" in
   reactive)
-    CLAUDE_CMD="$CLAUDE_CMD && claude -p '$ESCAPED_PROMPT' --yes --allowedTools 'Read,Edit,Bash,Glob,Grep,mcp__*' $MCP_FLAG --append-system-prompt '$SYSTEM_PROMPT'"
-    CLAUDE_CMD="$CLAUDE_CMD; EXIT_CODE=\$?; echo ''; echo '=== AGENT DONE (exit \$EXIT_CODE) ==='"
-    # Store exit code and metadata for retry-agent.sh
-    CLAUDE_CMD="$CLAUDE_CMD; echo \"\$EXIT_CODE\" > $AGENT_DIR/$NAME/.agent_exit_code"
-    CLAUDE_CMD="$CLAUDE_CMD; echo '$BEAD_ID' > $AGENT_DIR/$NAME/.agent_bead_id"
-    CLAUDE_CMD="$CLAUDE_CMD; echo '$ESCAPED_PROMPT' > $AGENT_DIR/$NAME/.agent_original_prompt"
-    CLAUDE_CMD="$CLAUDE_CMD; echo '$TYPE' > $AGENT_DIR/$NAME/.agent_type"
-    CLAUDE_CMD="$CLAUDE_CMD; echo 'Type next prompt or press Ctrl+D to exit'; claude --continue --yes"
+    cat > "$LAUNCHER" << LAUNCHEREOF
+#!/bin/bash
+# Prevent nested Claude Code detection
+unset CLAUDECODE
+# Strip API keys so Claude Code uses subscription auth, not API billing.
+# App code (tag_content.py etc.) loads .env directly when it needs API keys.
+unset ANTHROPIC_API_KEY OPENAI_API_KEY 2>/dev/null
+cd "$AGENT_DIR/$NAME"
+PROMPT=\$(cat .agent_prompt.txt)
+SYSPROMPT=\$(cat .agent_sysprompt.txt)
+claude -p "\$PROMPT" --dangerously-skip-permissions --allowedTools 'Read,Edit,Bash,Glob,Grep,mcp__*' $MCP_FLAG --append-system-prompt "\$SYSPROMPT"
+EXIT_CODE=\$?
+echo "\$EXIT_CODE" > .agent_exit_code
+echo ""
+echo "=== AGENT DONE (exit \$EXIT_CODE) ==="
+echo "Type next prompt or press Ctrl+D to exit"
+claude --continue --dangerously-skip-permissions
+LAUNCHEREOF
     ;;
   proactive)
-    CLAUDE_CMD="$CLAUDE_CMD && claude -p '$ESCAPED_PROMPT' --yes --allowedTools 'Read,Edit,Bash,Glob,Grep,mcp__*' $MCP_FLAG --output-format text --append-system-prompt '$SYSTEM_PROMPT'"
-    CLAUDE_CMD="$CLAUDE_CMD; EXIT_CODE=\$?; echo \"\$EXIT_CODE\" > $AGENT_DIR/$NAME/.agent_exit_code"
-    CLAUDE_CMD="$CLAUDE_CMD; echo '$BEAD_ID' > $AGENT_DIR/$NAME/.agent_bead_id"
-    CLAUDE_CMD="$CLAUDE_CMD; echo '$ESCAPED_PROMPT' > $AGENT_DIR/$NAME/.agent_original_prompt"
-    CLAUDE_CMD="$CLAUDE_CMD; echo '$TYPE' > $AGENT_DIR/$NAME/.agent_type"
-    # Auto-retry if timed out with checkpoint
-    CLAUDE_CMD="$CLAUDE_CMD; if [ \"\$EXIT_CODE\" = '124' ] && [ -f '.claude/agents/*/memory/MEMORY.md' ]; then echo '=== TIMEOUT WITH CHECKPOINT -- AUTO-RETRYING ==='; $SCRIPTS_DIR/retry-agent.sh $AGENT_DIR/$NAME; fi"
-    CLAUDE_CMD="$CLAUDE_CMD && echo '=== AUTO-CLEANUP ===' && cd $PROJECT && git add $AGENT_DIR/$NAME && git stash 2>/dev/null; true"
+    cat > "$LAUNCHER" << LAUNCHEREOF
+#!/bin/bash
+unset CLAUDECODE
+unset ANTHROPIC_API_KEY OPENAI_API_KEY 2>/dev/null
+cd "$AGENT_DIR/$NAME"
+PROMPT=\$(cat .agent_prompt.txt)
+SYSPROMPT=\$(cat .agent_sysprompt.txt)
+claude -p "\$PROMPT" --dangerously-skip-permissions --allowedTools 'Read,Edit,Bash,Glob,Grep,mcp__*' $MCP_FLAG --output-format text --append-system-prompt "\$SYSPROMPT"
+EXIT_CODE=\$?
+echo "\$EXIT_CODE" > .agent_exit_code
+if [ "\$EXIT_CODE" = "124" ] && ls .claude/agents/*/memory/MEMORY.md 1>/dev/null 2>&1; then
+  echo "=== TIMEOUT WITH CHECKPOINT -- AUTO-RETRYING ==="
+  $SCRIPTS_DIR/retry-agent.sh "$AGENT_DIR/$NAME"
+fi
+LAUNCHEREOF
     ;;
   team)
-    CLAUDE_CMD="$CLAUDE_CMD && CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude -p '$ESCAPED_PROMPT' --yes --allowedTools 'Read,Edit,Bash,Glob,Grep,mcp__*' $MCP_FLAG --teammate-mode tmux --append-system-prompt '$SYSTEM_PROMPT'"
-    CLAUDE_CMD="$CLAUDE_CMD; EXIT_CODE=\$?; echo \"\$EXIT_CODE\" > $AGENT_DIR/$NAME/.agent_exit_code"
-    CLAUDE_CMD="$CLAUDE_CMD; echo ''; echo '=== TEAM DONE (exit \$EXIT_CODE) === Press enter to close'; read"
+    cat > "$LAUNCHER" << LAUNCHEREOF
+#!/bin/bash
+unset CLAUDECODE
+unset ANTHROPIC_API_KEY OPENAI_API_KEY 2>/dev/null
+cd "$AGENT_DIR/$NAME"
+PROMPT=\$(cat .agent_prompt.txt)
+SYSPROMPT=\$(cat .agent_sysprompt.txt)
+CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude -p "\$PROMPT" --dangerously-skip-permissions --allowedTools 'Read,Edit,Bash,Glob,Grep,mcp__*' $MCP_FLAG --teammate-mode tmux --append-system-prompt "\$SYSPROMPT"
+EXIT_CODE=\$?
+echo "\$EXIT_CODE" > .agent_exit_code
+echo ""
+echo "=== TEAM DONE (exit \$EXIT_CODE) === Press enter to close"
+read
+LAUNCHEREOF
     ;;
   *)
     echo "Error: Unknown type '$TYPE'. Use: reactive, proactive, team" >&2
@@ -138,8 +174,10 @@ case "$TYPE" in
     ;;
 esac
 
+chmod +x "$LAUNCHER"
+
 # -- Launch in tmux ----------------------------------------------------------
-tmux new-window -t "$TMUX_SESSION" -n "$NAME" "$CLAUDE_CMD"
+tmux new-window -t "$TMUX_SESSION" -n "$NAME" "bash $LAUNCHER"
 echo "Launched agent: $NAME (tmux window in session '$TMUX_SESSION')"
 echo ""
 echo "Monitor:  tmux attach -t $TMUX_SESSION"

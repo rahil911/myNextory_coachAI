@@ -97,24 +97,53 @@
     "reject_reason": "Wrong agent for CSS files"
   },
   {
-    "type": "register",
-    "file": "tory_notification_service.py",
-    "agent": "comms-agent",
-    "proposed_at": "2026-02-19T02:38:47.656442+00:00",
-    "status": "pending"
+    "id": "prop-20260219020516",
+    "file": ".claude/mcp/tag_content.py",
+    "agent": "tory-agent",
+    "evidence": "Content tagging pipeline is core Tory bootstrap layer functionality. tory_content_tags table is owned by tory-agent, and the tagging pipeline generates data for it. This is the L1-L3 defense pipeline described in the agent spec.",
+    "proposed_at": "2026-02-19T02:05:16.472703+00:00",
+    "status": "pending",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)"
   },
   {
-    "type": "register",
-    "file": "test_tory_notifications.py",
-    "agent": "comms-agent",
-    "proposed_at": "2026-02-19T02:38:47.717641+00:00",
-    "status": "pending"
+    "id": "prop-20260219021601",
+    "file": ".claude/db/migrations/002_coach_curation.sql",
+    "agent": "content-agent",
+    "evidence": "Schema migration for coach curation API (tory_path_events table, tory_recommendations columns) - bead baap-qkk.5",
+    "proposed_at": "2026-02-19T02:16:01.800890+00:00",
+    "status": "pending",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)"
   },
   {
-    "type": "register",
-    "file": "migrations/007_tory_notifications.sql",
-    "agent": "comms-agent",
-    "proposed_at": "2026-02-19T02:38:47.788477+00:00",
-    "status": "pending"
+    "id": "prop-20260219021602",
+    "file": "test_coach_curation.py",
+    "agent": "content-agent",
+    "evidence": "E2E test for coach curation API - bead baap-qkk.5",
+    "proposed_at": "2026-02-19T02:16:02.552665+00:00",
+    "status": "pending",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)"
+  },
+  {
+    "id": "prop-20260219023334",
+    "file": ".claude/mcp/tory_engine.py",
+    "agent": "content-agent",
+    "evidence": "Content-agent has built and maintained tory_engine.py across beads baap-qkk.4, baap-qkk.5, and baap-qkk.6. Memory file confirms ownership.",
+    "proposed_at": "2026-02-19T02:33:34.609381+00:00",
+    "status": "pending",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)"
+  },
+  {
+    "id": "prop-20260219023650",
+    "file": "test_review_queue.py",
+    "agent": "content-agent",
+    "evidence": "E2E test for coach review queue (baap-qkk.10), created by content-agent",
+    "proposed_at": "2026-02-19T02:36:50.519699+00:00",
+    "status": "pending",
+    "auto_approved": false,
+    "reason": "Requires human review (file not in agent's module)"
   }
 ]

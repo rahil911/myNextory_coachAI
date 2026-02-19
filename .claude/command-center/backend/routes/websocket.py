@@ -90,6 +90,7 @@ async def thinktank_websocket(ws: WebSocket):
         "DISPATCH_PROGRESS",
         "DISPATCH_COMPLETE",
         "DISPATCH_ERROR",
+        "DISPATCH_CANCELLED",
         "TOAST",
     }
 
