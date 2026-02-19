@@ -329,18 +329,40 @@ function _renderSessionView(container) {
     const previewPanel = h('div', { class: 'approval-preview-panel', style: { display: 'none' } });
     previewPanel.id = 'approval-preview-panel';
 
+    let awaitingConfirm = false;
+    let confirmSessionId = null;
+
     const approveBtn = h('button', {
       class: 'approval-gate-btn',
       onClick: async () => {
         // Double-click protection: disable immediately
         approveBtn.disabled = true;
-        approveBtn.textContent = 'Approving...';
         errorPanel.style.display = 'none';
-        previewPanel.style.display = 'none';
 
         try {
-          const sessionId = getState().thinktank.sessionId;
+          const sessionId = confirmSessionId || getState().thinktank.sessionId;
           if (!sessionId) throw new Error('No session ID');
+
+          if (awaitingConfirm) {
+            approveBtn.textContent = 'Starting build...';
+            previewPanel.style.display = 'none';
+
+            const result = await api.approveSpec(sessionId);
+            if (result.success) {
+              awaitingConfirm = false;
+              confirmSessionId = null;
+              approveBtn.textContent = 'Build queued! Agents dispatching...';
+              approveBtn.classList.add('approved');
+              approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
+              showToast('Build started!', 'success');
+            } else {
+              throw new Error(result.error || 'Unknown error');
+            }
+            return;
+          }
+
+          approveBtn.textContent = 'Approving...';
+          previewPanel.style.display = 'none';
 
           // Step 1: Dry-run preview
           const preview = await api.approveSpec(sessionId, { dryRun: true });
@@ -356,28 +378,11 @@ function _renderSessionView(container) {
             `;
             previewPanel.style.display = 'block';
 
-            // Change button to "Confirm Build"
+            // Change button to "Confirm Build" and keep a single click handler
+            awaitingConfirm = true;
+            confirmSessionId = sessionId;
             approveBtn.textContent = 'Confirm Build \u2192';
             approveBtn.disabled = false;
-            approveBtn.onclick = async () => {
-              approveBtn.disabled = true;
-              approveBtn.textContent = 'Starting build...';
-              previewPanel.style.display = 'none';
-
-              try {
-                const result = await api.approveSpec(sessionId);
-                if (result.success) {
-                  approveBtn.textContent = 'Build queued! Agents dispatching...';
-                  approveBtn.classList.add('approved');
-                  approveBtn.style.animation = 'approval-burst 0.8s ease forwards';
-                  showToast('Build started!', 'success');
-                } else {
-                  throw new Error(result.error || 'Unknown error');
-                }
-              } catch (err) {
-                _showApprovalError(errorPanel, approveBtn, err.message);
-              }
-            };
             return;
           }
 
@@ -392,6 +397,8 @@ function _renderSessionView(container) {
           }
 
         } catch (err) {
+          awaitingConfirm = false;
+          confirmSessionId = null;
           _showApprovalError(errorPanel, approveBtn, err.message);
         }
       }
