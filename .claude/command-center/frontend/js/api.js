@@ -119,6 +119,11 @@ export const api = {
   getToryProfile:  (learnerId) => request('GET', `/api/tory/profile/${learnerId}`),
   submitToryFeedback: (learnerId, type, comment) =>
     request('POST', '/api/tory/feedback', { learner_id: learnerId, type, comment }),
+
+  // Tory Admin — HR Dashboard
+  getToryAdminCohort:   (qs) => request('GET', `/api/tory/admin/cohort${qs ? '?' + qs : ''}`),
+  getToryAdminLearner:  (id) => request('GET', `/api/tory/admin/learner/${id}`),
+  getToryAdminMetrics:  () => request('GET', '/api/tory/admin/metrics'),
 };
 
 // ── WebSocket Manager ──────────────────────────────────────────────────────

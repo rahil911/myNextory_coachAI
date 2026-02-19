@@ -1,0 +1,527 @@
+/* ==========================================================================
+   TORY-ADMIN.CSS — HR/Admin Dashboard Styles
+   ========================================================================== */
+
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+.ta-tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-1);
+}
+
+.ta-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  font-family: var(--font);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.ta-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-2);
+}
+
+.ta-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────────────── */
+.ta-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+  gap: var(--space-4);
+}
+
+.ta-toolbar-filters {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.ta-filter-input {
+  width: 180px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font);
+  padding: var(--space-2) var(--space-3);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.ta-filter-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ta-filter-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.ta-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ta-count {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+/* ── Table ─────────────────────────────────────────────────────────────────── */
+.ta-table-wrap {
+  overflow-x: auto;
+}
+
+.ta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.ta-table thead th {
+  text-align: left;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.ta-th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.ta-th-sortable:hover {
+  color: var(--text-primary);
+}
+
+.ta-table tbody td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.ta-row {
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.ta-row:hover {
+  background: var(--bg-card-hover);
+}
+
+.ta-empty {
+  text-align: center;
+  padding: var(--space-8) !important;
+  color: var(--text-tertiary);
+}
+
+.ta-learner-name {
+  font-weight: 500;
+  color: var(--text-strong);
+}
+
+.ta-learner-email {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.ta-path-progress {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.ta-match-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ta-mini-bar {
+  width: 48px;
+  height: 4px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ta-mini-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.ta-coach-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ta-compat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ta-compat-green { background: var(--green); }
+.ta-compat-yellow { background: var(--yellow); }
+.ta-compat-red { background: var(--red); }
+
+.ta-muted {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* ── Badge small variant ──────────────────────────────────────────────────── */
+.badge-sm {
+  font-size: 10px;
+  padding: 1px 6px;
+}
+
+/* ── Drilldown ────────────────────────────────────────────────────────────── */
+.ta-back-btn {
+  margin-bottom: var(--space-4);
+}
+
+.ta-dd-header {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.ta-dd-profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.ta-dd-name {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.ta-dd-email {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+.ta-dd-badges {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.ta-dd-coach {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.ta-dd-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.ta-dd-section {
+  margin-bottom: var(--space-5);
+}
+
+.ta-dd-section h4 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: var(--space-3);
+}
+
+.ta-dd-traits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+@media (max-width: 600px) {
+  .ta-dd-traits {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Path List ────────────────────────────────────────────────────────────── */
+.ta-path-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ta-path-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.ta-path-item:hover {
+  background: var(--bg-card-hover);
+}
+
+.ta-path-item.discovery {
+  border-left: 3px solid var(--purple);
+}
+
+.ta-path-item.coach-modified {
+  border-left: 3px solid var(--yellow);
+}
+
+.ta-path-seq {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  min-width: 28px;
+}
+
+.ta-path-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ta-path-title {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ta-path-journey {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.ta-path-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.ta-path-score {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+
+/* ── Events List ──────────────────────────────────────────────────────────── */
+.ta-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ta-event-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+}
+
+.ta-event-details {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.ta-event-coach {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.ta-event-reason {
+  color: var(--text-secondary);
+}
+
+.ta-event-divergence {
+  color: var(--yellow);
+  font-size: var(--font-size-xs);
+}
+
+.ta-event-time {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* ── Metrics Grid ─────────────────────────────────────────────────────────── */
+.ta-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+/* ── Review Bars ──────────────────────────────────────────────────────────── */
+.ta-review-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ta-review-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ta-review-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  min-width: 100px;
+  text-transform: capitalize;
+}
+
+.ta-review-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ta-review-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+.ta-review-pending { background: var(--yellow); }
+.ta-review-approved { background: var(--green); }
+.ta-review-rejected { background: var(--red); }
+.ta-review-needs_review { background: var(--blue); }
+
+.ta-review-count {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  min-width: 120px;
+  text-align: right;
+}
+
+/* ── Heatmap ──────────────────────────────────────────────────────────────── */
+.ta-heatmap-desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+}
+
+.ta-heatmap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--space-2);
+}
+
+.ta-heatmap-cell {
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.ta-heatmap-cell:hover {
+  transform: scale(1.05);
+}
+
+.ta-heatmap-gap {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.ta-heatmap-ok {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+}
+
+.ta-heatmap-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ta-heatmap-value {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.ta-heatmap-gap .ta-heatmap-value {
+  color: var(--red);
+}
+
+.ta-heatmap-ok .ta-heatmap-value {
+  color: var(--green);
+}
+
+/* ── Event Breakdown ──────────────────────────────────────────────────────── */
+.ta-event-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.ta-breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-2);
+  border-radius: var(--radius-sm);
+}
+
+.ta-breakdown-count {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}

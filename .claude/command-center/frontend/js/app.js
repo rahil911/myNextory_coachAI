@@ -19,6 +19,7 @@ import { renderEpics } from './views/epics.js';
 import { renderApprovals } from './views/approvals.js';
 import { renderArchitecture } from './views/architecture.js';
 import { renderTory } from './views/tory.js';
+import { renderToryAdmin } from './views/tory-admin.js';
 
 // ── Initialize ─────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   registerRoute('architecture', renderArchitecture);
   registerRoute('approvals', renderApprovals);
   registerRoute('tory', renderTory);
+  registerRoute('tory-admin', renderToryAdmin);
 
   // 2. Initialize router
   initRouter();
@@ -97,6 +99,8 @@ function setupCommandPalette() {
       shortcut: 'G P', icon: '\u26A0', action: () => { window.location.hash = 'approvals'; } },
     { name: 'Go to Learning Path', description: 'Tory learner roadmap and profile', category: 'Navigation',
       shortcut: 'G Y', icon: '\u2728', action: () => { window.location.hash = 'tory'; } },
+    { name: 'Go to HR Dashboard', description: 'Tory progress tracking for HR/Admin', category: 'Navigation',
+      shortcut: 'G H', icon: '\u25A4', action: () => { window.location.hash = 'tory-admin'; } },
 
     // Actions
     { name: 'New Think Tank Session', description: 'Start brainstorming', category: 'Actions',
@@ -160,6 +164,7 @@ function setupKeyboardShortcuts() {
       case '7': window.location.hash = 'approvals'; break;
       case '8': window.location.hash = 'architecture'; break;
       case '9': window.location.hash = 'tory'; break;
+      case '0': window.location.hash = 'tory-admin'; break;
       case 'r':
       case 'R':
         getCommandPalette().commands.find(c => c.name === 'Refresh Data')?.action();
