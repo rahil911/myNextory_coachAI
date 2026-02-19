@@ -285,9 +285,10 @@ async def cancel_agent_session(user_id: int, session_id: str):
 async def get_content_library(
     review_status: str | None = Query(None),
 ):
-    """Content library with tags, lesson info, and slide counts.
+    """Content library with tags enriched with lesson name, journey, and trait_tags.
 
-    Calls MCP tory_list_content_tags and enriches with lesson metadata.
+    Calls MCP tory_list_content_tags, then joins with nx_lessons + nx_journey_details
+    to provide full lesson metadata grouped by journey.
     """
     from tory_engine import _tool_list_content_tags
 
@@ -296,6 +297,196 @@ async def get_content_library(
         review_status=review_status,
     )
 
+    tags = result.get("tags", [])
+    if not tags:
+        return {"journeys": [], "tag_count": 0, "review_stats": {}}
+
+    # Gather lesson IDs from tags
+    lesson_ids = list({int(t["nx_lesson_id"]) for t in tags if t.get("nx_lesson_id")})
+    if not lesson_ids:
+        return {"journeys": [], "tag_count": 0, "review_stats": {}}
+
+    # Fetch lesson + journey metadata and trait_tags in one query
+    import subprocess
+    id_list = ",".join(str(i) for i in lesson_ids)
+    sql = (
+        f"SELECT ct.id AS tag_id, ct.nx_lesson_id, ct.trait_tags, ct.confidence, "
+        f"ct.review_status, ct.difficulty, ct.learning_style, ct.pass_agreement, "
+        f"l.lesson AS lesson_name, l.description AS lesson_desc, "
+        f"jd.id AS journey_detail_id, jd.journey AS journey_name "
+        f"FROM tory_content_tags ct "
+        f"LEFT JOIN nx_lessons l ON ct.nx_lesson_id = l.id "
+        f"LEFT JOIN nx_journey_details jd ON l.nx_journey_detail_id = jd.id "
+        f"WHERE ct.deleted_at IS NULL AND ct.nx_lesson_id IN ({id_list}) "
+    )
+    valid_statuses = {"pending", "approved", "needs_review", "dismissed", "corrected"}
+    if review_status and review_status in valid_statuses:
+        sql += f"AND ct.review_status = '{review_status}' "
+    sql += "ORDER BY jd.id, l.id"
+
+    proc = subprocess.run(
+        ["mysql", "baap", "--batch", "--raw", "-e", sql],
+        capture_output=True, text=True, timeout=15,
+    )
+    if proc.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"DB query failed: {proc.stderr.strip()}")
+
+    output = proc.stdout.strip()
+    if not output:
+        return {"journeys": [], "tag_count": 0, "review_stats": {}}
+
+    lines = output.split("\n")
+    headers = lines[0].split("\t")
+    rows = []
+    for line in lines[1:]:
+        vals = line.split("\t")
+        rows.append({col: (vals[i] if i < len(vals) and vals[i] != "NULL" else None) for i, col in enumerate(headers)})
+
+    # Parse trait_tags JSON
+    for row in rows:
+        if row.get("trait_tags"):
+            try:
+                row["trait_tags"] = json.loads(row["trait_tags"])
+            except (json.JSONDecodeError, TypeError):
+                row["trait_tags"] = []
+        else:
+            row["trait_tags"] = []
+        # Parse numeric fields
+        for field in ("confidence", "difficulty", "pass_agreement"):
+            row[field] = int(row[field]) if row.get(field) else None
+        row["journey_detail_id"] = int(row["journey_detail_id"]) if row.get("journey_detail_id") else None
+
+    # Group by journey
+    journey_map = {}
+    ungrouped = []
+    for row in rows:
+        jid = row.get("journey_detail_id")
+        if jid:
+            if jid not in journey_map:
+                journey_map[jid] = {
+                    "journey_detail_id": jid,
+                    "journey_name": row.get("journey_name", ""),
+                    "lessons": [],
+                }
+            journey_map[jid]["lessons"].append(row)
+        else:
+            ungrouped.append(row)
+
+    journeys = sorted(journey_map.values(), key=lambda j: j["journey_detail_id"])
+    if ungrouped:
+        journeys.append({
+            "journey_detail_id": None,
+            "journey_name": "Other Content",
+            "lessons": ungrouped,
+        })
+
+    # Review stats
+    stats = {"pending": 0, "approved": 0, "needs_review": 0, "dismissed": 0, "corrected": 0}
+    for row in rows:
+        s = row.get("review_status", "pending")
+        if s in stats:
+            stats[s] += 1
+
+    return {"journeys": journeys, "tag_count": len(rows), "review_stats": stats}
+
+
+# ── Content tag review ─────────────────────────────────────────────────────
+
+class ReviewApproveRequest(BaseModel):
+    reviewer_id: int
+    notes: str | None = None
+
+
+class CorrectedTag(BaseModel):
+    trait: str
+    relevance_score: int = Field(ge=0, le=100)
+    direction: str = Field(pattern="^(builds|leverages|challenges)$")
+
+
+class ReviewCorrectRequest(BaseModel):
+    reviewer_id: int
+    corrected_tags: list[CorrectedTag]
+    corrected_difficulty: int | None = Field(None, ge=1, le=5)
+    corrected_learning_style: str | None = None
+    notes: str | None = None
+
+
+class ReviewDismissRequest(BaseModel):
+    reviewer_id: int
+    notes: str | None = None
+
+
+class BulkApproveRequest(BaseModel):
+    reviewer_id: int
+    min_confidence: int = 70
+    tag_ids: list[int] | None = None
+    notes: str | None = None
+
+
+@router.post("/review/{tag_id}/approve")
+async def review_approve(tag_id: int, req: ReviewApproveRequest):
+    """Approve a content tag. Preserves existing trait_tags."""
+    from tory_engine import _tool_review_approve
+
+    return await _call_mcp_tool(
+        _tool_review_approve,
+        tag_id=tag_id,
+        reviewer_id=req.reviewer_id,
+        notes=req.notes,
+    )
+
+
+@router.post("/review/{tag_id}/correct")
+async def review_correct(tag_id: int, req: ReviewCorrectRequest):
+    """Correct a content tag with updated trait_tags."""
+    from tory_engine import _tool_review_correct
+
+    corrected = [t.model_dump() for t in req.corrected_tags]
+    return await _call_mcp_tool(
+        _tool_review_correct,
+        tag_id=tag_id,
+        reviewer_id=req.reviewer_id,
+        corrected_tags=corrected,
+        corrected_difficulty=req.corrected_difficulty,
+        corrected_learning_style=req.corrected_learning_style,
+        notes=req.notes,
+    )
+
+
+@router.post("/review/{tag_id}/dismiss")
+async def review_dismiss(tag_id: int, req: ReviewDismissRequest):
+    """Dismiss a content tag from review queue."""
+    from tory_engine import _tool_review_dismiss
+
+    return await _call_mcp_tool(
+        _tool_review_dismiss,
+        tag_id=tag_id,
+        reviewer_id=req.reviewer_id,
+        notes=req.notes,
+    )
+
+
+@router.post("/review/bulk-approve")
+async def review_bulk_approve(req: BulkApproveRequest):
+    """Bulk approve tags by confidence threshold or specific IDs."""
+    from tory_engine import _tool_review_bulk_approve
+
+    return await _call_mcp_tool(
+        _tool_review_bulk_approve,
+        reviewer_id=req.reviewer_id,
+        min_confidence=req.min_confidence,
+        tag_ids=req.tag_ids,
+        notes=req.notes,
+    )
+
+
+@router.get("/review/stats")
+async def review_stats():
+    """Get review queue statistics."""
+    from tory_engine import _tool_review_queue_stats
+
+    result_json = await _tool_review_queue_stats()
+    result = json.loads(result_json)
     return result
 
 

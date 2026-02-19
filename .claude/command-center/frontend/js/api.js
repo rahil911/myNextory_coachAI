@@ -145,10 +145,27 @@ export const api = {
     const qs = reviewStatus ? `?review_status=${encodeURIComponent(reviewStatus)}` : '';
     return request('GET', `/api/tory/content-library${qs}`);
   },
-  getToryLessonSlides:  (lessonDetailId) => request('GET', `/api/tory/lesson/${lessonDetailId}/slides`),
+  getToryLessonSlides:  (lessonDetailId) => request('GET', `/api/tory/lesson/${lessonDetailId}/slides`, null, 30000),
   reorderToryPath:      (userId, body) => request('PUT', `/api/tory/path/${userId}/reorder`, body),
   swapToryLesson:       (userId, body) => request('POST', `/api/tory/path/${userId}/swap`, body),
   lockToryRecommendation: (userId, recId, body) => request('POST', `/api/tory/path/${userId}/lock/${recId}`, body),
+
+  // Tory Content Review
+  reviewApprove:        (tagId, reviewerId, notes) =>
+    request('POST', `/api/tory/review/${tagId}/approve`, { reviewer_id: reviewerId, notes }),
+  reviewCorrect:        (tagId, reviewerId, correctedTags, opts = {}) =>
+    request('POST', `/api/tory/review/${tagId}/correct`, {
+      reviewer_id: reviewerId,
+      corrected_tags: correctedTags,
+      corrected_difficulty: opts.difficulty,
+      corrected_learning_style: opts.learningStyle,
+      notes: opts.notes,
+    }),
+  reviewDismiss:        (tagId, reviewerId, notes) =>
+    request('POST', `/api/tory/review/${tagId}/dismiss`, { reviewer_id: reviewerId, notes }),
+  reviewBulkApprove:    (reviewerId, minConfidence = 70) =>
+    request('POST', '/api/tory/review/bulk-approve', { reviewer_id: reviewerId, min_confidence: minConfidence }),
+  getReviewStats:       () => request('GET', '/api/tory/review/stats'),
 };
 
 // ── WebSocket Manager ──────────────────────────────────────────────────────
