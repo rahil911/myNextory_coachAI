@@ -155,3 +155,109 @@ async def thinktank_websocket(ws: WebSocket):
         reader_task.cancel()
         writer_task.cancel()
         await bus.unsubscribe(queue)
+
+
+@router.websocket("/ws/tory-agent")
+async def tory_agent_websocket(ws: WebSocket):
+    """Dedicated WebSocket for Tory Agent real-time event streaming.
+
+    Filtered view of the event bus that only sends TORY_AGENT_* events.
+    Accepts messages from the client for bidirectional communication.
+    """
+    await ws.accept()
+
+    # Subscribe FIRST so we don't miss events during catch-up
+    bus = _get_event_bus()
+    queue = await bus.subscribe()
+
+    # Send existing events as catch-up (fixes race condition where events
+    # fire before WebSocket connects)
+    seen_timestamps = set()
+    session_id = ws.query_params.get("session")
+
+    try:
+        from main import get_tory_agent_service
+        svc = get_tory_agent_service()
+        session = svc.get_session(session_id) if session_id else None
+        if session and hasattr(session, "events"):
+            for evt in session.events:
+                evt_dict = evt if isinstance(evt, dict) else evt.model_dump()
+                ts = evt_dict.get("ts")
+                if ts:
+                    seen_timestamps.add(ts)
+                await ws.send_json(evt_dict)
+    except Exception:
+        pass  # ToryAgentService not available yet, skip catch-up
+
+    tory_agent_events = {
+        "TORY_AGENT_STARTED",
+        "TORY_AGENT_PROGRESS",
+        "TORY_AGENT_COMPLETED",
+        "TORY_AGENT_FAILED",
+        "TOAST",
+    }
+
+    async def reader():
+        """Read messages from the WebSocket client.
+
+        Uses session_id from query params (captured at WS connect time).
+        """
+        try:
+            while True:
+                data = await ws.receive_text()
+                msg = json.loads(data)
+                if not session_id:
+                    continue
+                if msg.get("type") == "message":
+                    from main import get_tory_agent_service
+                    svc = get_tory_agent_service()
+                    await svc.resume_agent(session_id, msg.get("text", ""))
+                elif msg.get("type") == "cancel":
+                    from main import get_tory_agent_service
+                    svc = get_tory_agent_service()
+                    await svc.cancel_agent(session_id)
+        except WebSocketDisconnect:
+            pass
+        except Exception:
+            pass
+
+    async def writer():
+        """Push Tory Agent events to the WebSocket client."""
+        try:
+            while True:
+                event_json = await queue.get()
+                try:
+                    event = json.loads(event_json)
+                    if event.get("type") not in tory_agent_events:
+                        continue
+                    # Filter by session_id
+                    payload = event.get("payload", {})
+                    event_session = payload.get("session_id")
+                    if session_id and event_session and event_session != session_id:
+                        continue
+                    # Deduplicate: skip events already sent during catch-up
+                    ts = event.get("ts")
+                    if ts and ts in seen_timestamps:
+                        continue
+                    if ts:
+                        seen_timestamps.add(ts)
+                    await ws.send_text(event_json)
+                except (json.JSONDecodeError, Exception):
+                    pass  # Skip bad event, don't crash the writer loop
+        except WebSocketDisconnect:
+            pass
+        except Exception:
+            pass
+
+    # Run reader and writer concurrently
+    reader_task = asyncio.create_task(reader())
+    writer_task = asyncio.create_task(writer())
+
+    try:
+        await asyncio.gather(reader_task, writer_task)
+    except Exception:
+        pass
+    finally:
+        reader_task.cancel()
+        writer_task.cancel()
+        await bus.unsubscribe(queue)
