@@ -876,22 +876,12 @@ async def _tool_interpret_profile(nx_user_id: int) -> str:
 
     # Determine motivation cluster from Q&A
     motivation_drivers = []
-    if qa_answers.get("advance_your_career"):
-        motivation_drivers.append(
-            qa_answers["advance_your_career"]
-            if isinstance(qa_answers["advance_your_career"], str)
-            else str(qa_answers["advance_your_career"])
-        )
-    if qa_answers.get("imp_thing_career_plan"):
-        val = qa_answers["imp_thing_career_plan"]
+    for field in ("advance_your_career", "imp_thing_career_plan", "success_look_like"):
+        val = qa_answers.get(field)
+        if not val:
+            continue
         if isinstance(val, list):
-            motivation_drivers.extend(val)
-        else:
-            motivation_drivers.append(str(val))
-    if qa_answers.get("success_look_like"):
-        val = qa_answers["success_look_like"]
-        if isinstance(val, list):
-            motivation_drivers.extend(val)
+            motivation_drivers.extend(str(v) for v in val)
         else:
             motivation_drivers.append(str(val))
 
@@ -904,16 +894,59 @@ async def _tool_interpret_profile(nx_user_id: int) -> str:
     elif epp_scores.get("Conscientiousness", 50) > 70:
         learning_style = "theoretical"
 
-    # Build narrative
+    # Build narrative (second person, 3-5 sentences, top 3 strengths + 2 growth areas)
     top_strengths = [s["trait"] for s in strengths[:3]]
-    top_gaps = [g["trait"] for g in gaps[:3]]
-    narrative = (
-        f"This learner shows strong capabilities in {', '.join(top_strengths) if top_strengths else 'several areas'}. "
-        f"Growth opportunities exist in {', '.join(top_gaps) if top_gaps else 'few areas'}, "
-        f"with a {learning_style} learning style preference."
-    )
+    top_gaps = [g["trait"] for g in gaps[:2]]
+
+    # Human-readable trait names
+    trait_labels = {
+        "Achievement": "achievement drive", "Motivation": "intrinsic motivation",
+        "Competitiveness": "competitiveness", "Managerial": "managerial ability",
+        "Assertiveness": "assertiveness", "Extroversion": "extroversion",
+        "Cooperativeness": "cooperativeness", "Patience": "patience",
+        "SelfConfidence": "self-confidence", "Conscientiousness": "conscientiousness",
+        "Openness": "openness to new ideas", "Stability": "emotional stability",
+        "StressTolerance": "stress tolerance",
+    }
+    def label(t):
+        if t.endswith("_JobFit"):
+            return t.replace("_JobFit", "").lower() + " aptitude"
+        return trait_labels.get(t, t.lower())
+
+    str_labels = [label(t) for t in top_strengths]
+    gap_labels = [label(t) for t in top_gaps]
+
+    style_desc = {
+        "active": "You learn best through hands-on activities and interactive exercises.",
+        "reflective": "You learn best when given time to reflect and process information deeply.",
+        "theoretical": "You thrive with structured, methodical content and clear frameworks.",
+        "blended": "You adapt well across different learning formats and approaches.",
+    }
+
+    parts = []
+    if str_labels:
+        parts.append(
+            f"You show strong {str_labels[0]}, {str_labels[1]}, and {str_labels[2]}."
+            if len(str_labels) >= 3
+            else f"You show strong {' and '.join(str_labels)}."
+        )
+        parts.append(
+            f"These strengths suggest you tend to excel in roles that value "
+            f"collaboration, reliability, and initiative."
+        )
+    if gap_labels:
+        parts.append(
+            f"Your growth areas include {' and '.join(gap_labels)}, "
+            f"which your learning path will focus on developing."
+        )
+    parts.append(style_desc.get(learning_style, style_desc["blended"]))
     if motivation_drivers:
-        narrative += f" Key motivational drivers: {', '.join(motivation_drivers[:3])}."
+        clean_drivers = [d.strip().rstrip(".").lower() for d in motivation_drivers[:2]]
+        parts.append(
+            f"You are driven by {' and '.join(clean_drivers)}."
+        )
+
+    narrative = " ".join(parts[:5])
 
     # Determine confidence
     confidence = 50  # Base confidence from EPP alone
