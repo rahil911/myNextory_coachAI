@@ -301,6 +301,29 @@ CREATE TABLE IF NOT EXISTS tory_coach_flags (
     KEY idx_tory_flag_user_coach (nx_user_id, coach_id)
 ) ENGINE=InnoDB ROW_FORMAT=Dynamic;
 
+-- ---------------------------------------------------------------------------
+-- 11. tory_feedback
+--    Learner feedback on their profile ('This doesn't sound like me')
+--    Tracks profile accuracy signals for reassessment triggering
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tory_feedback (
+    id              int(11)       NOT NULL AUTO_INCREMENT,
+    nx_user_id      bigint(20)    NOT NULL COMMENT 'FK → nx_users.id',
+    profile_id      int(11)       NULL COMMENT 'FK → tory_learner_profiles.id',
+    type            varchar(30)   NOT NULL COMMENT 'not_like_me | too_vague | incorrect_strength | other',
+    comment         longtext      NULL COMMENT 'Optional learner comment',
+    profile_version int(11)       NULL COMMENT 'Version of profile when feedback was given',
+    resolved        int(11)       NOT NULL DEFAULT 0 COMMENT '1 = feedback addressed in subsequent profile version',
+    resolved_at     datetime      NULL,
+    created_at      datetime      NULL,
+    updated_at      datetime      NULL,
+    deleted_at      datetime      NULL,
+    PRIMARY KEY (id),
+    KEY idx_tory_feedback_user (nx_user_id),
+    KEY idx_tory_feedback_profile (profile_id),
+    KEY idx_tory_feedback_type (type)
+) ENGINE=InnoDB ROW_FORMAT=Dynamic;
+
 -- =============================================================================
 -- VERIFICATION
 -- =============================================================================
