@@ -67,6 +67,14 @@ DISCOVERY_LESSON_COUNT = 5
 CONFIDENCE_AUTO_APPROVE = 75  # Above this, tags are auto-approved
 CONFIDENCE_NEEDS_REVIEW = 50  # Below this, tags need human review
 
+# Reassessment config
+REASSESSMENT_QUARTERLY_DAYS = 90  # Quarterly EPP retake interval
+REASSESSMENT_MINI_QUESTION_COUNT = (3, 5)  # Min/max questions for mini-assessment
+BACKPACK_SIGNAL_THRESHOLD = 10  # Number of new interactions to trigger reassessment
+DRIFT_THRESHOLD_PCT = 15  # Profile drift % to trigger path re-ranking
+CRITERIA_CORP_MAX_RETRIES = 3
+CRITERIA_CORP_BASE_DELAY = 1.0  # seconds, for exponential backoff
+
 # ---------------------------------------------------------------------------
 # MySQL helpers (mirrors db_tools.py pattern)
 # ---------------------------------------------------------------------------
@@ -354,11 +362,34 @@ def get_active_recommendations(nx_user_id: int) -> list[dict]:
     return rows
 
 
+def get_locked_recommendations(nx_user_id: int) -> list[dict]:
+    """Fetch coach-locked recommendations that must be preserved through re-ranking."""
+    _, rows = mysql_query(
+        f"SELECT * FROM tory_recommendations WHERE nx_user_id = {int(nx_user_id)} "
+        f"AND locked_by_coach = 1 AND deleted_at IS NULL ORDER BY sequence ASC"
+    )
+    return rows
+
+
 def get_recommendation_by_id(rec_id: int) -> dict | None:
     """Fetch a single recommendation by ID."""
     _, rows = mysql_query(
         f"SELECT * FROM tory_recommendations WHERE id = {int(rec_id)} "
         f"AND deleted_at IS NULL LIMIT 1"
+    )
+    return rows[0] if rows else None
+
+
+def get_last_reassessment(nx_user_id: int, reassessment_type: str | None = None) -> dict | None:
+    """Fetch the most recent completed reassessment for a user."""
+    where = (
+        f"WHERE nx_user_id = {int(nx_user_id)} AND status = 'completed' "
+        f"AND deleted_at IS NULL"
+    )
+    if reassessment_type:
+        where += f" AND type = '{reassessment_type}'"
+    _, rows = mysql_query(
+        f"SELECT * FROM tory_reassessments {where} ORDER BY completed_at DESC LIMIT 1"
     )
     return rows[0] if rows else None
 
@@ -371,21 +402,269 @@ def get_path_events(nx_user_id: int, limit: int = 50) -> list[dict]:
     )
     return rows
 
+def count_new_interactions_since(nx_user_id: int, since: str) -> dict:
+    """Count new backpack saves, ratings, and task completions since a datetime."""
+    counts = {}
+    for table, col in [("backpacks", "created_by"), ("nx_user_ratings", "created_by"), ("tasks", "created_by")]:
+        _, rows = mysql_query(
+            f"SELECT COUNT(*) as cnt FROM {table} "
+            f"WHERE {col} = {int(nx_user_id)} AND created_at > '{since}' "
+            f"AND deleted_at IS NULL"
+        )
+        counts[table] = int(rows[0]["cnt"]) if rows else 0
+    return counts
+
+
+# ---------------------------------------------------------------------------
+# Criteria Corp API Client (with retry + fallback)
+# ---------------------------------------------------------------------------
+
+
+def _load_criteria_credentials() -> dict | None:
+    """Load Criteria Corp API credentials from integration config."""
+    cred_path = PROJECT_ROOT / ".claude" / "integrations" / "criteria-corp" / "credentials.json"
+    if not cred_path.exists():
+        return None
+    try:
+        return json.loads(cred_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def criteria_corp_fetch_scores(
+    order_id: str,
+    credentials: dict | None = None,
+) -> dict | None:
+    """Fetch updated EPP scores from Criteria Corp API.
+
+    Implements retry with exponential backoff (3 retries, 1s/2s/4s delays).
+    Returns parsed scores dict or None on failure.
+    """
+    import time
+    import urllib.request
+    import urllib.error
+
+    if credentials is None:
+        credentials = _load_criteria_credentials()
+    if not credentials:
+        return None
+
+    api_url = credentials.get("api_url", "https://api.criteriacorp.com/v1")
+    api_key = credentials.get("api_key", "")
+    if not api_key:
+        return None
+
+    url = f"{api_url}/orders/{order_id}/scores"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    last_error = None
+    for attempt in range(CRITERIA_CORP_MAX_RETRIES):
+        try:
+            req = urllib.request.Request(url, headers=headers, method="GET")
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode())
+                return data
+        except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError) as e:
+            last_error = e
+            if attempt < CRITERIA_CORP_MAX_RETRIES - 1:
+                delay = CRITERIA_CORP_BASE_DELAY * (2 ** attempt)
+                time.sleep(delay)
+
+    # All retries failed
+    print(
+        f"[tory-engine] Criteria Corp API failed after {CRITERIA_CORP_MAX_RETRIES} retries: {last_error}",
+        file=sys.stderr,
+    )
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Reassessment Engine
+# ---------------------------------------------------------------------------
+
+
+def compute_profile_drift(old_scores: dict, new_scores: dict) -> dict:
+    """Compare two EPP score sets and compute drift metrics.
+
+    Returns {drift_pct, changed_traits, delta_map}.
+    """
+    all_traits = set(old_scores.keys()) | set(new_scores.keys())
+    if not all_traits:
+        return {"drift_pct": 0, "changed_traits": [], "delta_map": {}}
+
+    delta_map = {}
+    total_delta = 0.0
+
+    for trait in all_traits:
+        old_val = old_scores.get(trait, 50.0)
+        new_val = new_scores.get(trait, 50.0)
+        delta = new_val - old_val
+        delta_map[trait] = round(delta, 2)
+        total_delta += abs(delta)
+
+    avg_delta = total_delta / len(all_traits) if all_traits else 0
+    drift_pct = round(avg_delta, 2)
+
+    changed_traits = [
+        {"trait": t, "old": old_scores.get(t, 50.0), "new": new_scores.get(t, 50.0), "delta": d}
+        for t, d in delta_map.items()
+        if abs(d) >= 5  # Only report meaningful changes (5+ points)
+    ]
+    changed_traits.sort(key=lambda x: abs(x["delta"]), reverse=True)
+
+    return {
+        "drift_pct": drift_pct,
+        "changed_traits": changed_traits,
+        "delta_map": delta_map,
+    }
+
+
+def update_profile_from_scores(
+    nx_user_id: int,
+    new_epp_scores: dict,
+    source: str = "reassessment",
+) -> dict:
+    """Create a new profile version with updated EPP scores.
+
+    Returns the new profile record.
+    """
+    existing = get_current_profile(nx_user_id)
+    if not existing:
+        raise ValueError(f"No existing profile for user {nx_user_id}")
+
+    # Re-classify strengths and gaps from new scores
+    sorted_traits = sorted(new_epp_scores.items(), key=lambda x: x[1], reverse=True)
+    strengths = [{"trait": t, "score": s, "type": "strength"} for t, s in sorted_traits if s >= 60]
+    gaps = [{"trait": t, "score": s, "type": "gap"} for t, s in sorted_traits if s <= 40]
+
+    # Preserve learning style and motivation from existing profile
+    learning_style = existing.get("learning_style", "blended")
+    try:
+        motivation = existing.get("motivation_cluster", "[]")
+        if isinstance(motivation, str):
+            motivation = json.loads(motivation)
+    except (json.JSONDecodeError, TypeError):
+        motivation = []
+
+    # Build updated narrative
+    top_str = [s["trait"] for s in strengths[:3]]
+    top_gap = [g["trait"] for g in gaps[:2]]
+    parts = []
+    if top_str:
+        labels = [_humanize_trait(t) for t in top_str]
+        parts.append(f"You show strong {', '.join(labels[:3])}.")
+    if top_gap:
+        labels = [_humanize_trait(t) for t in top_gap]
+        parts.append(f"Your growth areas include {' and '.join(labels)}.")
+    parts.append(f"Updated from {source} reassessment.")
+    narrative = " ".join(parts)
+
+    new_version = int(existing["version"]) + 1
+    confidence = min(95, int(existing.get("confidence", 50)) + 5)
+    now = now_str()
+
+    epp_json = escape_sql(json.dumps(new_epp_scores))
+    motivation_json = escape_sql(json.dumps(motivation))
+    strengths_json = escape_sql(json.dumps(strengths))
+    gaps_json = escape_sql(json.dumps(gaps))
+    narrative_esc = escape_sql(narrative)
+    onboarding_id = existing.get("onboarding_id") or "NULL"
+
+    sql = (
+        f"INSERT INTO tory_learner_profiles "
+        f"(nx_user_id, onboarding_id, epp_summary, motivation_cluster, "
+        f"strengths, gaps, learning_style, profile_narrative, confidence, "
+        f"version, source, feedback_flags, created_at, updated_at) "
+        f"VALUES ({int(nx_user_id)}, {onboarding_id}, {epp_json}, {motivation_json}, "
+        f"{strengths_json}, {gaps_json}, '{learning_style}', {narrative_esc}, "
+        f"{confidence}, {new_version}, '{source}', 0, '{now}', '{now}')"
+    )
+    mysql_write(sql)
+
+    return get_current_profile(nx_user_id)
+
+
+def write_reassessment(
+    nx_user_id: int,
+    profile_id: int | None,
+    reassessment_type: str,
+    trigger_reason: str,
+    status: str = "pending",
+    assessment_data: dict | None = None,
+    previous_scores: dict | None = None,
+    new_scores: dict | None = None,
+    result_delta: dict | None = None,
+    drift_detected: bool = False,
+    path_action: str | None = None,
+    criteria_order_id: str | None = None,
+) -> int:
+    """Write a reassessment record to tory_reassessments. Returns the new row ID."""
+    now = now_str()
+
+    def _js(val):
+        return escape_sql(json.dumps(val)) if val else "NULL"
+
+    sql = (
+        f"INSERT INTO tory_reassessments "
+        f"(nx_user_id, profile_id, type, trigger_reason, status, "
+        f"assessment_data, previous_scores, new_scores, result_delta, "
+        f"drift_detected, path_action, criteria_order_id, "
+        f"created_at, updated_at) "
+        f"VALUES ({int(nx_user_id)}, {int(profile_id) if profile_id else 'NULL'}, "
+        f"'{reassessment_type}', '{trigger_reason}', '{status}', "
+        f"{_js(assessment_data)}, {_js(previous_scores)}, {_js(new_scores)}, "
+        f"{_js(result_delta)}, {1 if drift_detected else 0}, "
+        f"{escape_sql(path_action) if path_action else 'NULL'}, "
+        f"{escape_sql(criteria_order_id) if criteria_order_id else 'NULL'}, "
+        f"'{now}', '{now}')"
+    )
+    mysql_write(sql)
+
+    # Get the new ID
+    _, rows = mysql_query(
+        f"SELECT id FROM tory_reassessments WHERE nx_user_id = {int(nx_user_id)} "
+        f"ORDER BY id DESC LIMIT 1"
+    )
+    return int(rows[0]["id"]) if rows else 0
+
+
+def complete_reassessment(reassessment_id: int, updates: dict) -> None:
+    """Mark a reassessment as completed with result data."""
+    now = now_str()
+    set_parts = [f"status = 'completed'", f"completed_at = '{now}'", f"updated_at = '{now}'"]
+
+    for field in ("new_scores", "result_delta", "assessment_data"):
+        if field in updates:
+            set_parts.append(f"{field} = {escape_sql(json.dumps(updates[field]))}")
+    if "drift_detected" in updates:
+        set_parts.append(f"drift_detected = {1 if updates['drift_detected'] else 0}")
+    if "path_action" in updates:
+        set_parts.append(f"path_action = {escape_sql(updates['path_action'])}")
+    if "profile_id" in updates:
+        set_parts.append(f"profile_id = {int(updates['profile_id'])}")
+
+    mysql_write(
+        f"UPDATE tory_reassessments SET {', '.join(set_parts)} WHERE id = {int(reassessment_id)}"
+    )
+
 
 def write_path_event(
     nx_user_id: int,
     coach_id: int,
     event_type: str,
     reason: str,
-    details: dict,
-    recommendation_ids: list[int],
+    details: dict | None = None,
+    recommendation_ids: list[int] | None = None,
     divergence_pct: int | None = None,
-) -> None:
-    """Write an audit event to tory_path_events."""
+) -> int:
+    """Write an audit event to tory_path_events. Returns the new row ID."""
     now = now_str()
     reason_esc = escape_sql(reason)
-    details_esc = escape_sql(json.dumps(details))
-    rec_ids_esc = escape_sql(json.dumps(recommendation_ids))
+    details_esc = escape_sql(json.dumps(details)) if details else "NULL"
+    rec_ids_esc = escape_sql(json.dumps(recommendation_ids)) if recommendation_ids else "NULL"
     flagged = 1 if divergence_pct is not None and divergence_pct > 30 else 0
     div_val = divergence_pct if divergence_pct is not None else "NULL"
 
@@ -399,6 +678,12 @@ def write_path_event(
         f"{div_val}, {flagged}, '{now}', '{now}')"
     )
     mysql_write(sql)
+
+    _, rows = mysql_query(
+        f"SELECT id FROM tory_path_events WHERE nx_user_id = {int(nx_user_id)} "
+        f"ORDER BY id DESC LIMIT 1"
+    )
+    return int(rows[0]["id"]) if rows else 0
 
 
 def compute_divergence(nx_user_id: int) -> int:
@@ -438,6 +723,188 @@ def compute_divergence(nx_user_id: int) -> int:
     # Simple divergence: % of items that have been coach-modified
     divergence = round(modified_count / total * 100)
     return min(100, divergence)
+
+
+def rerank_recommendations(
+    nx_user_id: int,
+    new_profile: dict,
+    reassessment_id: int,
+    trigger_reason: str,
+) -> dict:
+    """Re-run the scoring engine against an updated profile, preserving coach-locked items.
+
+    This is the core adaptive re-ranking worker. Steps:
+    1. Load locked recommendations (preserved through re-ranking)
+    2. Load current profile traits
+    3. Re-score all content against updated profile
+    4. Merge: locked items keep their positions, unlocked items re-ranked
+    5. Write new recommendations with new batch_id
+    6. Record path event with type=reassessed
+    7. Return summary of changes
+
+    Returns dict with old_recs, new_recs, changes, path_event_id.
+    """
+    import uuid
+
+    profile_id = int(new_profile["id"])
+
+    # 1. Load locked recommendations
+    locked = get_locked_recommendations(nx_user_id)
+    locked_lesson_ids = {int(r["nx_lesson_id"]) for r in locked}
+
+    # 2. Load profile traits
+    try:
+        strengths = json.loads(new_profile.get("strengths", "[]"))
+        gaps = json.loads(new_profile.get("gaps", "[]"))
+    except (json.JSONDecodeError, TypeError):
+        strengths, gaps = [], []
+    learner_traits = gaps + strengths
+
+    # 3. Load pedagogy config
+    user = get_user_info(nx_user_id)
+    client_id = user.get("client_id") if user else None
+    pedagogy = get_client_pedagogy(int(client_id)) if client_id else None
+
+    mode = pedagogy["mode"] if pedagogy else "balanced"
+    gap_ratio = int(pedagogy["gap_ratio"]) if pedagogy else 50
+    strength_ratio = int(pedagogy["strength_ratio"]) if pedagogy else 50
+    if mode == "gap_fill":
+        gap_ratio, strength_ratio = 70, 30
+    elif mode == "strength_lead":
+        gap_ratio, strength_ratio = 30, 70
+
+    pedagogy_info = {"mode": mode, "gap_ratio": gap_ratio, "strength_ratio": strength_ratio}
+
+    # 4. Fetch content tags and re-score
+    content_tags = get_content_tags(confidence_threshold=70)
+    scored = score_content_for_learner(
+        learner_traits, content_tags, mode, gap_ratio, strength_ratio
+    )
+
+    # Enrich with content_tag_id
+    tag_by_lesson = {int(t["nx_lesson_id"]): t for t in content_tags}
+    for lesson in scored:
+        lid = int(lesson["nx_lesson_id"])
+        if lid in tag_by_lesson:
+            lesson["content_tag_id"] = int(tag_by_lesson[lid]["id"])
+
+    # Apply sequencing (excluding locked lessons from re-ordering)
+    unlocked_scored = [s for s in scored if int(s["nx_lesson_id"]) not in locked_lesson_ids]
+    lesson_journey_map = get_lesson_journey_map()
+    sequenced = apply_sequencing(unlocked_scored, lesson_journey_map=lesson_journey_map, max_lessons=20)
+
+    # 5. Merge: locked items at their original positions, unlocked fill the rest
+    # Generate rationale for unlocked
+    for lesson in sequenced:
+        lesson["is_discovery"] = False
+        lesson["match_rationale"] = generate_rationale(lesson, is_discovery=False)
+
+    # Build final list: locked items first (at their sequence), then unlocked
+    final_recs = []
+    seq = 1
+
+    # Insert locked at their positions
+    locked_by_seq = {int(r.get("sequence", 0)): r for r in locked}
+
+    # Interleave: place locked items at their original positions
+    unlocked_iter = iter(sequenced)
+    max_seq = max(len(sequenced) + len(locked), 20)
+
+    for pos in range(1, max_seq + 1):
+        if pos in locked_by_seq:
+            rec = locked_by_seq[pos]
+            final_recs.append({
+                "nx_lesson_id": int(rec["nx_lesson_id"]),
+                "content_tag_id": rec.get("content_tag_id"),
+                "score": float(rec.get("match_score", 0)),
+                "adjusted_score": float(rec.get("adjusted_score", rec.get("match_score", 0))),
+                "gap_contribution": float(rec.get("gap_contribution", 0)),
+                "strength_contribution": float(rec.get("strength_contribution", 0)),
+                "matching_traits": json.loads(rec.get("matching_traits", "[]")) if isinstance(rec.get("matching_traits"), str) else rec.get("matching_traits", []),
+                "match_rationale": rec.get("match_rationale", "Coach-locked recommendation."),
+                "is_discovery": False,
+                "locked_by_coach": True,
+                "confidence": int(rec.get("confidence", 0) or 0),
+                "sequence": seq,
+                "nx_journey_detail_id": rec.get("nx_journey_detail_id"),
+            })
+        else:
+            try:
+                unlocked = next(unlocked_iter)
+                final_recs.append({
+                    **unlocked,
+                    "locked_by_coach": False,
+                    "sequence": seq,
+                })
+            except StopIteration:
+                break
+        seq += 1
+
+    # Cap at 20
+    final_recs = final_recs[:20]
+    for i, rec in enumerate(final_recs):
+        rec["sequence"] = i + 1
+
+    # 6. Soft-delete old recommendations and write new ones
+    batch_id = f"rerank-{nx_user_id}-{uuid.uuid4().hex[:8]}"
+    now = now_str()
+    mysql_write(
+        f"UPDATE tory_recommendations SET deleted_at = '{now}' "
+        f"WHERE nx_user_id = {int(nx_user_id)} AND deleted_at IS NULL"
+    )
+
+    rec_count = write_recommendations(nx_user_id, profile_id, final_recs, pedagogy_info, batch_id)
+
+    # Re-lock the coach-locked items in the new batch
+    for rec in final_recs:
+        if rec.get("locked_by_coach"):
+            mysql_write(
+                f"UPDATE tory_recommendations SET locked_by_coach = 1 "
+                f"WHERE nx_user_id = {int(nx_user_id)} AND batch_id = '{batch_id}' "
+                f"AND nx_lesson_id = {int(rec['nx_lesson_id'])} AND deleted_at IS NULL"
+            )
+
+    # 7. Record path event
+    coach_info = get_user_coach(nx_user_id)
+    coach_id = int(coach_info["coach_id"]) if coach_info else 0
+
+    # Build human-readable reason
+    new_rec_ids = []
+    _, new_recs_db = mysql_query(
+        f"SELECT id FROM tory_recommendations WHERE batch_id = '{batch_id}' "
+        f"AND deleted_at IS NULL ORDER BY sequence ASC"
+    )
+    new_rec_ids = [int(r["id"]) for r in new_recs_db]
+
+    reason = (
+        f"Path reassessed due to {trigger_reason}. "
+        f"Reassessment #{reassessment_id}. "
+        f"{len(locked)} coach-locked items preserved. "
+        f"{rec_count} total recommendations generated."
+    )
+
+    event_id = write_path_event(
+        nx_user_id=nx_user_id,
+        coach_id=coach_id,
+        event_type="reassessed",
+        reason=reason,
+        details={
+            "reassessment_id": reassessment_id,
+            "trigger": trigger_reason,
+            "locked_count": len(locked),
+            "new_batch_id": batch_id,
+            "profile_version": int(new_profile.get("version", 0)),
+        },
+        recommendation_ids=new_rec_ids,
+    )
+
+    return {
+        "batch_id": batch_id,
+        "recommendations_written": rec_count,
+        "locked_preserved": len(locked),
+        "path_event_id": event_id,
+        "reason": reason,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1336,6 +1803,92 @@ async def list_tools() -> list[Tool]:
                     },
                 },
                 "required": [],
+            },
+        ),
+        Tool(
+            name="tory_schedule_quarterly_epp",
+            description=(
+                "Schedule a quarterly EPP retake for a learner via Criteria Corp API. "
+                "Creates a pending reassessment record. When the API returns updated scores, "
+                "computes profile drift, updates the learner profile, and triggers path "
+                "re-ranking. Falls back to mini-assessment data if API fails after 3 retries."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                },
+                "required": ["nx_user_id"],
+            },
+        ),
+        Tool(
+            name="tory_mini_assessment",
+            description=(
+                "Process a mini-assessment submitted mid-lesson (POST /api/tory/mini-assessment). "
+                "Accepts 3-5 question responses, stores as type=mini reassessment, computes "
+                "profile adjustments, and triggers path re-ranking if drift exceeds threshold."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                    "responses": {
+                        "type": "array",
+                        "description": "Array of {question_id, trait, response_value (0-100)} objects",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "question_id": {"type": "string"},
+                                "trait": {"type": "string"},
+                                "response_value": {"type": "number"},
+                            },
+                            "required": ["question_id", "trait", "response_value"],
+                        },
+                    },
+                },
+                "required": ["nx_user_id", "responses"],
+            },
+        ),
+        Tool(
+            name="tory_check_passive_signals",
+            description=(
+                "Check if a learner's passive engagement signals (backpack saves, ratings, "
+                "task completions) have crossed the threshold for triggering a reassessment. "
+                "If threshold is met, aggregates signals as type=backpack_derived reassessment "
+                "and triggers path re-ranking."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                },
+                "required": ["nx_user_id"],
+            },
+        ),
+        Tool(
+            name="tory_reassessment_status",
+            description=(
+                "Get the reassessment history and scheduling status for a learner. "
+                "Shows completed, pending, and upcoming reassessments with drift data."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                },
+                "required": ["nx_user_id"],
             },
         ),
     ]
@@ -2457,6 +3010,473 @@ async def _tool_dashboard_snapshot(
         return json.dumps({"error": "Provide nx_user_id, client_id, or department_id"})
 
 
+async def _tool_schedule_quarterly_epp(nx_user_id: int) -> str:
+    """Schedule a quarterly EPP retake and process results.
+
+    Flow:
+    1. Check if quarterly retake is due (90 days since last quarterly_epp)
+    2. Fetch the user's Criteria Corp order ID from onboarding
+    3. Call Criteria Corp API to fetch updated scores (3 retries with exponential backoff)
+    4. If API fails, fall back to most recent mini-assessment data
+    5. Compute profile drift between old and new scores
+    6. If drift >= threshold, update profile and trigger re-ranking
+    7. Write reassessment record and path event
+    """
+    profile = get_current_profile(nx_user_id)
+    if not profile:
+        return json.dumps({"error": f"No profile for user {nx_user_id}"})
+
+    # Check if quarterly retake is due
+    last_quarterly = get_last_reassessment(nx_user_id, "quarterly_epp")
+    if last_quarterly:
+        completed_at = last_quarterly.get("completed_at", "")
+        if completed_at and completed_at != "NULL":
+            from datetime import datetime as dt
+            try:
+                last_date = dt.strptime(completed_at, "%Y-%m-%d %H:%M:%S")
+                days_since = (dt.now() - last_date).days
+                if days_since < REASSESSMENT_QUARTERLY_DAYS:
+                    return json.dumps({
+                        "status": "not_due",
+                        "days_since_last": days_since,
+                        "days_until_next": REASSESSMENT_QUARTERLY_DAYS - days_since,
+                        "message": f"Quarterly EPP retake not due for {REASSESSMENT_QUARTERLY_DAYS - days_since} more days.",
+                    })
+            except (ValueError, TypeError):
+                pass
+
+    # Get old scores from current profile
+    try:
+        old_scores = json.loads(profile.get("epp_summary", "{}"))
+    except (json.JSONDecodeError, TypeError):
+        old_scores = {}
+
+    # Create pending reassessment
+    reassessment_id = write_reassessment(
+        nx_user_id=nx_user_id,
+        profile_id=int(profile["id"]),
+        reassessment_type="quarterly_epp",
+        trigger_reason="quarterly_schedule",
+        status="pending",
+        previous_scores=old_scores,
+    )
+
+    # Try Criteria Corp API
+    onboarding = get_user_onboarding(nx_user_id)
+    criteria_order_id = None
+    if onboarding:
+        try:
+            assessment = json.loads(onboarding.get("assesment_result", "{}"))
+            criteria_order_id = assessment.get("orderId")
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    new_raw_scores = None
+    api_source = "criteria_corp"
+
+    if criteria_order_id:
+        new_raw_scores = criteria_corp_fetch_scores(criteria_order_id)
+
+    if new_raw_scores:
+        # Parse the API response into normalized scores
+        new_scores = parse_epp_scores(json.dumps(new_raw_scores))
+    else:
+        # Fallback: use most recent mini-assessment data
+        api_source = "mini_fallback"
+        last_mini = get_last_reassessment(nx_user_id, "mini")
+        if last_mini and last_mini.get("new_scores") and last_mini["new_scores"] != "NULL":
+            try:
+                mini_scores = json.loads(last_mini["new_scores"])
+                # Merge mini scores into old scores (mini only covers some traits)
+                new_scores = dict(old_scores)
+                new_scores.update(mini_scores)
+            except (json.JSONDecodeError, TypeError):
+                new_scores = old_scores
+        else:
+            # No fallback data available — complete with no changes
+            complete_reassessment(reassessment_id, {
+                "path_action": "no_change",
+                "drift_detected": False,
+                "new_scores": old_scores,
+                "result_delta": {"drift_pct": 0, "changed_traits": [], "delta_map": {}},
+            })
+            return json.dumps({
+                "status": "completed_no_data",
+                "reassessment_id": reassessment_id,
+                "message": "Criteria Corp API unavailable and no mini-assessment fallback data. No changes made.",
+                "api_source": api_source,
+            })
+
+    # Compute drift
+    drift = compute_profile_drift(old_scores, new_scores)
+
+    # Decide action
+    drift_detected = drift["drift_pct"] >= DRIFT_THRESHOLD_PCT
+    path_action = "reranked" if drift_detected else "no_change"
+
+    result = {
+        "status": "completed",
+        "reassessment_id": reassessment_id,
+        "api_source": api_source,
+        "drift": drift,
+        "drift_detected": drift_detected,
+        "path_action": path_action,
+    }
+
+    if drift_detected:
+        # Update profile with new scores
+        new_profile = update_profile_from_scores(nx_user_id, new_scores, source="quarterly_epp")
+        result["new_profile_version"] = int(new_profile["version"])
+
+        # Re-rank recommendations
+        rerank_result = rerank_recommendations(
+            nx_user_id, new_profile, reassessment_id, "quarterly_epp"
+        )
+        result["rerank"] = rerank_result
+
+        complete_reassessment(reassessment_id, {
+            "new_scores": new_scores,
+            "result_delta": drift,
+            "drift_detected": True,
+            "path_action": "reranked",
+            "profile_id": int(new_profile["id"]),
+        })
+    else:
+        complete_reassessment(reassessment_id, {
+            "new_scores": new_scores,
+            "result_delta": drift,
+            "drift_detected": False,
+            "path_action": "no_change",
+        })
+        result["message"] = (
+            f"Drift of {drift['drift_pct']}% below threshold of {DRIFT_THRESHOLD_PCT}%. "
+            f"No path changes needed."
+        )
+
+    return json.dumps(result, indent=2, default=str)
+
+
+async def _tool_mini_assessment(nx_user_id: int, responses: list[dict]) -> str:
+    """Process a mini-assessment submitted mid-lesson.
+
+    Flow:
+    1. Validate responses (3-5 questions, each with trait + value)
+    2. Compute trait adjustments from responses
+    3. Merge adjustments with current profile scores
+    4. Compute profile drift
+    5. If drift >= threshold, update profile and re-rank
+    6. Write reassessment record and path event
+    """
+    # Validate response count
+    min_q, max_q = REASSESSMENT_MINI_QUESTION_COUNT
+    if len(responses) < min_q or len(responses) > max_q:
+        return json.dumps({
+            "error": f"Mini-assessment requires {min_q}-{max_q} responses, got {len(responses)}",
+        })
+
+    # Validate each response
+    for resp in responses:
+        if not resp.get("trait") or resp.get("response_value") is None:
+            return json.dumps({"error": f"Invalid response: {resp}. Need trait and response_value."})
+        val = float(resp["response_value"])
+        if val < 0 or val > 100:
+            return json.dumps({"error": f"response_value must be 0-100, got {val}"})
+
+    profile = get_current_profile(nx_user_id)
+    if not profile:
+        return json.dumps({"error": f"No profile for user {nx_user_id}"})
+
+    try:
+        old_scores = json.loads(profile.get("epp_summary", "{}"))
+    except (json.JSONDecodeError, TypeError):
+        old_scores = {}
+
+    # Compute trait adjustments — mini-assessments nudge scores, not replace them
+    # Weighted average: 70% existing score + 30% mini-assessment response
+    EXISTING_WEIGHT = 0.7
+    MINI_WEIGHT = 0.3
+
+    new_scores = dict(old_scores)
+    adjustments = []
+
+    for resp in responses:
+        trait = resp["trait"]
+        new_val = float(resp["response_value"])
+        old_val = old_scores.get(trait, 50.0)
+        blended = round(old_val * EXISTING_WEIGHT + new_val * MINI_WEIGHT, 2)
+        new_scores[trait] = blended
+        adjustments.append({
+            "trait": trait,
+            "old": old_val,
+            "response": new_val,
+            "blended": blended,
+            "delta": round(blended - old_val, 2),
+        })
+
+    # Compute drift
+    drift = compute_profile_drift(old_scores, new_scores)
+    drift_detected = drift["drift_pct"] >= DRIFT_THRESHOLD_PCT
+    path_action = "reranked" if drift_detected else "no_change"
+
+    # Create reassessment record
+    reassessment_id = write_reassessment(
+        nx_user_id=nx_user_id,
+        profile_id=int(profile["id"]),
+        reassessment_type="mini",
+        trigger_reason="mid_lesson",
+        status="completed",
+        assessment_data={"responses": responses, "adjustments": adjustments},
+        previous_scores=old_scores,
+        new_scores=new_scores,
+        result_delta=drift,
+        drift_detected=drift_detected,
+        path_action=path_action,
+    )
+
+    result = {
+        "status": "completed",
+        "reassessment_id": reassessment_id,
+        "adjustments": adjustments,
+        "drift": drift,
+        "drift_detected": drift_detected,
+        "path_action": path_action,
+    }
+
+    if drift_detected:
+        new_profile = update_profile_from_scores(nx_user_id, new_scores, source="mini_assessment")
+        result["new_profile_version"] = int(new_profile["version"])
+
+        rerank_result = rerank_recommendations(
+            nx_user_id, new_profile, reassessment_id, "mini_assessment"
+        )
+        result["rerank"] = rerank_result
+    else:
+        # Still store the new scores even if no re-ranking (they accumulate)
+        complete_reassessment(reassessment_id, {
+            "new_scores": new_scores,
+            "result_delta": drift,
+            "drift_detected": False,
+            "path_action": "no_change",
+        })
+        result["message"] = (
+            f"Drift of {drift['drift_pct']}% below threshold of {DRIFT_THRESHOLD_PCT}%. "
+            f"Scores recorded but no path changes."
+        )
+
+    return json.dumps(result, indent=2, default=str)
+
+
+async def _tool_check_passive_signals(nx_user_id: int) -> str:
+    """Check passive engagement signals and trigger reassessment if threshold met.
+
+    Aggregates: backpack saves, lesson ratings, task completions.
+    Threshold: 10+ new interactions since last reassessment of any type.
+    """
+    profile = get_current_profile(nx_user_id)
+    if not profile:
+        return json.dumps({"error": f"No profile for user {nx_user_id}"})
+
+    # Find the last reassessment of any type
+    last = get_last_reassessment(nx_user_id)
+    since = last["completed_at"] if last and last.get("completed_at") != "NULL" else "2000-01-01 00:00:00"
+
+    # Count new interactions
+    counts = count_new_interactions_since(nx_user_id, since)
+    total = sum(counts.values())
+
+    result = {
+        "user_id": nx_user_id,
+        "since": since,
+        "interaction_counts": counts,
+        "total_new_interactions": total,
+        "threshold": BACKPACK_SIGNAL_THRESHOLD,
+        "threshold_met": total >= BACKPACK_SIGNAL_THRESHOLD,
+    }
+
+    if total < BACKPACK_SIGNAL_THRESHOLD:
+        result["status"] = "below_threshold"
+        result["message"] = (
+            f"{total} new interactions since last reassessment "
+            f"(need {BACKPACK_SIGNAL_THRESHOLD}). No action taken."
+        )
+        return json.dumps(result, indent=2, default=str)
+
+    # Threshold met — derive trait signals from engagement patterns
+    try:
+        old_scores = json.loads(profile.get("epp_summary", "{}"))
+    except (json.JSONDecodeError, TypeError):
+        old_scores = {}
+
+    # Analyze backpack saves to infer trait engagement
+    backpacks = get_user_backpacks(nx_user_id)
+    ratings = get_user_ratings(nx_user_id)
+
+    # Build trait signal map from content the user engaged with
+    trait_engagement: dict[str, list[float]] = {}
+
+    # Check which lessons user saved/rated and what traits those lessons target
+    engaged_lesson_ids = set()
+    for bp in backpacks:
+        lid = bp.get("nx_lesson_id")
+        if lid and lid != "NULL":
+            engaged_lesson_ids.add(int(lid))
+    for r in ratings:
+        lid = r.get("nx_lesson_id")
+        if lid and lid != "NULL":
+            engaged_lesson_ids.add(int(lid))
+
+    for lid in engaged_lesson_ids:
+        tags = get_content_tags(nx_lesson_id=lid)
+        for tag in tags:
+            try:
+                trait_tags = json.loads(tag.get("trait_tags", "[]"))
+            except (json.JSONDecodeError, TypeError):
+                trait_tags = []
+            for tt in trait_tags:
+                trait = tt.get("trait", "")
+                relevance = float(tt.get("relevance_score", 50))
+                if trait:
+                    trait_engagement.setdefault(trait, []).append(relevance)
+
+    # Adjust scores: traits the user engages with more get a small boost
+    PASSIVE_WEIGHT = 0.1  # Light touch — passive signals are weak
+    new_scores = dict(old_scores)
+
+    signal_adjustments = []
+    for trait, scores in trait_engagement.items():
+        if trait in old_scores:
+            avg_engagement = sum(scores) / len(scores)
+            boost = avg_engagement * PASSIVE_WEIGHT
+            old_val = old_scores[trait]
+            new_val = min(100, round(old_val + boost, 2))
+            new_scores[trait] = new_val
+            if abs(new_val - old_val) >= 1:
+                signal_adjustments.append({
+                    "trait": trait,
+                    "old": old_val,
+                    "new": new_val,
+                    "delta": round(new_val - old_val, 2),
+                    "engagement_count": len(scores),
+                })
+
+    # Compute drift
+    drift = compute_profile_drift(old_scores, new_scores)
+    drift_detected = drift["drift_pct"] >= DRIFT_THRESHOLD_PCT
+    path_action = "reranked" if drift_detected else "no_change"
+
+    reassessment_id = write_reassessment(
+        nx_user_id=nx_user_id,
+        profile_id=int(profile["id"]),
+        reassessment_type="backpack_derived",
+        trigger_reason="passive_signals",
+        status="completed",
+        assessment_data={
+            "interaction_counts": counts,
+            "signal_adjustments": signal_adjustments,
+            "engaged_lessons": list(engaged_lesson_ids),
+        },
+        previous_scores=old_scores,
+        new_scores=new_scores,
+        result_delta=drift,
+        drift_detected=drift_detected,
+        path_action=path_action,
+    )
+
+    result["status"] = "completed"
+    result["reassessment_id"] = reassessment_id
+    result["signal_adjustments"] = signal_adjustments
+    result["drift"] = drift
+    result["drift_detected"] = drift_detected
+    result["path_action"] = path_action
+
+    if drift_detected:
+        new_profile = update_profile_from_scores(nx_user_id, new_scores, source="passive_signals")
+        result["new_profile_version"] = int(new_profile["version"])
+
+        rerank_result = rerank_recommendations(
+            nx_user_id, new_profile, reassessment_id, "passive_signals"
+        )
+        result["rerank"] = rerank_result
+    else:
+        result["message"] = (
+            f"Passive signals aggregated. Drift of {drift['drift_pct']}% below "
+            f"threshold of {DRIFT_THRESHOLD_PCT}%. Scores recorded, no path changes."
+        )
+
+    return json.dumps(result, indent=2, default=str)
+
+
+async def _tool_reassessment_status(nx_user_id: int) -> str:
+    """Get reassessment history and scheduling status for a learner."""
+    history = get_reassessment_history(nx_user_id)
+
+    # Parse out key dates
+    last_quarterly = get_last_reassessment(nx_user_id, "quarterly_epp")
+    last_mini = get_last_reassessment(nx_user_id, "mini")
+    last_passive = get_last_reassessment(nx_user_id, "backpack_derived")
+    last_any = get_last_reassessment(nx_user_id)
+
+    # Calculate next quarterly due date
+    next_quarterly_in = None
+    if last_quarterly and last_quarterly.get("completed_at") and last_quarterly["completed_at"] != "NULL":
+        from datetime import datetime as dt
+        try:
+            last_date = dt.strptime(last_quarterly["completed_at"], "%Y-%m-%d %H:%M:%S")
+            days_since = (dt.now() - last_date).days
+            next_quarterly_in = max(0, REASSESSMENT_QUARTERLY_DAYS - days_since)
+        except (ValueError, TypeError):
+            pass
+
+    # Check passive signal readiness
+    since = last_any["completed_at"] if last_any and last_any.get("completed_at") != "NULL" else "2000-01-01 00:00:00"
+    counts = count_new_interactions_since(nx_user_id, since)
+    total_interactions = sum(counts.values())
+
+    # Summarize history
+    summary = []
+    for r in history[:10]:
+        drift_data = {}
+        if r.get("result_delta") and r["result_delta"] != "NULL":
+            try:
+                drift_data = json.loads(r["result_delta"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        summary.append({
+            "id": r["id"],
+            "type": r["type"],
+            "trigger_reason": r["trigger_reason"],
+            "status": r["status"],
+            "drift_pct": drift_data.get("drift_pct", 0),
+            "drift_detected": r.get("drift_detected") == "1",
+            "path_action": r.get("path_action"),
+            "completed_at": r.get("completed_at"),
+        })
+
+    return json.dumps({
+        "user_id": nx_user_id,
+        "total_reassessments": len(history),
+        "completed": sum(1 for r in history if r.get("status") == "completed"),
+        "pending": sum(1 for r in history if r.get("status") == "pending"),
+        "last_quarterly": {
+            "completed_at": last_quarterly.get("completed_at") if last_quarterly else None,
+            "next_due_in_days": next_quarterly_in,
+        },
+        "last_mini": {
+            "completed_at": last_mini.get("completed_at") if last_mini else None,
+        },
+        "last_passive": {
+            "completed_at": last_passive.get("completed_at") if last_passive else None,
+        },
+        "passive_signal_status": {
+            "interactions_since_last": total_interactions,
+            "threshold": BACKPACK_SIGNAL_THRESHOLD,
+            "ready": total_interactions >= BACKPACK_SIGNAL_THRESHOLD,
+        },
+        "history": summary,
+    }, indent=2, default=str)
+
+
 # ---------------------------------------------------------------------------
 # Tool dispatcher
 # ---------------------------------------------------------------------------
@@ -2536,6 +3556,23 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 arguments.get("nx_user_id"),
                 arguments.get("client_id"),
                 arguments.get("department_id"),
+            )
+        elif name == "tory_schedule_quarterly_epp":
+            result = await _tool_schedule_quarterly_epp(
+                int(arguments["nx_user_id"]),
+            )
+        elif name == "tory_mini_assessment":
+            result = await _tool_mini_assessment(
+                int(arguments["nx_user_id"]),
+                arguments["responses"],
+            )
+        elif name == "tory_check_passive_signals":
+            result = await _tool_check_passive_signals(
+                int(arguments["nx_user_id"]),
+            )
+        elif name == "tory_reassessment_status":
+            result = await _tool_reassessment_status(
+                int(arguments["nx_user_id"]),
             )
         else:
             result = json.dumps({"error": f"Unknown tool: {name}"})
