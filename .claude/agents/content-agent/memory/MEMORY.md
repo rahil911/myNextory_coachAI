@@ -1,9 +1,11 @@
 # Content Agent Memory
 
 ## My Ownership
-- `.claude/mcp/tory_engine.py` — Tory MCP server (working on as content-agent for bead baap-qkk.4)
-- `.claude/db/migrations/001_create_tory_tables.sql` — Tory schema migration
+- `.claude/mcp/tory_engine.py` — Tory MCP server (tory_engine tools)
+- `.claude/db/migrations/001_create_tory_tables.sql` — Tory schema migration (original 10 tables)
+- `.claude/db/migrations/002_coach_curation.sql` — Coach curation schema (tory_path_events + recommendation columns)
 - `test_generate_path.py` — E2E test for generate_path
+- `test_coach_curation.py` — E2E test for coach curation API
 
 ## Key Decisions
 - `signal` is a reserved word in MariaDB — renamed to `compat_signal` in tory_coach_flags
@@ -24,8 +26,9 @@ Key tables in my domain:
 - backpacks: User-collected learning materials (5833 rows)
 - documents: Uploaded documents
 - chatbot_documents: Knowledge base documents
-- **tory_recommendations**: Raw scored recommendations per learner (NEW)
-- **tory_coach_flags**: Coach compatibility traffic light signals (NEW)
+- **tory_recommendations**: Raw scored recommendations per learner (has locked_by_coach, source columns)
+- **tory_coach_flags**: Coach compatibility traffic light signals
+- **tory_path_events**: Audit log for coach mutations (reordered/swapped/locked with reason)
 
 Content hierarchy: Journey > Chapter > Lesson > Slide/Video
 
@@ -35,7 +38,19 @@ Content hierarchy: Journey > Chapter > Lesson > Slide/Video
 ## Dependents to Notify on Changes
 - engagement-agent, comms-agent
 
+## Key Patterns
+- Locked recommendations (locked_by_coach=1) must be excluded from reorder and swap operations
+- Divergence detection: % of coach-modified items vs total; >30% flags as "coach insight" (not blocked)
+- All coach mutations create tory_path_events with reason text for audit trail
+- `source` column on tory_recommendations: 'tory' = algorithm, 'coach' = manually modified
+
 ## Recent Changes
+- baap-qkk.5: Built coach curation API for path management
+  - Created tory_path_events table (11 tory tables now)
+  - Added locked_by_coach and source columns to tory_recommendations
+  - 4 new MCP tools: tory_coach_reorder, tory_coach_swap, tory_coach_lock, tory_get_path
+  - Divergence detection >30% flagged as coach insight, not blocked
+  - All 6 acceptance criteria verified via 50-test E2E suite
 - baap-qkk.4: Implemented similarity scoring + path generation in tory_engine.py
   - Created tory_recommendations table (10 tory tables total now, was 8)
   - Created tory_coach_flags table

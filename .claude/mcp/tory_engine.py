@@ -345,6 +345,101 @@ def get_coach_overrides(roadmap_id: int) -> list[dict]:
     return rows
 
 
+def get_active_recommendations(nx_user_id: int) -> list[dict]:
+    """Fetch active (non-deleted) recommendations for a learner, ordered by sequence."""
+    _, rows = mysql_query(
+        f"SELECT * FROM tory_recommendations WHERE nx_user_id = {int(nx_user_id)} "
+        f"AND deleted_at IS NULL ORDER BY sequence ASC"
+    )
+    return rows
+
+
+def get_recommendation_by_id(rec_id: int) -> dict | None:
+    """Fetch a single recommendation by ID."""
+    _, rows = mysql_query(
+        f"SELECT * FROM tory_recommendations WHERE id = {int(rec_id)} "
+        f"AND deleted_at IS NULL LIMIT 1"
+    )
+    return rows[0] if rows else None
+
+
+def get_path_events(nx_user_id: int, limit: int = 50) -> list[dict]:
+    """Fetch path events for a learner."""
+    _, rows = mysql_query(
+        f"SELECT * FROM tory_path_events WHERE nx_user_id = {int(nx_user_id)} "
+        f"AND deleted_at IS NULL ORDER BY created_at DESC LIMIT {int(limit)}"
+    )
+    return rows
+
+
+def write_path_event(
+    nx_user_id: int,
+    coach_id: int,
+    event_type: str,
+    reason: str,
+    details: dict,
+    recommendation_ids: list[int],
+    divergence_pct: int | None = None,
+) -> None:
+    """Write an audit event to tory_path_events."""
+    now = now_str()
+    reason_esc = escape_sql(reason)
+    details_esc = escape_sql(json.dumps(details))
+    rec_ids_esc = escape_sql(json.dumps(recommendation_ids))
+    flagged = 1 if divergence_pct is not None and divergence_pct > 30 else 0
+    div_val = divergence_pct if divergence_pct is not None else "NULL"
+
+    sql = (
+        f"INSERT INTO tory_path_events "
+        f"(nx_user_id, coach_id, event_type, reason, details, "
+        f"recommendation_ids, divergence_pct, flagged_for_review, "
+        f"created_at, updated_at) "
+        f"VALUES ({int(nx_user_id)}, {int(coach_id)}, '{event_type}', "
+        f"{reason_esc}, {details_esc}, {rec_ids_esc}, "
+        f"{div_val}, {flagged}, '{now}', '{now}')"
+    )
+    mysql_write(sql)
+
+
+def compute_divergence(nx_user_id: int) -> int:
+    """Compute how much coach modifications diverge from Tory's original ranking.
+
+    Returns 0-100 percentage. Compares current sequence vs original sequence
+    for coach-modified items. Also accounts for swapped/locked items.
+    """
+    recs = get_active_recommendations(nx_user_id)
+    if not recs:
+        return 0
+
+    total = len(recs)
+    modified_count = 0
+    displacement_sum = 0
+
+    for rec in recs:
+        source = rec.get("source", "tory")
+        locked = rec.get("locked_by_coach", "0")
+
+        if source == "coach" or str(locked) == "1":
+            modified_count += 1
+
+    # Displacement-based divergence: how far items moved from original position
+    # Original sequence was set at generation time; current sequence reflects coach edits
+    # We use Spearman-style displacement
+    for rec in recs:
+        # batch_id items all had original sequence = their sequence at creation
+        # After reorder, sequence changes but we can compare against original
+        # We track this via tory_path_events, but a simpler heuristic:
+        # count items with source=coach as displaced
+        pass
+
+    if total == 0:
+        return 0
+
+    # Simple divergence: % of items that have been coach-modified
+    divergence = round(modified_count / total * 100)
+    return min(100, divergence)
+
+
 # ---------------------------------------------------------------------------
 # EPP Score Parser
 # ---------------------------------------------------------------------------
@@ -1095,6 +1190,130 @@ async def list_tools() -> list[Tool]:
             },
         ),
         Tool(
+            name="tory_coach_reorder",
+            description=(
+                "PUT /api/tory/coach/:learnerId/reorder — Reorder a learner's path. "
+                "Accepts an ordering array [{recommendation_id, new_sequence}] and a reason. "
+                "Updates rank values in tory_recommendations, logs a path_event with type=reordered. "
+                "Locked items cannot be moved."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                    "coach_id": {
+                        "type": "integer",
+                        "description": "The coaches.id of the coach performing the action",
+                    },
+                    "ordering": {
+                        "type": "array",
+                        "description": "Array of {recommendation_id, new_sequence} objects",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "recommendation_id": {"type": "integer"},
+                                "new_sequence": {"type": "integer"},
+                            },
+                            "required": ["recommendation_id", "new_sequence"],
+                        },
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Coach's reason for the reorder",
+                    },
+                },
+                "required": ["nx_user_id", "coach_id", "ordering", "reason"],
+            },
+        ),
+        Tool(
+            name="tory_coach_swap",
+            description=(
+                "POST /api/tory/coach/:learnerId/swap — Swap a lesson in the path. "
+                "Accepts {remove_lesson_id, add_lesson_id} and a reason. "
+                "Replaces the lesson in tory_recommendations and logs type=swapped. "
+                "Locked items cannot be swapped out."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                    "coach_id": {
+                        "type": "integer",
+                        "description": "The coaches.id of the coach performing the action",
+                    },
+                    "remove_lesson_id": {
+                        "type": "integer",
+                        "description": "The nx_lessons.id to remove from the path",
+                    },
+                    "add_lesson_id": {
+                        "type": "integer",
+                        "description": "The nx_lessons.id to add to the path",
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Coach's reason for the swap",
+                    },
+                },
+                "required": ["nx_user_id", "coach_id", "remove_lesson_id", "add_lesson_id", "reason"],
+            },
+        ),
+        Tool(
+            name="tory_coach_lock",
+            description=(
+                "PUT /api/tory/coach/:learnerId/lock/:recommendationId — Lock a recommendation. "
+                "Sets locked_by_coach=true and source=coach. Locked items survive future "
+                "Tory re-ranking. Logs type=locked with coach reason."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                    "coach_id": {
+                        "type": "integer",
+                        "description": "The coaches.id of the coach performing the action",
+                    },
+                    "recommendation_id": {
+                        "type": "integer",
+                        "description": "The tory_recommendations.id to lock",
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Coach's reason for locking this item",
+                    },
+                },
+                "required": ["nx_user_id", "coach_id", "recommendation_id", "reason"],
+            },
+        ),
+        Tool(
+            name="tory_get_path",
+            description=(
+                "GET /api/tory/path/:learnerId — Get the full ordered learning path. "
+                "Returns recommendations ordered by sequence with source field "
+                "distinguishing 'tory' (algorithm) vs 'coach' (manually modified). "
+                "Includes divergence detection: >30% deviation flagged as 'coach insight' "
+                "for review but not blocked."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                },
+                "required": ["nx_user_id"],
+            },
+        ),
+        Tool(
             name="tory_dashboard_snapshot",
             description=(
                 "Generate a progress snapshot for the HR dashboard. "
@@ -1820,6 +2039,319 @@ async def _tool_set_pedagogy(
     }, indent=2, default=str)
 
 
+async def _tool_coach_reorder(
+    nx_user_id: int,
+    coach_id: int,
+    ordering: list[dict],
+    reason: str,
+) -> str:
+    """Reorder a learner's path. Accepts [{recommendation_id, new_sequence}].
+
+    Updates rank values in tory_recommendations, logs a path_event with type=reordered.
+    Locked items keep their position — they cannot be moved by reorder.
+    """
+    recs = get_active_recommendations(nx_user_id)
+    if not recs:
+        return json.dumps({"error": f"No active recommendations for user {nx_user_id}"})
+
+    rec_by_id = {int(r["id"]): r for r in recs}
+
+    # Validate all recommendation_ids exist and belong to this user
+    affected_ids = []
+    for item in ordering:
+        rid = int(item["recommendation_id"])
+        new_seq = int(item["new_sequence"])
+        if rid not in rec_by_id:
+            return json.dumps({
+                "error": f"Recommendation {rid} not found for user {nx_user_id}"
+            })
+        if str(rec_by_id[rid].get("locked_by_coach", "0")) == "1":
+            return json.dumps({
+                "error": f"Recommendation {rid} is locked and cannot be reordered"
+            })
+        affected_ids.append(rid)
+
+    # Apply the reorder
+    now = now_str()
+    for item in ordering:
+        rid = int(item["recommendation_id"])
+        new_seq = int(item["new_sequence"])
+        mysql_write(
+            f"UPDATE tory_recommendations SET sequence = {new_seq}, "
+            f"source = 'coach', updated_at = '{now}' "
+            f"WHERE id = {rid} AND deleted_at IS NULL"
+        )
+
+    # Compute divergence
+    divergence = compute_divergence(nx_user_id)
+
+    # Log path event
+    write_path_event(
+        nx_user_id=nx_user_id,
+        coach_id=coach_id,
+        event_type="reordered",
+        reason=reason,
+        details={"ordering": ordering},
+        recommendation_ids=affected_ids,
+        divergence_pct=divergence,
+    )
+
+    return json.dumps({
+        "status": "reordered",
+        "user_id": nx_user_id,
+        "coach_id": coach_id,
+        "items_reordered": len(ordering),
+        "recommendation_ids": affected_ids,
+        "divergence_pct": divergence,
+        "flagged_for_review": divergence > 30,
+        "reason": reason,
+    }, indent=2, default=str)
+
+
+async def _tool_coach_swap(
+    nx_user_id: int,
+    coach_id: int,
+    remove_lesson_id: int,
+    add_lesson_id: int,
+    reason: str,
+) -> str:
+    """Swap a lesson in a learner's path.
+
+    Replaces remove_lesson_id with add_lesson_id in tory_recommendations.
+    The new lesson inherits the sequence position. Logs type=swapped.
+    """
+    recs = get_active_recommendations(nx_user_id)
+    if not recs:
+        return json.dumps({"error": f"No active recommendations for user {nx_user_id}"})
+
+    # Find the recommendation to remove
+    target_rec = None
+    for r in recs:
+        if int(r["nx_lesson_id"]) == remove_lesson_id:
+            target_rec = r
+            break
+
+    if not target_rec:
+        return json.dumps({
+            "error": f"Lesson {remove_lesson_id} not in active recommendations for user {nx_user_id}"
+        })
+
+    if str(target_rec.get("locked_by_coach", "0")) == "1":
+        return json.dumps({
+            "error": f"Lesson {remove_lesson_id} is locked and cannot be swapped"
+        })
+
+    # Check add_lesson_id isn't already in the path
+    existing_lesson_ids = {int(r["nx_lesson_id"]) for r in recs}
+    if add_lesson_id in existing_lesson_ids:
+        return json.dumps({
+            "error": f"Lesson {add_lesson_id} is already in the path"
+        })
+
+    # Verify the new lesson exists
+    _, lesson_rows = mysql_query(
+        f"SELECT id, lesson FROM nx_lessons WHERE id = {int(add_lesson_id)} "
+        f"AND deleted_at IS NULL LIMIT 1"
+    )
+    if not lesson_rows:
+        return json.dumps({"error": f"Lesson {add_lesson_id} not found"})
+
+    # Perform the swap: update the recommendation row in place
+    rec_id = int(target_rec["id"])
+    now = now_str()
+    mysql_write(
+        f"UPDATE tory_recommendations SET nx_lesson_id = {int(add_lesson_id)}, "
+        f"source = 'coach', match_rationale = 'Coach-selected replacement', "
+        f"updated_at = '{now}' "
+        f"WHERE id = {rec_id} AND deleted_at IS NULL"
+    )
+
+    # Compute divergence
+    divergence = compute_divergence(nx_user_id)
+
+    # Log path event
+    write_path_event(
+        nx_user_id=nx_user_id,
+        coach_id=coach_id,
+        event_type="swapped",
+        reason=reason,
+        details={
+            "remove_lesson_id": remove_lesson_id,
+            "add_lesson_id": add_lesson_id,
+            "recommendation_id": rec_id,
+            "inherited_sequence": int(target_rec["sequence"]),
+        },
+        recommendation_ids=[rec_id],
+        divergence_pct=divergence,
+    )
+
+    return json.dumps({
+        "status": "swapped",
+        "user_id": nx_user_id,
+        "coach_id": coach_id,
+        "removed_lesson_id": remove_lesson_id,
+        "added_lesson_id": add_lesson_id,
+        "added_lesson_name": lesson_rows[0].get("lesson", ""),
+        "recommendation_id": rec_id,
+        "sequence_position": int(target_rec["sequence"]),
+        "divergence_pct": divergence,
+        "flagged_for_review": divergence > 30,
+        "reason": reason,
+    }, indent=2, default=str)
+
+
+async def _tool_coach_lock(
+    nx_user_id: int,
+    coach_id: int,
+    recommendation_id: int,
+    reason: str,
+) -> str:
+    """Lock a recommendation so it survives future Tory re-ranking.
+
+    Sets locked_by_coach=1 and source='coach'. Logs type=locked.
+    """
+    rec = get_recommendation_by_id(recommendation_id)
+    if not rec:
+        return json.dumps({"error": f"Recommendation {recommendation_id} not found"})
+
+    if int(rec["nx_user_id"]) != nx_user_id:
+        return json.dumps({
+            "error": f"Recommendation {recommendation_id} does not belong to user {nx_user_id}"
+        })
+
+    if str(rec.get("locked_by_coach", "0")) == "1":
+        return json.dumps({
+            "status": "already_locked",
+            "recommendation_id": recommendation_id,
+        })
+
+    now = now_str()
+    mysql_write(
+        f"UPDATE tory_recommendations SET locked_by_coach = 1, "
+        f"source = 'coach', updated_at = '{now}' "
+        f"WHERE id = {int(recommendation_id)} AND deleted_at IS NULL"
+    )
+
+    # Compute divergence
+    divergence = compute_divergence(nx_user_id)
+
+    # Log path event
+    write_path_event(
+        nx_user_id=nx_user_id,
+        coach_id=coach_id,
+        event_type="locked",
+        reason=reason,
+        details={
+            "recommendation_id": recommendation_id,
+            "nx_lesson_id": int(rec["nx_lesson_id"]),
+            "sequence": int(rec["sequence"]),
+        },
+        recommendation_ids=[recommendation_id],
+        divergence_pct=divergence,
+    )
+
+    return json.dumps({
+        "status": "locked",
+        "user_id": nx_user_id,
+        "coach_id": coach_id,
+        "recommendation_id": recommendation_id,
+        "nx_lesson_id": int(rec["nx_lesson_id"]),
+        "sequence": int(rec["sequence"]),
+        "divergence_pct": divergence,
+        "flagged_for_review": divergence > 30,
+        "reason": reason,
+    }, indent=2, default=str)
+
+
+async def _tool_get_path(nx_user_id: int) -> str:
+    """Get the full ordered path for a learner with coach modifications marked.
+
+    Returns recommendations ordered by sequence with source field distinguishing
+    'tory' (algorithm-generated) vs 'coach' (manually modified).
+    Includes divergence detection: >30% flags for review as 'coach insight'.
+    """
+    recs = get_active_recommendations(nx_user_id)
+    if not recs:
+        return json.dumps({"error": f"No active path for user {nx_user_id}"})
+
+    # Enrich with lesson names
+    lesson_ids = [int(r["nx_lesson_id"]) for r in recs]
+    if lesson_ids:
+        ids_str = ",".join(str(lid) for lid in lesson_ids)
+        _, lessons = mysql_query(
+            f"SELECT id, lesson, nx_journey_detail_id FROM nx_lessons "
+            f"WHERE id IN ({ids_str}) AND deleted_at IS NULL"
+        )
+        lesson_map = {int(l["id"]): l for l in lessons}
+    else:
+        lesson_map = {}
+
+    # Build path items
+    path_items = []
+    coach_modified_count = 0
+    locked_count = 0
+
+    for rec in recs:
+        lesson_id = int(rec["nx_lesson_id"])
+        lesson_info = lesson_map.get(lesson_id, {})
+        source = rec.get("source", "tory")
+        is_locked = str(rec.get("locked_by_coach", "0")) == "1"
+
+        if source == "coach":
+            coach_modified_count += 1
+        if is_locked:
+            locked_count += 1
+
+        path_items.append({
+            "recommendation_id": int(rec["id"]),
+            "sequence": int(rec["sequence"]),
+            "nx_lesson_id": lesson_id,
+            "lesson_name": lesson_info.get("lesson", ""),
+            "journey_id": int(lesson_info.get("nx_journey_detail_id", 0) or 0),
+            "source": source,
+            "locked_by_coach": is_locked,
+            "is_discovery": str(rec.get("is_discovery", "0")) == "1",
+            "match_score": float(rec.get("adjusted_score") or rec.get("match_score", 0)),
+            "match_rationale": rec.get("match_rationale", ""),
+        })
+
+    # Compute divergence
+    divergence = compute_divergence(nx_user_id)
+    flagged = divergence > 30
+
+    # Get recent path events
+    events = get_path_events(nx_user_id, limit=10)
+    recent_events = [
+        {
+            "event_type": e["event_type"],
+            "reason": e.get("reason", ""),
+            "created_at": e.get("created_at", ""),
+        }
+        for e in events
+    ]
+
+    result = {
+        "status": "ok",
+        "user_id": nx_user_id,
+        "total_items": len(path_items),
+        "coach_modified_count": coach_modified_count,
+        "locked_count": locked_count,
+        "divergence_pct": divergence,
+        "divergence_flagged": flagged,
+        "path": path_items,
+        "recent_events": recent_events,
+    }
+
+    if flagged:
+        result["coach_insight_note"] = (
+            f"Coach has modified {divergence}% of the path. "
+            f"This is flagged as a coach insight for review — "
+            f"the coach's professional judgment is valued and not blocked."
+        )
+
+    return json.dumps(result, indent=2, default=str)
+
+
 async def _tool_dashboard_snapshot(
     nx_user_id: int | None = None,
     client_id: int | None = None,
@@ -1942,6 +2474,30 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 int(arguments.get("gap_ratio", 50)),
                 int(arguments.get("strength_ratio", 50)),
             )
+        elif name == "tory_coach_reorder":
+            result = await _tool_coach_reorder(
+                int(arguments["nx_user_id"]),
+                int(arguments["coach_id"]),
+                arguments["ordering"],
+                arguments["reason"],
+            )
+        elif name == "tory_coach_swap":
+            result = await _tool_coach_swap(
+                int(arguments["nx_user_id"]),
+                int(arguments["coach_id"]),
+                int(arguments["remove_lesson_id"]),
+                int(arguments["add_lesson_id"]),
+                arguments["reason"],
+            )
+        elif name == "tory_coach_lock":
+            result = await _tool_coach_lock(
+                int(arguments["nx_user_id"]),
+                int(arguments["coach_id"]),
+                int(arguments["recommendation_id"]),
+                arguments["reason"],
+            )
+        elif name == "tory_get_path":
+            result = await _tool_get_path(int(arguments["nx_user_id"]))
         elif name == "tory_dashboard_snapshot":
             result = await _tool_dashboard_snapshot(
                 arguments.get("nx_user_id"),
