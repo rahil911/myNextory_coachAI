@@ -95,5 +95,26 @@
     "reviewed_by": "human",
     "reviewed_at": "2026-02-15T23:17:20.647153+00:00",
     "reject_reason": "Wrong agent for CSS files"
+  },
+  {
+    "type": "register",
+    "file": "tory_notification_service.py",
+    "agent": "comms-agent",
+    "proposed_at": "2026-02-19T02:38:47.656442+00:00",
+    "status": "pending"
+  },
+  {
+    "type": "register",
+    "file": "test_tory_notifications.py",
+    "agent": "comms-agent",
+    "proposed_at": "2026-02-19T02:38:47.717641+00:00",
+    "status": "pending"
+  },
+  {
+    "type": "register",
+    "file": "migrations/007_tory_notifications.sql",
+    "agent": "comms-agent",
+    "proposed_at": "2026-02-19T02:38:47.788477+00:00",
+    "status": "pending"
   }
 ]
