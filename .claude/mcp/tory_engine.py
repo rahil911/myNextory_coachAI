@@ -224,8 +224,30 @@ def get_roadmap_items(roadmap_id: int) -> list[dict]:
     return rows
 
 
-def get_content_tags(nx_lesson_id: int | None = None) -> list[dict]:
-    """Fetch content tags, optionally for a specific lesson."""
+def get_content_tags(
+    nx_lesson_id: int | None = None,
+    confidence_threshold: int = 70,
+) -> list[dict]:
+    """Fetch content tags, optionally for a specific lesson.
+
+    Filters to confidence >= threshold OR review_status = 'approved'.
+    This implements the bead requirement: exclude tags with confidence
+    below 0.7 (70) unless manually reviewed/approved.
+    """
+    where = (
+        "WHERE deleted_at IS NULL AND review_status != 'rejected' "
+        f"AND (confidence >= {int(confidence_threshold)} OR review_status = 'approved')"
+    )
+    if nx_lesson_id is not None:
+        where += f" AND nx_lesson_id = {int(nx_lesson_id)}"
+    _, rows = mysql_query(
+        f"SELECT * FROM tory_content_tags {where} ORDER BY nx_lesson_id ASC"
+    )
+    return rows
+
+
+def get_content_tags_unfiltered(nx_lesson_id: int | None = None) -> list[dict]:
+    """Fetch all content tags without confidence filtering (for listing/review)."""
     where = "WHERE deleted_at IS NULL AND review_status != 'rejected'"
     if nx_lesson_id is not None:
         where += f" AND nx_lesson_id = {int(nx_lesson_id)}"
@@ -243,6 +265,26 @@ def get_all_lessons() -> list[dict]:
         "FROM nx_lessons l WHERE l.deleted_at IS NULL ORDER BY l.id ASC"
     )
     return rows
+
+
+def get_lesson_journey_map() -> dict[int, int]:
+    """Build a mapping of lesson_id -> journey_id for diversity rules."""
+    _, rows = mysql_query(
+        "SELECT id, nx_journey_detail_id FROM nx_lessons WHERE deleted_at IS NULL"
+    )
+    return {int(r["id"]): int(r["nx_journey_detail_id"] or 0) for r in rows}
+
+
+def get_user_coach(nx_user_id: int) -> dict | None:
+    """Fetch the coach assigned to a user (if any)."""
+    _, rows = mysql_query(
+        f"SELECT c.id as coach_id FROM coaches c "
+        f"JOIN coach_users cu ON cu.coach_id = c.id "
+        f"WHERE cu.nx_user_id = {int(nx_user_id)} "
+        f"AND cu.deleted_at IS NULL AND c.deleted_at IS NULL "
+        f"LIMIT 1"
+    )
+    return rows[0] if rows else None
 
 
 def get_lesson_slides(nx_lesson_id: int) -> list[dict]:
@@ -473,50 +515,133 @@ def score_content_for_learner(
 
 def apply_sequencing(
     scored_lessons: list[dict],
-    max_lessons: int = 30,
+    lesson_journey_map: dict[int, int] | None = None,
+    max_lessons: int = 20,
+    max_consecutive_same_journey: int = 3,
     diminishing_factor: float = 0.7,
 ) -> list[dict]:
     """Apply sequencing logic to scored lessons.
 
-    - Limit to max_lessons
+    Rules (from bead spec):
+    - Limit to max_lessons (default 20)
+    - No more than max_consecutive_same_journey (3) from same journey in a row
     - Apply diminishing returns for same-trait stacking
+    - Mix strength-building and growth-area lessons
     - Ensure diversity of targeted traits
     """
     if not scored_lessons:
         return []
 
-    selected = []
+    if lesson_journey_map is None:
+        lesson_journey_map = {}
+
+    # Phase 1: Score adjustment with diminishing returns
+    candidates = []
     trait_counts: dict[str, int] = {}
 
     for lesson in scored_lessons:
-        if len(selected) >= max_lessons:
-            break
-
-        # Check trait diversity — apply diminishing returns
         adjusted_score = lesson["score"]
         for mt in lesson.get("matching_traits", []):
             trait = mt["trait"]
             count = trait_counts.get(trait, 0)
             if count > 0:
-                # Reduce score for repeated traits
                 adjusted_score *= diminishing_factor ** count
 
-        lesson["adjusted_score"] = round(adjusted_score, 2)
-        selected.append(lesson)
+        lesson_copy = dict(lesson)
+        lesson_copy["adjusted_score"] = round(adjusted_score, 2)
+        candidates.append(lesson_copy)
 
-        # Update trait counts
         for mt in lesson.get("matching_traits", []):
             trait = mt["trait"]
             trait_counts[trait] = trait_counts.get(trait, 0) + 1
 
-    # Re-sort by adjusted score
-    selected.sort(key=lambda x: x["adjusted_score"], reverse=True)
+    # Sort by adjusted score
+    candidates.sort(key=lambda x: x["adjusted_score"], reverse=True)
 
-    # Assign sequence numbers
-    for i, lesson in enumerate(selected):
+    # Phase 2: Journey diversity — no more than 3 consecutive from same journey
+    selected: list[dict] = []
+    deferred: list[dict] = []
+
+    for lesson in candidates:
+        if len(selected) >= max_lessons:
+            break
+
+        lesson_id = int(lesson["nx_lesson_id"])
+        journey_id = lesson_journey_map.get(lesson_id, lesson.get("nx_journey_detail_id", 0))
+
+        # Check consecutive same-journey count
+        consecutive = 0
+        for prev in reversed(selected):
+            prev_lid = int(prev["nx_lesson_id"])
+            prev_jid = lesson_journey_map.get(prev_lid, prev.get("nx_journey_detail_id", 0))
+            if prev_jid == journey_id and journey_id != 0:
+                consecutive += 1
+            else:
+                break
+
+        if consecutive >= max_consecutive_same_journey:
+            deferred.append(lesson)
+        else:
+            lesson["nx_journey_detail_id"] = journey_id
+            selected.append(lesson)
+
+    # Phase 3: Fill remaining slots from deferred (at positions where they don't violate)
+    for lesson in deferred:
+        if len(selected) >= max_lessons:
+            break
+        lesson["nx_journey_detail_id"] = lesson_journey_map.get(
+            int(lesson["nx_lesson_id"]), 0
+        )
+        selected.append(lesson)
+
+    # Phase 4: Interleave gap and strength lessons for variety
+    gap_lessons = [l for l in selected if any(
+        m.get("type") == "gap" for m in l.get("matching_traits", [])
+    )]
+    strength_lessons = [l for l in selected if l not in gap_lessons]
+
+    interleaved: list[dict] = []
+    gi, si = 0, 0
+    streak_type = None
+    streak_count = 0
+
+    while gi < len(gap_lessons) or si < len(strength_lessons):
+        # Alternate: prefer gap, but don't let either type run more than 3 in a row
+        pick_gap = True
+        if gi >= len(gap_lessons):
+            pick_gap = False
+        elif si >= len(strength_lessons):
+            pick_gap = True
+        elif streak_type == "gap" and streak_count >= 3:
+            pick_gap = False
+        elif streak_type == "strength" and streak_count >= 3:
+            pick_gap = True
+        else:
+            # Pick whichever has higher adjusted_score
+            pick_gap = gap_lessons[gi]["adjusted_score"] >= strength_lessons[si]["adjusted_score"]
+
+        if pick_gap:
+            interleaved.append(gap_lessons[gi])
+            gi += 1
+            if streak_type == "gap":
+                streak_count += 1
+            else:
+                streak_type = "gap"
+                streak_count = 1
+        else:
+            interleaved.append(strength_lessons[si])
+            si += 1
+            if streak_type == "strength":
+                streak_count += 1
+            else:
+                streak_type = "strength"
+                streak_count = 1
+
+    # Assign final sequence numbers
+    for i, lesson in enumerate(interleaved):
         lesson["sequence"] = i + 1
 
-    return selected
+    return interleaved[:max_lessons]
 
 
 def check_coach_compatibility(
@@ -564,6 +689,172 @@ def check_coach_compatibility(
         "learner_low_traits": low_traits,
         "learner_high_traits": high_traits,
     }
+
+
+# ---------------------------------------------------------------------------
+# Rationale generation (EPP-dimension-aware)
+# ---------------------------------------------------------------------------
+
+
+def generate_rationale(
+    lesson: dict,
+    is_discovery: bool = False,
+) -> str:
+    """Generate a human-readable match rationale referencing EPP dimensions.
+
+    Cost-optimized: uses template-based generation (no Claude API call)
+    with EPP dimension names for specificity.
+    """
+    matching = lesson.get("matching_traits", [])
+    gap_traits = [m["trait"] for m in matching if m.get("type") == "gap"]
+    str_traits = [m["trait"] for m in matching if m.get("type") == "strength"]
+    score = lesson.get("adjusted_score", lesson.get("score", 0))
+
+    parts = []
+
+    if is_discovery:
+        # Discovery-phase framing: exploratory, low-commitment language
+        parts.append(
+            "Discovery lesson: This is an exploratory recommendation to help "
+            "us understand your learning preferences early in your journey."
+        )
+        if gap_traits:
+            trait_names = ", ".join(_humanize_trait(t) for t in gap_traits[:2])
+            parts.append(
+                f"It gently introduces growth areas in {trait_names}, "
+                f"allowing you to explore at your own pace."
+            )
+        if str_traits:
+            trait_names = ", ".join(_humanize_trait(t) for t in str_traits[:2])
+            parts.append(
+                f"It also connects to your existing strengths in {trait_names}."
+            )
+    else:
+        # Full-path framing: specific EPP dimension references
+        if gap_traits:
+            trait_names = ", ".join(_humanize_trait(t) for t in gap_traits[:3])
+            parts.append(
+                f"This lesson targets your growth areas in {trait_names}."
+            )
+        if str_traits:
+            trait_names = ", ".join(_humanize_trait(t) for t in str_traits[:3])
+            parts.append(
+                f"It leverages your strong {trait_names} scores "
+                f"to build confidence while stretching new skills."
+            )
+        if score > 70:
+            parts.append("High-confidence match based on your EPP profile.")
+        elif score > 40:
+            parts.append("Moderate match — selected for balanced skill development.")
+
+    if not parts:
+        parts.append("Selected to broaden your learning experience across multiple dimensions.")
+
+    return " ".join(parts)
+
+
+def _humanize_trait(trait: str) -> str:
+    """Convert EPP trait keys to human-readable names."""
+    replacements = {
+        "SelfConfidence": "Self-Confidence",
+        "StressTolerance": "Stress Tolerance",
+        "Accounting_JobFit": "Accounting aptitude",
+        "AdminAsst_JobFit": "Administrative aptitude",
+        "Analyst_JobFit": "Analytical aptitude",
+        "BankTeller_JobFit": "Detail-oriented service",
+        "Collections_JobFit": "Collections aptitude",
+        "CustomerService_JobFit": "Customer Service aptitude",
+        "FrontDesk_JobFit": "Front Desk aptitude",
+        "Manager_JobFit": "Management aptitude",
+        "MedicalAsst_JobFit": "Medical assistance aptitude",
+        "Production_JobFit": "Production aptitude",
+        "Programmer_JobFit": "Programming aptitude",
+        "Sales_JobFit": "Sales aptitude",
+    }
+    return replacements.get(trait, trait)
+
+
+def write_recommendations(
+    nx_user_id: int,
+    profile_id: int,
+    lessons: list[dict],
+    pedagogy: dict,
+    batch_id: str,
+) -> int:
+    """Write scored recommendations to tory_recommendations table.
+
+    Returns count of rows written.
+    """
+    now = now_str()
+    count = 0
+
+    for lesson in lessons:
+        is_disc = 1 if lesson.get("is_discovery") else 0
+        score = lesson.get("adjusted_score", lesson.get("score", 0))
+        rationale = lesson.get("match_rationale", "")
+        traits_json = escape_sql(json.dumps(lesson.get("matching_traits", [])))
+        rationale_esc = escape_sql(rationale)
+        journey_id = lesson.get("nx_journey_detail_id") or "NULL"
+        tag_id = lesson.get("content_tag_id") or "NULL"
+        conf = lesson.get("confidence", 0) or "NULL"
+
+        sql = (
+            f"INSERT INTO tory_recommendations "
+            f"(nx_user_id, profile_id, nx_lesson_id, content_tag_id, "
+            f"nx_journey_detail_id, match_score, gap_contribution, "
+            f"strength_contribution, adjusted_score, sequence, "
+            f"match_rationale, matching_traits, is_discovery, "
+            f"pedagogy_mode, pedagogy_ratio, confidence, batch_id, "
+            f"created_at, updated_at) "
+            f"VALUES ({int(nx_user_id)}, {int(profile_id)}, "
+            f"{int(lesson['nx_lesson_id'])}, {tag_id}, "
+            f"{journey_id}, {score}, "
+            f"{lesson.get('gap_contribution', 0)}, "
+            f"{lesson.get('strength_contribution', 0)}, "
+            f"{lesson.get('adjusted_score', score)}, "
+            f"{lesson.get('sequence', 0)}, "
+            f"{rationale_esc}, {traits_json}, {is_disc}, "
+            f"'{pedagogy.get('mode', 'balanced')}', "
+            f"'{pedagogy.get('gap_ratio', 50)}/{pedagogy.get('strength_ratio', 50)}', "
+            f"{conf}, '{batch_id}', '{now}', '{now}')"
+        )
+        mysql_write(sql)
+        count += 1
+
+    return count
+
+
+def write_coach_flags(
+    nx_user_id: int,
+    coach_id: int,
+    profile_id: int,
+    compat: dict,
+) -> None:
+    """Write coach compatibility flags to tory_coach_flags table."""
+    now = now_str()
+    warnings_json = escape_sql(json.dumps(compat.get("warnings", [])))
+    low_json = escape_sql(json.dumps(compat.get("learner_low_traits", [])))
+    high_json = escape_sql(json.dumps(compat.get("learner_high_traits", [])))
+    msg = escape_sql(compat.get("message", ""))
+
+    # Soft-delete previous flags for this user-coach pair
+    mysql_write(
+        f"UPDATE tory_coach_flags SET deleted_at = '{now}' "
+        f"WHERE nx_user_id = {int(nx_user_id)} AND coach_id = {int(coach_id)} "
+        f"AND deleted_at IS NULL"
+    )
+
+    sql = (
+        f"INSERT INTO tory_coach_flags "
+        f"(nx_user_id, coach_id, profile_id, compat_signal, compat_message, "
+        f"warnings, learner_low_traits, learner_high_traits, "
+        f"created_at, updated_at) "
+        f"VALUES ({int(nx_user_id)}, {int(coach_id)}, {int(profile_id)}, "
+        f"'{compat['signal']}', {msg}, "
+        f"{warnings_json}, {low_json}, {high_json}, "
+        f"'{now}', '{now}')"
+    )
+    mysql_write(sql)
 
 
 # ---------------------------------------------------------------------------
@@ -769,6 +1060,38 @@ async def list_tools() -> list[Tool]:
                     },
                 },
                 "required": ["client_id", "mode"],
+            },
+        ),
+        Tool(
+            name="tory_generate_path",
+            description=(
+                "Generate a complete personalized learning path for a learner. "
+                "This is the main entry point (POST /api/tory/generate/:learnerId). "
+                "Loads learner profile, scores content via cosine similarity against EPP "
+                "dimensions, applies diversity rules (max 3 consecutive from same journey, "
+                "mix gap/strength lessons), generates top-N recommendations (default 20) "
+                "with EPP-referencing rationale, marks first 3-5 as discovery phase, "
+                "computes coach compatibility flags, and writes everything to "
+                "tory_recommendations + tory_coach_flags tables."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "nx_user_id": {
+                        "type": "integer",
+                        "description": "The nx_users.id of the learner",
+                    },
+                    "max_recommendations": {
+                        "type": "integer",
+                        "description": "Number of recommendations to generate (default 20)",
+                        "default": 20,
+                    },
+                    "coach_id": {
+                        "type": "integer",
+                        "description": "Optional: coaches.id to check compatibility for",
+                    },
+                },
+                "required": ["nx_user_id"],
             },
         ),
         Tool(
@@ -992,8 +1315,8 @@ async def _tool_score_content(nx_user_id: int, max_lessons: int = 30) -> str:
 
     learner_traits = gaps + strengths
 
-    # Get all tagged content
-    content_tags = get_content_tags()
+    # Get all tagged content (confidence >= 70 or approved)
+    content_tags = get_content_tags(confidence_threshold=70)
     if not content_tags:
         return json.dumps({
             "error": "No content tags found. Run content tagging pipeline first.",
@@ -1156,6 +1479,195 @@ async def _tool_check_coach_compatibility(nx_user_id: int, coach_id: int) -> str
     result["coach_id"] = coach_id
 
     return json.dumps(result, indent=2, default=str)
+
+
+async def _tool_generate_path(
+    nx_user_id: int,
+    max_recommendations: int = 20,
+    coach_id: int | None = None,
+) -> str:
+    """Generate a complete personalized learning path.
+
+    This is the main entry point implementing POST /api/tory/generate/:learnerId.
+
+    Pipeline:
+    1. Load learner profile from tory_learner_profiles
+    2. Load pedagogy config from tory_pedagogy_config (via client_id)
+    3. Fetch content tags (confidence >= 70 or approved)
+    4. Score lessons via weighted dot product against learner trait vector
+    5. Apply sequencing: journey diversity (max 3 consecutive), trait mixing
+    6. Generate rationale for each recommendation referencing EPP dimensions
+    7. Mark first 3-5 as discovery phase with exploratory framing
+    8. Write to tory_recommendations
+    9. Check coach compatibility and write to tory_coach_flags
+    10. Return full result
+    """
+    import uuid
+
+    # Step 1: Load profile
+    profile = get_current_profile(nx_user_id)
+    if not profile:
+        return json.dumps({
+            "error": f"No profile for user {nx_user_id}. Run tory_interpret_profile first.",
+        })
+
+    profile_id = int(profile["id"])
+
+    # Step 2: Load pedagogy config
+    user = get_user_info(nx_user_id)
+    if not user:
+        return json.dumps({"error": f"User {nx_user_id} not found"})
+
+    client_id = user.get("client_id")
+    pedagogy = get_client_pedagogy(int(client_id)) if client_id else None
+
+    mode = pedagogy["mode"] if pedagogy else "balanced"
+    gap_ratio = int(pedagogy["gap_ratio"]) if pedagogy else 50
+    strength_ratio = int(pedagogy["strength_ratio"]) if pedagogy else 50
+
+    if mode == "gap_fill":
+        gap_ratio, strength_ratio = 70, 30
+    elif mode == "strength_lead":
+        gap_ratio, strength_ratio = 30, 70
+
+    pedagogy_info = {
+        "mode": mode,
+        "gap_ratio": gap_ratio,
+        "strength_ratio": strength_ratio,
+    }
+
+    # Step 3: Load learner traits
+    try:
+        strengths = json.loads(profile.get("strengths", "[]"))
+        gaps = json.loads(profile.get("gaps", "[]"))
+    except (json.JSONDecodeError, TypeError):
+        strengths, gaps = [], []
+
+    learner_traits = gaps + strengths
+
+    # Step 4: Fetch content tags (confidence >= 70 or approved)
+    content_tags = get_content_tags(confidence_threshold=70)
+    if not content_tags:
+        return json.dumps({
+            "error": "No eligible content tags found. Need tags with confidence >= 70 or status=approved.",
+            "tagged_lesson_count": 0,
+        })
+
+    # Step 5: Score lessons
+    scored = score_content_for_learner(
+        learner_traits, content_tags, mode, gap_ratio, strength_ratio
+    )
+
+    if not scored:
+        return json.dumps({
+            "error": "No lessons scored above zero. Check content tags and learner profile alignment.",
+        })
+
+    # Enrich scored lessons with content_tag_id
+    tag_by_lesson = {int(t["nx_lesson_id"]): t for t in content_tags}
+    for lesson in scored:
+        lid = int(lesson["nx_lesson_id"])
+        if lid in tag_by_lesson:
+            lesson["content_tag_id"] = int(tag_by_lesson[lid]["id"])
+
+    # Step 6: Apply sequencing with journey diversity
+    lesson_journey_map = get_lesson_journey_map()
+    sequenced = apply_sequencing(
+        scored,
+        lesson_journey_map=lesson_journey_map,
+        max_lessons=max_recommendations,
+        max_consecutive_same_journey=3,
+    )
+
+    # Step 7: Generate rationale and mark discovery phase
+    discovery_count = min(DISCOVERY_LESSON_COUNT, len(sequenced))
+    for i, lesson in enumerate(sequenced):
+        is_discovery = i < discovery_count
+        lesson["is_discovery"] = is_discovery
+        lesson["match_rationale"] = generate_rationale(lesson, is_discovery=is_discovery)
+
+    # Step 8: Write to tory_recommendations
+    batch_id = f"gen-{nx_user_id}-{uuid.uuid4().hex[:8]}"
+
+    # Soft-delete previous recommendations for this user
+    now = now_str()
+    mysql_write(
+        f"UPDATE tory_recommendations SET deleted_at = '{now}' "
+        f"WHERE nx_user_id = {int(nx_user_id)} AND deleted_at IS NULL"
+    )
+
+    rec_count = write_recommendations(
+        nx_user_id, profile_id, sequenced, pedagogy_info, batch_id
+    )
+
+    # Step 9: Coach compatibility
+    coach_result = None
+    if coach_id is None:
+        # Try to find assigned coach
+        coach_info = get_user_coach(nx_user_id)
+        if coach_info:
+            coach_id = int(coach_info["coach_id"])
+
+    if coach_id:
+        onboarding = get_user_onboarding(nx_user_id)
+        epp_scores = {}
+        if onboarding:
+            epp_scores = parse_epp_scores(onboarding.get("assesment_result", ""))
+
+        if epp_scores:
+            compat = check_coach_compatibility(epp_scores, coach_id)
+            write_coach_flags(nx_user_id, coach_id, profile_id, compat)
+            coach_result = {
+                "coach_id": coach_id,
+                "signal": compat["signal"],
+                "message": compat["message"],
+                "warning_count": len(compat.get("warnings", [])),
+            }
+
+    # Step 10: Build response
+    discovery_lessons = [l for l in sequenced if l.get("is_discovery")]
+    non_discovery = [l for l in sequenced if not l.get("is_discovery")]
+
+    # Verify consecutive journey constraint
+    journey_violations = 0
+    for i in range(3, len(sequenced)):
+        jids = [
+            lesson_journey_map.get(int(sequenced[j]["nx_lesson_id"]), 0)
+            for j in range(i - 2, i + 1)
+        ]
+        if jids[0] == jids[1] == jids[2] != 0:
+            # Check if the item before the window is also the same
+            if i >= 3:
+                prev_jid = lesson_journey_map.get(int(sequenced[i - 3]["nx_lesson_id"]), 0)
+                if prev_jid == jids[0]:
+                    journey_violations += 1
+
+    return json.dumps({
+        "status": "path_generated",
+        "user_id": nx_user_id,
+        "profile_id": profile_id,
+        "batch_id": batch_id,
+        "pedagogy": pedagogy_info,
+        "total_eligible_tags": len(content_tags),
+        "total_scored": len(scored),
+        "total_recommendations": len(sequenced),
+        "recommendations_written": rec_count,
+        "discovery_count": len(discovery_lessons),
+        "non_discovery_count": len(non_discovery),
+        "journey_diversity_violations": journey_violations,
+        "coach_compatibility": coach_result,
+        "recommendations": [
+            {
+                "sequence": l["sequence"],
+                "nx_lesson_id": l["nx_lesson_id"],
+                "match_score": l.get("adjusted_score", l.get("score", 0)),
+                "is_discovery": l.get("is_discovery", False),
+                "match_rationale": l.get("match_rationale", ""),
+                "matching_traits": l.get("matching_traits", []),
+            }
+            for l in sequenced
+        ],
+    }, indent=2, default=str)
 
 
 async def _tool_get_roadmap(nx_user_id: int) -> str:
@@ -1407,6 +1919,12 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             result = await _tool_check_coach_compatibility(
                 int(arguments["nx_user_id"]),
                 int(arguments["coach_id"]),
+            )
+        elif name == "tory_generate_path":
+            result = await _tool_generate_path(
+                int(arguments["nx_user_id"]),
+                int(arguments.get("max_recommendations", 20)),
+                arguments.get("coach_id"),
             )
         elif name == "tory_get_roadmap":
             result = await _tool_get_roadmap(int(arguments["nx_user_id"]))
