@@ -23,8 +23,9 @@ from services.attachment_service import AttachmentService
 from services.thinktank_service import ThinkTankService
 from services.command_service import CommandService
 from services.notification_bridge import get_notification_router
+from services.tory_service import ToryService
 
-from routes import agents, approvals, beads, attachments, thinktank, commands, dashboard, epics, websocket
+from routes import agents, approvals, beads, attachments, thinktank, commands, dashboard, epics, tory, websocket
 
 # ── Service singletons ────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ _bead_service: BeadService | None = None
 _attachment_service: AttachmentService | None = None
 _thinktank_service: ThinkTankService | None = None
 _command_service: CommandService | None = None
+_tory_service: ToryService | None = None
 
 
 def get_event_bus():
@@ -58,6 +60,10 @@ def get_command_service() -> CommandService:
     assert _command_service is not None
     return _command_service
 
+def get_tory_service() -> ToryService:
+    assert _tory_service is not None
+    return _tory_service
+
 
 # ── Background task: agent status polling ─────────────────────────────────────
 
@@ -77,7 +83,7 @@ async def _agent_poll_loop():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _agent_service, _bead_service, _attachment_service
-    global _thinktank_service, _command_service
+    global _thinktank_service, _command_service, _tory_service
 
     # Startup: create services
     _notification_router = get_notification_router()
@@ -86,6 +92,7 @@ async def lifespan(app: FastAPI):
     _attachment_service = AttachmentService()
     _thinktank_service = ThinkTankService(event_bus=event_bus)
     _command_service = CommandService()
+    _tory_service = ToryService()
 
     # Start background polling
     poll_task = asyncio.create_task(_agent_poll_loop())
@@ -128,6 +135,7 @@ app.include_router(thinktank.router)
 app.include_router(commands.router)
 app.include_router(dashboard.router)
 app.include_router(epics.router)
+app.include_router(tory.router)
 app.include_router(websocket.router)
 
 
