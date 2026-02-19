@@ -483,6 +483,8 @@ function handleThinktankMessage(data) {
   }
 }
 
+export { WebSocketManager };
+
 export let eventsWs = null;
 export let thinktankWs = null;
 
@@ -501,6 +503,28 @@ export function disconnectThinktankWs() {
   if (thinktankWs) {
     thinktankWs.close();
     thinktankWs = null;
+  }
+}
+
+// ── Tory Agent WebSocket ─────────────────────────────────────────────────
+
+let _toryAgentWs = null;
+
+export function connectToryAgentWs(sessionId, onMessage) {
+  if (_toryAgentWs) _toryAgentWs.close();
+  _toryAgentWs = new WebSocketManager(`/ws/tory-agent?session=${sessionId}`, onMessage);
+  _toryAgentWs.connect();
+  return _toryAgentWs;
+}
+
+export function sendToryAgentMessage(data) {
+  if (_toryAgentWs) _toryAgentWs.send(data);
+}
+
+export function disconnectToryAgentWs() {
+  if (_toryAgentWs) {
+    _toryAgentWs.close();
+    _toryAgentWs = null;
   }
 }
 
