@@ -3,7 +3,13 @@
 // Handles mic capture, WebSocket streaming, audio playback, and visual states.
 // ==========================================================================
 
-const WS_BASE = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+// Build both ws:// and wss:// base URLs for fallback logic.
+// When the page is served over HTTPS but uvicorn has no TLS, wss:// will fail.
+// We try wss:// first (if HTTPS), then fall back to ws:// after a timeout.
+const _host = window.location.host;
+const _isSecure = window.location.protocol === 'https:';
+const WS_BASE_PRIMARY   = `${_isSecure ? 'wss:' : 'ws:'}//${_host}`;
+const WS_BASE_FALLBACK  = _isSecure ? `ws://${_host}` : null;
 
 // ── Audio worklet processor (inline) ──────────────────────────────────────
 
@@ -53,7 +59,7 @@ export class VoiceChat {
     this.onResponse = opts.onResponse || (() => {});
     this.onStateChange = opts.onStateChange || (() => {});
 
-    this._state = 'idle'; // idle | listening | thinking | speaking
+    this._state = 'idle'; // idle | listening | thinking | speaking | error
     this._ws = null;
     this._audioCtx = null;
     this._mediaStream = null;
@@ -71,7 +77,7 @@ export class VoiceChat {
   get state() { return this._state; }
 
   async toggle() {
-    if (this._state === 'idle') {
+    if (this._state === 'idle' || this._state === 'error') {
       await this.start();
     } else {
       this.stop();
@@ -79,7 +85,7 @@ export class VoiceChat {
   }
 
   async start() {
-    if (this._state !== 'idle') return;
+    if (this._state !== 'idle' && this._state !== 'error') return;
 
     try {
       // Get mic permission
@@ -123,7 +129,7 @@ export class VoiceChat {
     } catch (err) {
       console.error('Voice start failed:', err);
       this._cleanup();
-      this._setState('idle');
+      this._setState('error');
       throw err;
     }
   }
@@ -144,20 +150,49 @@ export class VoiceChat {
   // ── WebSocket ───────────────────────────────────────────────────────────
 
   _connectWs() {
-    const url = `${WS_BASE}/api/voice/ws/${this.role}/${this.userId}`;
-    this._ws = new WebSocket(url);
-    this._ws.binaryType = 'arraybuffer';
+    const path = `/api/voice/ws/${this.role}/${this.userId}`;
+    const primaryUrl = `${WS_BASE_PRIMARY}${path}`;
 
-    this._ws.onopen = () => {
-      console.log(`[VoiceChat] Connected: ${this.role}/${this.userId}`);
+    if (WS_BASE_FALLBACK) {
+      // HTTPS page → try wss:// first, fall back to ws:// after 3s
+      const fallbackUrl = `${WS_BASE_FALLBACK}${path}`;
+      this._tryConnect(primaryUrl, () => {
+        console.log('[VoiceChat] wss:// failed, falling back to ws://');
+        this._tryConnect(fallbackUrl, null);
+      });
+    } else {
+      // HTTP page → ws:// directly, no fallback needed
+      this._tryConnect(primaryUrl, null);
+    }
+  }
+
+  /**
+   * Attempt a WebSocket connection. If it fails within 3s and fallbackFn is
+   * provided, call fallbackFn instead of entering error state.
+   */
+  _tryConnect(url, fallbackFn) {
+    const ws = new WebSocket(url);
+    ws.binaryType = 'arraybuffer';
+
+    const fallbackTimer = fallbackFn
+      ? setTimeout(() => {
+          // Connection didn't open in time — try fallback
+          ws.onopen = ws.onclose = ws.onerror = ws.onmessage = null;
+          ws.close();
+          fallbackFn();
+        }, 3000)
+      : null;
+
+    ws.onopen = () => {
+      clearTimeout(fallbackTimer);
+      this._ws = ws;
+      console.log(`[VoiceChat] Connected: ${url}`);
     };
 
-    this._ws.onmessage = (e) => {
+    ws.onmessage = (e) => {
       if (e.data instanceof ArrayBuffer) {
-        // Binary: MP3 audio chunk from TTS
         this._enqueueAudio(e.data);
       } else {
-        // JSON control message
         try {
           const msg = JSON.parse(e.data);
           this._handleServerMsg(msg);
@@ -165,16 +200,23 @@ export class VoiceChat {
       }
     };
 
-    this._ws.onclose = () => {
+    ws.onclose = () => {
+      clearTimeout(fallbackTimer);
       console.log('[VoiceChat] Disconnected');
-      if (this._state !== 'idle') {
+      if (this._state !== 'idle' && this._state !== 'error') {
         this._cleanup();
-        this._setState('idle');
+        this._setState('error');
       }
     };
 
-    this._ws.onerror = (err) => {
+    ws.onerror = (err) => {
+      clearTimeout(fallbackTimer);
       console.error('[VoiceChat] WebSocket error:', err);
+      if (fallbackFn) {
+        ws.onopen = ws.onclose = ws.onerror = ws.onmessage = null;
+        ws.close();
+        fallbackFn();
+      }
     };
   }
 
@@ -349,6 +391,7 @@ export class VoiceChat {
       listening: 'Listening... (click to stop)',
       thinking: 'Processing...',
       speaking: 'AI speaking... (click to interrupt)',
+      error: 'Connection failed — click to retry',
     };
     this._btn.title = titles[this._state] || '';
   }

@@ -6,7 +6,12 @@ import { setState, getState } from './state.js';
 import { showToast } from './components/toast.js';
 
 const BASE_URL = window.location.origin;
-const WS_BASE = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+// Build both ws:// and wss:// base URLs for fallback logic.
+// When the page is served over HTTPS but uvicorn has no TLS, wss:// will fail.
+const _host = window.location.host;
+const _isSecure = window.location.protocol === 'https:';
+const WS_BASE_PRIMARY  = `${_isSecure ? 'wss:' : 'ws:'}//${_host}`;
+const WS_BASE_FALLBACK = _isSecure ? `ws://${_host}` : null;
 
 // ── REST Client ────────────────────────────────────────────────────────────
 
@@ -240,18 +245,43 @@ class WebSocketManager {
 
   connect() {
     this.intentionalClose = false;
-    const url = `${WS_BASE}${this.path}`;
+    const primaryUrl = `${WS_BASE_PRIMARY}${this.path}`;
 
+    if (WS_BASE_FALLBACK && !this._triedFallback) {
+      // HTTPS page → try wss:// first, fall back to ws:// after 3s
+      const fallbackUrl = `${WS_BASE_FALLBACK}${this.path}`;
+      this._tryConnect(primaryUrl, () => {
+        console.log(`WebSocket wss:// failed [${this.path}], falling back to ws://`);
+        this._triedFallback = true;
+        this._tryConnect(fallbackUrl, null);
+      });
+    } else {
+      // HTTP page, or already fell back to ws:// → connect directly
+      this._tryConnect(this._triedFallback ? `${WS_BASE_FALLBACK}${this.path}` : primaryUrl, null);
+    }
+  }
+
+  _tryConnect(url, fallbackFn) {
     try {
       this.ws = new WebSocket(url);
     } catch (err) {
       console.error(`WebSocket connect error [${this.path}]:`, err);
+      if (fallbackFn) { fallbackFn(); return; }
       this._scheduleReconnect();
       return;
     }
 
+    const fallbackTimer = fallbackFn
+      ? setTimeout(() => {
+          this.ws.onopen = this.ws.onclose = this.ws.onerror = this.ws.onmessage = null;
+          this.ws.close();
+          fallbackFn();
+        }, 3000)
+      : null;
+
     this.ws.onopen = () => {
-      console.log(`WebSocket connected: ${this.path}`);
+      clearTimeout(fallbackTimer);
+      console.log(`WebSocket connected: ${url}`);
       this.reconnectDelay = 1000;
       setState({ wsConnected: true });
       this._updateStatusUI(true);
@@ -267,6 +297,7 @@ class WebSocketManager {
     };
 
     this.ws.onclose = (event) => {
+      clearTimeout(fallbackTimer);
       console.log(`WebSocket closed: ${this.path} (code=${event.code})`);
       setState({ wsConnected: false });
       this._updateStatusUI(false);
@@ -276,7 +307,13 @@ class WebSocketManager {
     };
 
     this.ws.onerror = (err) => {
+      clearTimeout(fallbackTimer);
       console.error(`WebSocket error [${this.path}]:`, err);
+      if (fallbackFn) {
+        this.ws.onopen = this.ws.onclose = this.ws.onerror = this.ws.onmessage = null;
+        this.ws.close();
+        fallbackFn();
+      }
     };
   }
 
