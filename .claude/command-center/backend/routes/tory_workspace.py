@@ -486,6 +486,255 @@ async def review_stats():
     return result
 
 
+# ── EPP Profile Display ────────────────────────────────────────────────────
+
+# EPP personality dimensions (13) — in raw data these are prefixed with "EPP"
+_PERSONALITY_DIMS = [
+    "Achievement", "Motivation", "Competitiveness", "Managerial",
+    "Assertiveness", "Extroversion", "Cooperativeness", "Patience",
+    "SelfConfidence", "Conscientiousness", "Openness", "Stability",
+    "StressTolerance",
+]
+
+# EPP job fit dimensions (12) — in raw data these lack the _JobFit suffix
+_JOBFIT_DIMS = [
+    "Accounting_JobFit", "AdminAsst_JobFit", "Analyst_JobFit",
+    "BankTeller_JobFit", "Collections_JobFit", "CustomerService_JobFit",
+    "FrontDesk_JobFit", "Manager_JobFit", "MedicalAsst_JobFit",
+    "Production_JobFit", "Programmer_JobFit", "Sales_JobFit",
+]
+
+# Mapping from raw assessment key to canonical dimension name
+_RAW_JOBFIT_MAP = {
+    "Accounting": "Accounting_JobFit",
+    "AdminAsst": "AdminAsst_JobFit",
+    "Analyst": "Analyst_JobFit",
+    "BankTeller": "BankTeller_JobFit",
+    "Collections": "Collections_JobFit",
+    "CustomerService": "CustomerService_JobFit",
+    "FrontDesk": "FrontDesk_JobFit",
+    "Manager": "Manager_JobFit",
+    "MedicalAsst": "MedicalAsst_JobFit",
+    "Production": "Production_JobFit",
+    "Programmer": "Programmer_JobFit",
+    "Sales": "Sales_JobFit",
+}
+
+# Onboarding Q&A fields to extract
+_QA_FIELDS = [
+    ("why_did_you_come", "Why I'm here"),
+    ("own_reason", "In my own words"),
+    ("call_yourself", "How I see myself"),
+    ("advance_your_career", "My career drive"),
+    ("imp_thing_career_plan", "What matters most"),
+    ("best_boss", "My ideal manager"),
+    ("success_look_like", "Success means"),
+    ("stay_longer", "Retention intent"),
+    ("future_months", "Time horizon"),
+]
+
+
+def _parse_epp_from_assessment(assessment_json: str) -> dict:
+    """Parse EPP scores from raw nx_user_onboardings.assesment_result JSON."""
+    try:
+        data = json.loads(assessment_json)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+    scores_raw = data.get("scores", {})
+    if not scores_raw:
+        return {}
+
+    epp = {}
+    # Personality dimensions (prefixed EPP*)
+    for dim in _PERSONALITY_DIMS:
+        key = f"EPP{dim}"
+        val = scores_raw.get(key)
+        if val is not None and val is not False:
+            try:
+                epp[dim] = float(val)
+            except (ValueError, TypeError):
+                pass
+
+    # Job fit dimensions (no prefix, no _JobFit suffix in raw data)
+    for raw_key, canonical in _RAW_JOBFIT_MAP.items():
+        val = scores_raw.get(raw_key)
+        if val is not None and val is not False:
+            try:
+                epp[canonical] = float(val)
+            except (ValueError, TypeError):
+                pass
+
+    return epp
+
+
+def _compute_strengths_gaps(epp_scores: dict) -> tuple[list, list]:
+    """Compute top 3 strengths (>70) and top 3 gaps (<30) from EPP scores."""
+    personality_scores = {k: v for k, v in epp_scores.items() if k in _PERSONALITY_DIMS}
+
+    strengths = sorted(
+        [{"trait": k, "score": v} for k, v in personality_scores.items() if v >= 70],
+        key=lambda x: x["score"], reverse=True,
+    )[:3]
+
+    gaps = sorted(
+        [{"trait": k, "score": v} for k, v in personality_scores.items() if v <= 30],
+        key=lambda x: x["score"],
+    )[:3]
+
+    return strengths, gaps
+
+
+def _parse_qa_value(val):
+    """Parse a Q&A field value — handles JSON arrays, strings, None."""
+    if val is None or val == "NULL" or val == "":
+        return None
+    if isinstance(val, str):
+        val = val.strip()
+        if val.startswith("["):
+            try:
+                parsed = json.loads(val)
+                if isinstance(parsed, list):
+                    return parsed
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return val
+    return val
+
+
+@router.get("/users/{user_id}/profile")
+async def get_user_profile(user_id: int):
+    """Full EPP profile display data for a learner.
+
+    Returns EPP scores (25 dimensions), onboarding Q&A, profile narrative,
+    top strengths/gaps. Falls back to raw assessment_result if no
+    tory_learner_profiles entry exists.
+    """
+    import subprocess
+
+    result = {
+        "nx_user_id": user_id,
+        "epp_scores": {},
+        "personality_scores": {},
+        "jobfit_scores": {},
+        "onboarding_qa": [],
+        "profile_narrative": None,
+        "motivation_cluster": [],
+        "learning_style": None,
+        "top_strengths": [],
+        "top_gaps": [],
+        "source": "none",
+    }
+
+    # 1. Try tory_learner_profiles first (most recent version)
+    profile_sql = (
+        "SELECT epp_summary, profile_narrative, strengths, gaps, "
+        "motivation_cluster, learning_style, confidence, version "
+        "FROM tory_learner_profiles "
+        f"WHERE nx_user_id = {int(user_id)} AND deleted_at IS NULL "
+        "ORDER BY version DESC LIMIT 1"
+    )
+    proc = subprocess.run(
+        ["mysql", "baap", "--batch", "--raw", "-e", profile_sql],
+        capture_output=True, text=True, timeout=10,
+    )
+
+    has_profile = False
+    if proc.returncode == 0 and proc.stdout.strip():
+        lines = proc.stdout.strip().split("\n")
+        if len(lines) >= 2:
+            headers = lines[0].split("\t")
+            vals = lines[1].split("\t")
+            row = {h: (vals[i] if i < len(vals) and vals[i] != "NULL" else None) for i, h in enumerate(headers)}
+
+            if row.get("epp_summary"):
+                try:
+                    epp = json.loads(row["epp_summary"])
+                    result["epp_scores"] = epp
+                    result["source"] = "tory_profile"
+                    has_profile = True
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            if row.get("profile_narrative"):
+                result["profile_narrative"] = row["profile_narrative"]
+
+            if row.get("motivation_cluster"):
+                try:
+                    result["motivation_cluster"] = json.loads(row["motivation_cluster"])
+                except (json.JSONDecodeError, TypeError):
+                    result["motivation_cluster"] = []
+
+            result["learning_style"] = row.get("learning_style")
+
+            # Use pre-computed strengths/gaps from profile if available
+            if row.get("strengths"):
+                try:
+                    result["top_strengths"] = json.loads(row["strengths"])[:3]
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            if row.get("gaps"):
+                try:
+                    result["top_gaps"] = json.loads(row["gaps"])[:3]
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+    # 2. Fallback: parse from nx_user_onboardings.assesment_result
+    onboarding_sql = (
+        "SELECT assesment_result, why_did_you_come, own_reason, "
+        "call_yourself, advance_your_career, imp_thing_career_plan, "
+        "best_boss, success_look_like, stay_longer, future_months "
+        "FROM nx_user_onboardings "
+        f"WHERE nx_user_id = {int(user_id)} AND deleted_at IS NULL "
+        "ORDER BY id DESC LIMIT 1"
+    )
+    proc2 = subprocess.run(
+        ["mysql", "baap", "--batch", "--raw", "-e", onboarding_sql],
+        capture_output=True, text=True, timeout=10,
+    )
+
+    if proc2.returncode == 0 and proc2.stdout.strip():
+        lines2 = proc2.stdout.strip().split("\n")
+        if len(lines2) >= 2:
+            headers2 = lines2[0].split("\t")
+            vals2 = lines2[1].split("\t")
+            row2 = {h: (vals2[i] if i < len(vals2) and vals2[i] != "NULL" else None) for i, h in enumerate(headers2)}
+
+            # Parse EPP from raw assessment if we don't have a profile
+            if not has_profile and row2.get("assesment_result"):
+                epp = _parse_epp_from_assessment(row2["assesment_result"])
+                if epp:
+                    result["epp_scores"] = epp
+                    result["source"] = "raw_assessment"
+
+            # Build onboarding Q&A
+            for field_name, label in _QA_FIELDS:
+                raw_val = row2.get(field_name)
+                parsed = _parse_qa_value(raw_val)
+                if parsed is not None:
+                    result["onboarding_qa"].append({
+                        "field": field_name,
+                        "label": label,
+                        "value": parsed,
+                    })
+
+    # 3. Split EPP scores into personality vs job fit
+    for dim in _PERSONALITY_DIMS:
+        if dim in result["epp_scores"]:
+            result["personality_scores"][dim] = result["epp_scores"][dim]
+    for dim in _JOBFIT_DIMS:
+        if dim in result["epp_scores"]:
+            result["jobfit_scores"][dim] = result["epp_scores"][dim]
+
+    # 4. Compute strengths/gaps if not already set from profile
+    if not result["top_strengths"] and not result["top_gaps"] and result["epp_scores"]:
+        strengths, gaps = _compute_strengths_gaps(result["epp_scores"])
+        result["top_strengths"] = strengths
+        result["top_gaps"] = gaps
+
+    return result
+
+
 # ── Path editing ────────────────────────────────────────────────────────────
 
 @router.put("/path/{user_id}/reorder")
