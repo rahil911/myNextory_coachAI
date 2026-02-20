@@ -1738,8 +1738,8 @@ details.tw-event[open] summary::after {
 /* ── Content Card ────────────────────────────────────────────────────── */
 
 .tw-content-card {
-  flex: 0 0 180px;
-  min-width: 180px;
+  flex: 0 0 220px;
+  min-width: 220px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -2116,6 +2116,380 @@ details.tw-event[open] summary::after {
   gap: var(--space-1);
   margin-top: var(--space-2);
   justify-content: flex-end;
+}
+
+/* ==========================================================================
+   ENRICHED CONTENT — AI Metadata Badges, Prompts, Timeline, Concepts
+   ========================================================================== */
+
+/* ── Content Stats Bar ──────────────────────────────────────────────── */
+
+.tw-content-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-2) var(--space-1);
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.tw-content-stat-sep {
+  color: var(--bg-4);
+}
+
+.tw-stat-approved {
+  color: var(--green);
+}
+
+.tw-stat-pending {
+  color: var(--yellow);
+}
+
+/* ── AI-Enriched Card Indicator ─────────────────────────────────────── */
+
+.tw-content-card.ai-enriched {
+  border-left: 2px solid var(--accent);
+}
+
+/* ── Summary in Card ────────────────────────────────────────────────── */
+
+.tw-content-card-summary {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Enrichment Badges ──────────────────────────────────────────────── */
+
+.tw-content-badges,
+.tw-preview-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.tw-enrich-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.tw-badge-diff {
+  font-weight: 600;
+}
+
+.tw-badge-time {
+  background: #6366f120;
+  color: #818cf8;
+  border: 1px solid #6366f140;
+}
+
+.tw-badge-style {
+  background: #8b5cf620;
+  color: #a78bfa;
+  border: 1px solid #8b5cf640;
+}
+
+.tw-badge-tone {
+  border: 1px solid transparent;
+}
+
+.tw-badge-seniority {
+  background: #14b8a620;
+  color: #2dd4bf;
+  border: 1px solid #14b8a640;
+}
+
+.tw-badge-slides {
+  background: #06b6d420;
+  color: #22d3ee;
+  border: 1px solid #06b6d440;
+}
+
+.tw-badge-quality {
+  background: #f59e0b18;
+  color: #f59e0b;
+  border: 1px solid #f59e0b30;
+  letter-spacing: 1px;
+}
+
+.tw-badge-confidence {
+  background: #22c55e20;
+  color: #4ade80;
+  border: 1px solid #22c55e40;
+}
+
+/* ── Key Concept Pills ──────────────────────────────────────────────── */
+
+.tw-content-concepts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+
+.tw-concept-pill {
+  font-size: 9px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--bg-3);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.tw-pill-more {
+  background: transparent;
+  color: var(--text-tertiary);
+  border-style: dashed;
+}
+
+/* ── Content Quality Stars (inline in card) ─────────────────────────── */
+
+.tw-content-quality {
+  font-size: 10px;
+  color: #f59e0b;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.tw-star-empty {
+  color: var(--text-tertiary);
+  opacity: 0.4;
+}
+
+/* ── No-AI Banner ───────────────────────────────────────────────────── */
+
+.tw-no-ai-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f59e0b10;
+  border: 1px solid #f59e0b30;
+  border-radius: var(--radius-sm);
+  color: #fbbf24;
+  font-size: var(--font-size-xs);
+  margin-bottom: var(--space-2);
+}
+
+/* ── Learning Objectives ────────────────────────────────────────────── */
+
+.tw-objectives-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tw-objective-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.tw-check {
+  color: var(--green);
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Coaching Prompts Accordion ─────────────────────────────────────── */
+
+.tw-coaching-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tw-prompt-card {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.tw-prompt-card:hover {
+  border-color: var(--accent);
+}
+
+.tw-prompt-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+.tw-prompt-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tw-prompt-preview {
+  flex: 1;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tw-prompt-copy {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-4);
+  color: var(--text-tertiary);
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: var(--font);
+}
+
+.tw-prompt-copy:hover {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.tw-prompt-body {
+  display: none;
+  padding: 0 var(--space-3) var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.tw-prompt-card.expanded .tw-prompt-body {
+  display: block;
+}
+
+.tw-prompt-card.expanded {
+  border-color: var(--accent);
+}
+
+/* ── Slide Analysis Timeline ────────────────────────────────────────── */
+
+.tw-slide-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--border);
+}
+
+.tw-timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 3px var(--space-2);
+  position: relative;
+}
+
+.tw-timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg-4);
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  margin-top: 3px;
+  position: relative;
+  left: calc(-1 * var(--space-2) - 5px);
+}
+
+.tw-timeline-item[data-phase="warm-up"] .tw-timeline-dot { background: #f59e0b; border-color: #f59e0b; }
+.tw-timeline-item[data-phase="core"] .tw-timeline-dot { background: var(--accent); border-color: var(--accent); }
+.tw-timeline-item[data-phase="reflection"] .tw-timeline-dot { background: #8b5cf6; border-color: #8b5cf6; }
+.tw-timeline-item[data-phase="wrap-up"] .tw-timeline-dot { background: var(--green); border-color: var(--green); }
+
+.tw-timeline-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-left: -4px;
+}
+
+.tw-timeline-phase {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--text-primary);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+}
+
+.tw-timeline-type {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.tw-timeline-desc {
+  font-size: 10px;
+  color: var(--text-secondary);
+  width: 100%;
+}
+
+/* ── Pair Recommendations ───────────────────────────────────────────── */
+
+.tw-pair-recs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tw-pair-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-width: 140px;
+  max-width: 220px;
+}
+
+.tw-pair-name {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.tw-pair-reason {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  line-height: 1.3;
 }
 
 /* ==========================================================================

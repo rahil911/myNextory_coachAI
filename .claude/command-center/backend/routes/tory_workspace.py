@@ -299,7 +299,11 @@ async def get_content_library(
         "jd.id AS journey_detail_id, jd.journey AS journey_name, "
         "COALESCE(sc.slide_count, 0) AS slide_count, "
         "ct.id AS tag_id, ct.trait_tags, ct.confidence, "
-        "ct.review_status, ct.difficulty, ct.learning_style, ct.pass_agreement "
+        "ct.review_status, ct.difficulty, ct.learning_style, ct.pass_agreement, "
+        "ct.summary, ct.learning_objectives, ct.key_concepts, "
+        "ct.emotional_tone, ct.target_seniority, ct.estimated_minutes, "
+        "ct.coaching_prompts, ct.content_quality, ct.pair_recommendations, "
+        "ct.slide_analysis "
         "FROM lesson_details ld "
         "JOIN nx_lessons nl ON ld.nx_lesson_id = nl.id "
         "JOIN nx_journey_details jd ON nl.nx_journey_detail_id = jd.id "
@@ -335,21 +339,32 @@ async def get_content_library(
         vals = line.split("\t")
         rows.append({col: (vals[i] if i < len(vals) and vals[i] != "NULL" else None) for i, col in enumerate(headers)})
 
+    json_fields = [
+        "trait_tags", "learning_objectives", "key_concepts",
+        "coaching_prompts", "content_quality", "pair_recommendations",
+        "slide_analysis",
+    ]
+    int_fields = [
+        "confidence", "difficulty", "pass_agreement",
+        "journey_detail_id", "lesson_detail_id", "nx_lesson_id",
+        "slide_count", "tag_id", "estimated_minutes",
+    ]
+
     for row in rows:
-        if row.get("trait_tags"):
-            try:
-                row["trait_tags"] = json.loads(row["trait_tags"])
-            except (json.JSONDecodeError, TypeError):
-                row["trait_tags"] = []
-        else:
-            row["trait_tags"] = []
-        for field in ("confidence", "difficulty", "pass_agreement"):
-            row[field] = int(row[field]) if row.get(field) else None
-        row["journey_detail_id"] = int(row["journey_detail_id"]) if row.get("journey_detail_id") else None
-        row["lesson_detail_id"] = int(row["lesson_detail_id"]) if row.get("lesson_detail_id") else None
-        row["nx_lesson_id"] = int(row["nx_lesson_id"]) if row.get("nx_lesson_id") else None
-        row["slide_count"] = int(row["slide_count"]) if row.get("slide_count") else 0
-        row["tag_id"] = int(row["tag_id"]) if row.get("tag_id") else None
+        for f in json_fields:
+            if row.get(f):
+                try:
+                    row[f] = json.loads(row[f])
+                except (json.JSONDecodeError, TypeError):
+                    if f == "trait_tags":
+                        row[f] = []
+            elif f == "trait_tags":
+                row[f] = []
+        for f in int_fields:
+            if f == "slide_count":
+                row[f] = int(row[f]) if row.get(f) else 0
+            else:
+                row[f] = int(row[f]) if row.get(f) else None
 
     journey_map = {}
     ungrouped = []

@@ -1,0 +1,38 @@
+bd show baap-093 && bd update baap-093 --status=in_progress
+
+Your task: Build the Content Library UI that shows enriched lesson data with all AI-generated fields.
+
+CONTEXT (what exists on main):
+- Content 360 page: .claude/command-center/frontend/js/views/content-360.js (696 lines), css/content-360.css (835 lines)
+- Tory workspace: .claude/command-center/frontend/js/views/tory-workspace.js — main workspace with EPP + slide viewer
+- Backend routes: .claude/command-center/backend/routes/tory_workspace.py — already has content-library API
+- Content Processor: .claude/mcp/content_processor.py — generates 15 fields per lesson
+- DB: tory_content_tags (now has 15 AI fields: summary, learning_objectives, key_concepts, emotional_tone, target_seniority, estimated_minutes, coaching_prompts, content_quality, pair_recommendations, slide_analysis, rag_chunk_ids, plus existing trait_tags, difficulty, learning_style)
+
+WHAT TO BUILD:
+1. Upgrade the Content tab in tory-workspace.js:
+   - Show ALL lessons from DB (not gated by tags existing)
+   - When AI tags exist, show: summary, difficulty badge (1-5 stars), learning style icon, emotional tone indicator, estimated minutes
+   - Coaching prompts section: expandable cards with pre-generated discussion starters
+   - Learning objectives displayed as checklist items
+   - Key concepts as searchable tag pills
+   - Content quality score with visual indicator
+   - Pair recommendations as 'Related Lessons' links
+   - Slide analysis showing slide roles (warm-up/core/reflection/wrap-up)
+
+2. Update the Content 360 page to show ALL 15 fields:
+   - EPP dimension coverage heatmap
+   - Lesson quality grid
+   - AI processing status (processed vs pending)
+   - Tag confidence scores with visual indicators
+   - Review queue integration (pending/approved/corrected status)
+
+3. Backend API updates (tory_workspace.py):
+   - GET /api/tory/content-library — return lessons with ALL 15 fields from tory_content_tags
+   - GET /api/tory/content/:lessonId — single lesson with full AI metadata
+   - GET /api/tory/content/:lessonId/coaching-prompts — pre-generated coaching prompts
+   - GET /api/tory/content/search — search by key concepts
+
+IMPORTANT: All data comes from the real DB. The tory_content_tags table may have some lessons processed (with all 15 fields) and some not yet processed. Show both — processed lessons show full AI data, unprocessed show basic info. Never show dummy data.
+
+Production grade UI with proper styling matching existing command-center design.

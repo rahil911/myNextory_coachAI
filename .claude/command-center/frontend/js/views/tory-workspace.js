@@ -1390,6 +1390,8 @@ let _contentCache = null;        // Cached content library data
 let _contentSearch = '';         // Search filter
 let _contentJourneyFilter = '';  // Journey filter
 let _contentReviewFilter = '';   // Review status filter
+let _contentDifficultyFilter = ''; // Difficulty filter
+let _contentStyleFilter = '';    // Learning style filter
 let _contentExpanded = null;     // { lessonId, tagId } of expanded card
 let _contentSlides = null;       // Current slides data for modal
 let _contentSlideIdx = 0;        // Current slide index
@@ -1438,6 +1440,22 @@ function renderContentTab(el) {
         <option value="needs_review" ${_contentReviewFilter === 'needs_review' ? 'selected' : ''}>Needs Review</option>
         <option value="corrected" ${_contentReviewFilter === 'corrected' ? 'selected' : ''}>Corrected</option>
       </select>
+      <select id="tw-content-difficulty-filter">
+        <option value="">All Difficulty</option>
+        <option value="1" ${_contentDifficultyFilter === '1' ? 'selected' : ''}>Beginner (1)</option>
+        <option value="2" ${_contentDifficultyFilter === '2' ? 'selected' : ''}>Easy (2)</option>
+        <option value="3" ${_contentDifficultyFilter === '3' ? 'selected' : ''}>Moderate (3)</option>
+        <option value="4" ${_contentDifficultyFilter === '4' ? 'selected' : ''}>Advanced (4)</option>
+        <option value="5" ${_contentDifficultyFilter === '5' ? 'selected' : ''}>Expert (5)</option>
+      </select>
+      <select id="tw-content-style-filter">
+        <option value="">All Styles</option>
+        <option value="visual" ${_contentStyleFilter === 'visual' ? 'selected' : ''}>Visual</option>
+        <option value="reflective" ${_contentStyleFilter === 'reflective' ? 'selected' : ''}>Reflective</option>
+        <option value="active" ${_contentStyleFilter === 'active' ? 'selected' : ''}>Active</option>
+        <option value="theoretical" ${_contentStyleFilter === 'theoretical' ? 'selected' : ''}>Theoretical</option>
+        <option value="blended" ${_contentStyleFilter === 'blended' ? 'selected' : ''}>Blended</option>
+      </select>
     </div>
     <div class="tw-content-toolbar-right">
       <button class="btn btn-ghost btn-sm" id="tw-content-refresh" title="Refresh content library">Refresh</button>
@@ -1461,6 +1479,14 @@ function renderContentTab(el) {
   });
   toolbar.querySelector('#tw-content-review-filter').addEventListener('change', (e) => {
     _contentReviewFilter = e.target.value;
+    renderContentLibraryBody();
+  });
+  toolbar.querySelector('#tw-content-difficulty-filter').addEventListener('change', (e) => {
+    _contentDifficultyFilter = e.target.value;
+    renderContentLibraryBody();
+  });
+  toolbar.querySelector('#tw-content-style-filter').addEventListener('change', (e) => {
+    _contentStyleFilter = e.target.value;
     renderContentLibraryBody();
   });
   toolbar.querySelector('#tw-content-refresh').addEventListener('click', () => {
@@ -1494,6 +1520,23 @@ function renderContentLibraryBody() {
 
   body.innerHTML = '';
   const journeys = _contentCache.journeys || [];
+
+  // Stats bar
+  const totalLessons = _contentCache.total_lessons || 0;
+  const tagCount = _contentCache.tag_count || 0;
+  const reviewStats = _contentCache.review_stats || {};
+  const statsBar = document.createElement('div');
+  statsBar.className = 'tw-content-stats-bar';
+  statsBar.innerHTML = `
+    <span class="tw-content-stat">${totalLessons} lessons</span>
+    <span class="tw-content-stat-sep">&middot;</span>
+    <span class="tw-content-stat">${tagCount} AI-enriched</span>
+    <span class="tw-content-stat-sep">&middot;</span>
+    <span class="tw-content-stat">${totalLessons - tagCount} basic</span>
+    ${reviewStats.approved ? `<span class="tw-content-stat-sep">&middot;</span><span class="tw-content-stat tw-stat-approved">${reviewStats.approved} approved</span>` : ''}
+    ${reviewStats.pending ? `<span class="tw-content-stat-sep">&middot;</span><span class="tw-content-stat tw-stat-pending">${reviewStats.pending} pending</span>` : ''}
+  `;
+  body.appendChild(statsBar);
 
   // Get user path data if user is selected
   const tw = getState().toryWorkspace;
@@ -1576,36 +1619,69 @@ function renderContentLibraryBody() {
 function filterLessons(lessons) {
   return lessons.filter(l => {
     if (_contentSearch) {
-      const name = (l.lesson_name || '').toLowerCase();
-      const desc = (l.lesson_desc || '').toLowerCase();
-      if (!name.includes(_contentSearch) && !desc.includes(_contentSearch)) return false;
+      const haystack = [
+        l.lesson_name,
+        l.lesson_desc,
+        l.summary,
+        Array.isArray(l.key_concepts) ? l.key_concepts.join(' ') : (l.key_concepts || ''),
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(_contentSearch)) return false;
     }
     if (_contentReviewFilter && l.review_status !== _contentReviewFilter) return false;
+    if (_contentDifficultyFilter && l.difficulty !== parseInt(_contentDifficultyFilter)) return false;
+    if (_contentStyleFilter && l.learning_style !== _contentStyleFilter) return false;
     return true;
   });
+}
+
+// ── Content enrichment helpers ───────────────────────────────────────────────
+
+const STYLE_ICONS = {
+  visual: '\u{1F3A8}', reflective: '\u{1F4AD}', active: '\u26A1',
+  theoretical: '\u{1F4D6}', blended: '\u{1F504}',
+};
+
+const TONE_COLORS = {
+  motivational: '#f59e0b', empathetic: '#ec4899', analytical: '#3b82f6',
+  challenging: '#ef4444', supportive: '#22c55e', neutral: '#6b7280',
+};
+
+const DIFFICULTY_LABELS = ['', 'Beginner', 'Easy', 'Moderate', 'Advanced', 'Expert'];
+const DIFFICULTY_COLORS = ['', '#22c55e', '#22c55e', '#eab308', '#f97316', '#ef4444'];
+
+function _extractQualityScore(quality) {
+  if (!quality) return null;
+  if (typeof quality === 'number') return quality;
+  if (typeof quality === 'object') return quality.overall || quality.score || quality.rating || null;
+  const num = parseFloat(quality);
+  return isNaN(num) ? null : num;
+}
+
+function _truncate(str, max) {
+  if (!str || str.length <= max) return str || '';
+  return str.slice(0, max) + '...';
 }
 
 function buildContentCard(lesson, pathRec, journey) {
   const lessonId = parseInt(lesson.nx_lesson_id, 10);
   const isExpanded = _contentExpanded && _contentExpanded.lessonId === lessonId;
   const slideCount = parseInt(lesson.slide_count, 10) || 0;
+  const hasAI = !!lesson.tag_id;
 
   const card = document.createElement('div');
   const noSlides = slideCount === 0;
-  card.className = `tw-content-card${isExpanded ? ' expanded' : ''}${noSlides ? ' no-content' : ''}`;
+  card.className = `tw-content-card${isExpanded ? ' expanded' : ''}${noSlides ? ' no-content' : ''}${hasAI ? ' ai-enriched' : ''}`;
   card.dataset.lessonId = lessonId;
 
   const confidence = Math.round(lesson.confidence || 0);
-  const difficulty = lesson.difficulty || 3;
+  const difficulty = lesson.difficulty;
   const reviewStatus = lesson.review_status || 'pending';
   const learningStyle = lesson.learning_style || '';
 
   // Review status color map
   const reviewColors = {
-    approved: 'var(--green)',
-    pending: 'var(--yellow)',
-    needs_review: 'var(--red)',
-    corrected: 'var(--blue)',
+    approved: 'var(--green)', pending: 'var(--yellow)',
+    needs_review: 'var(--red)', corrected: 'var(--blue)',
     dismissed: 'var(--text-tertiary)',
   };
   const reviewColor = reviewColors[reviewStatus] || reviewColors.pending;
@@ -1616,26 +1692,70 @@ function buildContentCard(lesson, pathRec, journey) {
     const score = Math.round(pathRec.match_score || 0);
     const matchClass = score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low';
     matchOverlay = `<div class="tw-content-match ${matchClass}">${score}</div>`;
-
-    // Path position badge
     const seq = pathRec.sequence || '?';
-    const isDiscovery = pathRec.is_discovery;
     matchOverlay += `<div class="tw-content-path-badge">In Path #${seq}</div>`;
-    if (isDiscovery) {
-      matchOverlay += `<div class="tw-content-discovery-badge">Discovery</div>`;
+    if (pathRec.is_discovery) matchOverlay += `<div class="tw-content-discovery-badge">Discovery</div>`;
+  }
+
+  // ── Build badge row: difficulty, time, style, tone, seniority ──
+  let badges = '';
+  if (hasAI) {
+    const parts = [];
+    if (difficulty) {
+      const dc = DIFFICULTY_COLORS[difficulty] || '#6b7280';
+      parts.push(`<span class="tw-enrich-badge tw-badge-diff" style="background:${dc}20;color:${dc};border:1px solid ${dc}40">${DIFFICULTY_LABELS[difficulty] || difficulty}</span>`);
+    }
+    if (lesson.estimated_minutes) {
+      parts.push(`<span class="tw-enrich-badge tw-badge-time">${lesson.estimated_minutes}m</span>`);
+    }
+    if (learningStyle) {
+      parts.push(`<span class="tw-enrich-badge tw-badge-style">${STYLE_ICONS[learningStyle] || ''} ${esc(learningStyle)}</span>`);
+    }
+    if (lesson.emotional_tone) {
+      const tc = TONE_COLORS[lesson.emotional_tone] || '#6b7280';
+      parts.push(`<span class="tw-enrich-badge tw-badge-tone" style="background:${tc}20;color:${tc}">${esc(lesson.emotional_tone)}</span>`);
+    }
+    if (lesson.target_seniority) {
+      parts.push(`<span class="tw-enrich-badge tw-badge-seniority">${esc(lesson.target_seniority)}</span>`);
+    }
+    if (parts.length > 0) badges = `<div class="tw-content-badges">${parts.join('')}</div>`;
+  } else {
+    // Basic card: show difficulty dots if available
+    if (difficulty) {
+      badges = `<div class="tw-content-card-meta">${difficultyDots(difficulty)}${learningStyle ? `<span class="tw-content-ls-badge">${esc(learningStyle)}</span>` : ''}</div>`;
     }
   }
 
-  // Media icons for production content
+  // ── Summary (2-line preview) ──
+  const summaryHtml = lesson.summary
+    ? `<div class="tw-content-card-summary">${esc(_truncate(lesson.summary, 100))}</div>`
+    : '';
+
+  // ── Key concepts as pills (top 4) ──
+  let conceptsHtml = '';
+  const concepts = Array.isArray(lesson.key_concepts) ? lesson.key_concepts : [];
+  if (concepts.length > 0) {
+    conceptsHtml = `<div class="tw-content-concepts">${concepts.slice(0, 4).map(c =>
+      `<span class="tw-concept-pill">${esc(String(c))}</span>`
+    ).join('')}${concepts.length > 4 ? `<span class="tw-concept-pill tw-pill-more">+${concepts.length - 4}</span>` : ''}</div>`;
+  }
+
+  // ── Content quality score ──
+  let qualityHtml = '';
+  const qScore = _extractQualityScore(lesson.content_quality);
+  if (qScore !== null) {
+    const full = Math.floor(qScore);
+    const half = qScore - full >= 0.5 ? 1 : 0;
+    qualityHtml = `<span class="tw-content-quality" title="Quality: ${qScore.toFixed(1)}/5">${'\u2605'.repeat(full)}${half ? '\u00BD' : ''}${'<span class="tw-star-empty">\u2606</span>'.repeat(5 - full - half)}</span>`;
+  }
+
+  // Slide count
   let mediaIcons = '';
   if (slideCount > 0) {
     mediaIcons = `<span class="tw-content-slides-badge" title="${slideCount} slides">&#128444; ${slideCount}</span>`;
   }
 
-  // Description
-  const desc = lesson.lesson_desc || '';
-
-  // Trait tags (top 3 by relevance)
+  // ── Trait tags (top 3) ──
   const traits = (lesson.trait_tags || [])
     .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
     .slice(0, 3);
@@ -1648,14 +1768,13 @@ function buildContentCard(lesson, pathRec, journey) {
   card.innerHTML = `
     ${matchOverlay}
     <div class="tw-content-card-title">${esc(lesson.lesson_name || 'Untitled')}</div>
-    ${desc ? `<div class="tw-content-card-desc">${esc(desc)}</div>` : ''}
+    ${summaryHtml}
+    ${badges}
+    ${conceptsHtml}
     ${traitHtml}
-    <div class="tw-content-card-meta">
-      ${difficultyDots(difficulty)}
-      ${learningStyle ? `<span class="tw-content-ls-badge">${esc(learningStyle)}</span>` : ''}
-    </div>
     <div class="tw-content-card-bottom">
       <span class="tw-content-review" style="color:${reviewColor}">${esc(reviewStatus)}</span>
+      ${qualityHtml}
       <div class="tw-content-confidence" title="Confidence: ${confidence}%">
         <div class="tw-content-confidence-bar" style="width:${confidence}%"></div>
       </div>
@@ -1676,7 +1795,7 @@ function buildContentCard(lesson, pathRec, journey) {
   return card;
 }
 
-// ── Layer 2: Lesson Detail Preview ──────────────────────────────────────────
+// ── Layer 2: Lesson Detail Preview (Enriched) ──────────────────────────────
 
 function buildContentPreview(lesson, pathRec, journey) {
   const panel = document.createElement('div');
@@ -1687,43 +1806,174 @@ function buildContentPreview(lesson, pathRec, journey) {
     try { lesson.trait_tags = JSON.parse(tags); } catch { lesson.trait_tags = []; }
   }
   const traitTags = Array.isArray(lesson.trait_tags) ? lesson.trait_tags : [];
+  const hasAI = !!lesson.tag_id;
+  const slideCount = lesson.slide_count || 0;
 
   const directionColors = { builds: 'var(--green)', leverages: 'var(--blue)', challenges: 'var(--yellow)' };
-  const slideCount = lesson.slide_count || 0;
+
+  // ── Header with badges ──
+  let headerBadges = '';
+  if (hasAI) {
+    const parts = [];
+    if (lesson.difficulty) {
+      const dc = DIFFICULTY_COLORS[lesson.difficulty] || '#6b7280';
+      parts.push(`<span class="tw-enrich-badge tw-badge-diff" style="background:${dc}20;color:${dc};border:1px solid ${dc}40">${DIFFICULTY_LABELS[lesson.difficulty]}</span>`);
+    }
+    if (lesson.estimated_minutes) parts.push(`<span class="tw-enrich-badge tw-badge-time">${lesson.estimated_minutes} min</span>`);
+    if (lesson.learning_style) parts.push(`<span class="tw-enrich-badge tw-badge-style">${STYLE_ICONS[lesson.learning_style] || ''} ${esc(lesson.learning_style)}</span>`);
+    if (lesson.emotional_tone) {
+      const tc = TONE_COLORS[lesson.emotional_tone] || '#6b7280';
+      parts.push(`<span class="tw-enrich-badge tw-badge-tone" style="background:${tc}20;color:${tc}">${esc(lesson.emotional_tone)}</span>`);
+    }
+    if (lesson.target_seniority) parts.push(`<span class="tw-enrich-badge tw-badge-seniority">${esc(lesson.target_seniority)}</span>`);
+    if (slideCount > 0) parts.push(`<span class="tw-enrich-badge tw-badge-slides">${slideCount} slides</span>`);
+    const qScore = _extractQualityScore(lesson.content_quality);
+    if (qScore !== null) {
+      const full = Math.floor(qScore);
+      const half = qScore - full >= 0.5 ? 1 : 0;
+      parts.push(`<span class="tw-enrich-badge tw-badge-quality">${'\u2605'.repeat(full)}${half ? '\u00BD' : ''} ${qScore.toFixed(1)}</span>`);
+    }
+    if (lesson.confidence) parts.push(`<span class="tw-enrich-badge tw-badge-confidence">AI ${lesson.confidence}%</span>`);
+    headerBadges = parts.length > 0 ? `<div class="tw-preview-badges">${parts.join('')}</div>` : '';
+  }
 
   let html = `
     <div class="tw-content-preview-header">
-      <div class="tw-content-preview-title">${esc(lesson.lesson_name || 'Untitled')}</div>
+      <div>
+        <div class="tw-content-preview-title">${esc(lesson.lesson_name || 'Untitled')}</div>
+        <div class="tw-content-preview-journey">${esc(journey.journey_name)}</div>
+      </div>
       <button class="tw-content-preview-close" id="tw-preview-close">&times;</button>
     </div>
     <div class="tw-content-preview-body">
-      <div class="tw-content-preview-info">
-        <span class="tw-content-preview-journey">${esc(journey.journey_name)}</span>
-        <span>Difficulty: ${difficultyDots(lesson.difficulty || 3)}</span>
-        <span>Style: ${esc(lesson.learning_style || '—')}</span>
-      </div>
-      ${lesson.lesson_desc ? `<p class="tw-content-preview-desc">${esc(lesson.lesson_desc)}</p>` : ''}
+      ${headerBadges}
+      ${!hasAI ? '<div class="tw-no-ai-banner">AI metadata not yet generated. Showing basic info only.</div>' : ''}
+  `;
 
+  // ── Summary ──
+  if (lesson.summary) {
+    html += `
       <div class="tw-content-preview-section">
-        <div class="tw-content-preview-label">Trait Tags</div>
-        <div class="tw-content-tags">
-          ${traitTags.length > 0 ? traitTags.map(t => {
-            const color = directionColors[t.direction] || 'var(--text-secondary)';
-            return `<span class="tw-content-tag" style="border-left-color:${color}">
-              <strong>${esc(t.trait)}</strong> ${t.relevance_score || ''}
-              <em>${esc(t.direction || '')}</em>
-            </span>`;
-          }).join('') : '<span class="tw-content-tag-empty">No tags</span>'}
-        </div>
+        <div class="tw-content-preview-label">Summary</div>
+        <p class="tw-content-preview-desc">${esc(lesson.summary)}</p>
       </div>
+    `;
+  } else if (lesson.lesson_desc) {
+    html += `<p class="tw-content-preview-desc">${esc(lesson.lesson_desc)}</p>`;
+  }
 
+  // ── Key Concepts ──
+  const concepts = Array.isArray(lesson.key_concepts) ? lesson.key_concepts : [];
+  if (concepts.length > 0) {
+    html += `
       <div class="tw-content-preview-section">
-        <div class="tw-content-preview-label">Review</div>
-        <div class="tw-content-preview-review">
-          <span>Status: <strong>${esc(lesson.review_status || 'pending')}</strong></span>
-          <span>Confidence: <strong>${Math.round(lesson.confidence || 0)}%</strong></span>
-        </div>
+        <div class="tw-content-preview-label">Key Concepts</div>
+        <div class="tw-content-concepts">${concepts.map(c =>
+          `<span class="tw-concept-pill">${esc(String(c))}</span>`
+        ).join('')}</div>
       </div>
+    `;
+  }
+
+  // ── Learning Objectives ──
+  const objectives = Array.isArray(lesson.learning_objectives) ? lesson.learning_objectives : [];
+  if (objectives.length > 0) {
+    html += `
+      <div class="tw-content-preview-section">
+        <div class="tw-content-preview-label">Learning Objectives</div>
+        <ul class="tw-objectives-list">${objectives.map(o =>
+          `<li class="tw-objective-item"><span class="tw-check">\u2713</span> ${esc(String(o))}</li>`
+        ).join('')}</ul>
+      </div>
+    `;
+  }
+
+  // ── Coaching Prompts (expandable accordion) ──
+  const prompts = Array.isArray(lesson.coaching_prompts) ? lesson.coaching_prompts : [];
+  if (prompts.length > 0) {
+    html += `
+      <div class="tw-content-preview-section">
+        <div class="tw-content-preview-label">Coaching Prompts</div>
+        <div class="tw-coaching-prompts">${prompts.map((p, i) => {
+          const text = typeof p === 'string' ? p : (p.prompt || p.text || JSON.stringify(p));
+          return `
+            <div class="tw-prompt-card" data-idx="${i}">
+              <div class="tw-prompt-header">
+                <span class="tw-prompt-num">${i + 1}</span>
+                <span class="tw-prompt-preview">${esc(_truncate(text, 80))}</span>
+                <button class="tw-prompt-copy" data-text="${esc(text).replace(/"/g, '&quot;')}">Copy</button>
+              </div>
+              <div class="tw-prompt-body">${esc(text)}</div>
+            </div>
+          `;
+        }).join('')}</div>
+      </div>
+    `;
+  }
+
+  // ── Slide Analysis Timeline ──
+  const slideAnalysis = Array.isArray(lesson.slide_analysis) ? lesson.slide_analysis : [];
+  if (slideAnalysis.length > 0) {
+    html += `
+      <div class="tw-content-preview-section">
+        <div class="tw-content-preview-label">Slide Analysis</div>
+        <div class="tw-slide-timeline">${slideAnalysis.map(s => {
+          const phase = s.phase || s.role || 'core';
+          return `
+            <div class="tw-timeline-item" data-phase="${esc(phase)}">
+              <div class="tw-timeline-dot"></div>
+              <div class="tw-timeline-content">
+                <span class="tw-timeline-phase">${esc(phase)}</span>
+                <span class="tw-timeline-type">${esc(s.type || s.slide_type || '')}</span>
+                ${s.description ? `<span class="tw-timeline-desc">${esc(_truncate(s.description, 60))}</span>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}</div>
+      </div>
+    `;
+  }
+
+  // ── Pair Recommendations ──
+  const pairs = Array.isArray(lesson.pair_recommendations) ? lesson.pair_recommendations : [];
+  if (pairs.length > 0) {
+    html += `
+      <div class="tw-content-preview-section">
+        <div class="tw-content-preview-label">Related Lessons</div>
+        <div class="tw-pair-recs">${pairs.map(p => {
+          const name = p.lesson_name || p.title || p.name || 'Related Lesson';
+          const reason = p.reason || p.shared_dimensions || '';
+          return `<div class="tw-pair-card"><span class="tw-pair-name">${esc(String(name))}</span>${reason ? `<span class="tw-pair-reason">${esc(String(reason))}</span>` : ''}</div>`;
+        }).join('')}</div>
+      </div>
+    `;
+  }
+
+  // ── Trait Tags ──
+  html += `
+    <div class="tw-content-preview-section">
+      <div class="tw-content-preview-label">Trait Tags</div>
+      <div class="tw-content-tags">
+        ${traitTags.length > 0 ? traitTags.map(t => {
+          const color = directionColors[t.direction] || 'var(--text-secondary)';
+          return `<span class="tw-content-tag" style="border-left-color:${color}">
+            <strong>${esc(t.trait)}</strong> ${t.relevance_score || ''}
+            <em>${esc(t.direction || '')}</em>
+          </span>`;
+        }).join('') : '<span class="tw-content-tag-empty">No tags</span>'}
+      </div>
+    </div>
+  `;
+
+  // ── Review Status ──
+  html += `
+    <div class="tw-content-preview-section">
+      <div class="tw-content-preview-label">Review</div>
+      <div class="tw-content-preview-review">
+        <span>Status: <strong>${esc(lesson.review_status || 'pending')}</strong></span>
+        <span>Confidence: <strong>${Math.round(lesson.confidence || 0)}%</strong></span>
+      </div>
+    </div>
   `;
 
   // Path info if user selected
@@ -1768,7 +2018,8 @@ function buildContentPreview(lesson, pathRec, journey) {
 
   panel.innerHTML = html;
 
-  // Wire events
+  // ── Wire events ──
+
   panel.querySelector('#tw-preview-close').addEventListener('click', () => {
     _contentExpanded = null;
     renderContentLibraryBody();
@@ -1783,6 +2034,24 @@ function buildContentPreview(lesson, pathRec, journey) {
       if (ldId) openSlideViewer(ldId, name);
     });
   }
+
+  // Coaching prompt expand/copy
+  panel.querySelectorAll('.tw-prompt-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.tw-prompt-copy')) return;
+      card.classList.toggle('expanded');
+    });
+  });
+  panel.querySelectorAll('.tw-prompt-copy').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const text = btn.dataset.text;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      });
+    });
+  });
 
   // Approve
   panel.querySelector('.tw-action-approve')?.addEventListener('click', async (e) => {
