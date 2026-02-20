@@ -25,7 +25,7 @@ try:
 except ImportError:
     HAS_FILELOCK = False
 
-from config import USER_OVERLAY_DIR
+from rag_config import USER_OVERLAY_DIR
 
 logger = structlog.get_logger()
 

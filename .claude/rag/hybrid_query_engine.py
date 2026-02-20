@@ -30,7 +30,7 @@ from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from langchain_openai import OpenAIEmbeddings
 
-from config import (
+from rag_config import (
     EMBEDDING_MODEL, EMBEDDING_DIMENSIONS,
     SONNET_MODEL, OPUS_MODEL, TIER_THRESHOLD,
     USER_OVERLAY_DIR, MAX_USER_OVERLAYS,
@@ -261,7 +261,7 @@ class HybridQueryEngine:
         try:
             import subprocess
             import xml.etree.ElementTree as ET
-            from config import DATABASE, DB_QUERY_TIMEOUT
+            from rag_config import DATABASE, DB_QUERY_TIMEOUT
 
             result = subprocess.run(
                 [

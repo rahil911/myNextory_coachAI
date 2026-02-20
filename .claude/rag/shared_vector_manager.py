@@ -26,7 +26,7 @@ from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.documents import Document
 from uuid import uuid4
 
-from config import (
+from rag_config import (
     EMBEDDING_MODEL, EMBEDDING_DIMENSIONS,
     RAG_FAISS_DIR, RAG_BASE_DIR,
 )

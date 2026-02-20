@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
 
-from config import (
+from rag_config import (
     ANTHROPIC_API_KEY,
     DATABASE,
     DB_QUERY_TIMEOUT,

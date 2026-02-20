@@ -36,7 +36,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from config import (
+from rag_config import (
     DATABASE, DB_QUERY_TIMEOUT,
     EMBEDDING_MODEL, EMBEDDING_DIMENSIONS, EMBEDDING_PRICE_PER_1K_TOKENS,
     CHUNK_SIZE_TOKENS, CHUNK_OVERLAP_TOKENS,

@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional
 import structlog
 from anthropic import Anthropic
 
-from config import (
+from rag_config import (
     ANTHROPIC_API_KEY,
     DATABASE,
     DB_QUERY_TIMEOUT,

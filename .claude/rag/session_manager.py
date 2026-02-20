@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional
 
 import structlog
 
-from config import (
+from rag_config import (
     DATABASE,
     DB_QUERY_TIMEOUT,
     SONNET_MODEL,

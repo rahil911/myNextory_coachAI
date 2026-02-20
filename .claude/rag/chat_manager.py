@@ -23,7 +23,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_anthropic import ChatAnthropic
 import structlog
 
-from config import (
+from rag_config import (
     SONNET_MODEL, OPUS_MODEL, TIER_THRESHOLD,
     MEMORY_BUFFER_SIZE, MEMORY_SUMMARY_THRESHOLD, MEMORY_KEY_FACTS_MAX,
     MAX_TOTAL_TOKENS,

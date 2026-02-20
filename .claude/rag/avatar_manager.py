@@ -10,9 +10,9 @@ import requests
 from typing import Dict, Optional, Any
 import structlog
 
-from config import (
+from rag_config import (
     HEYGEN_API_KEY,
-    AVATAR_ID, 
+    AVATAR_ID,
     AUDIO_ID,
     HEYGEN_BASE_URL
 )

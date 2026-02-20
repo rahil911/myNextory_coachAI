@@ -29,7 +29,7 @@ import xxhash
 from bloom_filter2 import BloomFilter
 from langchain_core.documents import Document
 
-from config import (
+from rag_config import (
     DATABASE, DB_QUERY_TIMEOUT, USER_OVERLAY_DIR,
     EMBEDDING_PRICE_PER_1K_TOKENS,
 )
