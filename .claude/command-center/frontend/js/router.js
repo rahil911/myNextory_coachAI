@@ -32,7 +32,8 @@ export function navigate(hash) {
     agents: 'Agents',
     epics: 'Epics',
     approvals: 'Approvals',
-    tory: 'Tory Workspace'
+    tory: 'Tory Workspace',
+    companion: 'Tory Companion',
   };
   const titleEl = document.getElementById('topbar-title');
   if (titleEl) titleEl.textContent = titles[view] || view;

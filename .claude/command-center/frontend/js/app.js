@@ -21,6 +21,7 @@ import { renderArchitecture } from './views/architecture.js';
 import { renderToryWorkspace } from './views/tory-workspace.js';
 import { renderToryAdmin } from './views/tory-admin.js';
 import { renderContent360 } from './views/content-360.js';
+import { renderCompanionChat } from './views/companion-chat.js';
 
 // ── Initialize ─────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   registerRoute('tory', renderToryWorkspace);
   registerRoute('tory-admin', renderToryAdmin);
   registerRoute('content-360', renderContent360);
+  registerRoute('companion', renderCompanionChat);
 
   // 2. Initialize router
   initRouter();
@@ -105,6 +107,8 @@ function setupCommandPalette() {
       shortcut: 'G H', icon: '\u25A4', action: () => { window.location.hash = 'tory-admin'; } },
     { name: 'Go to Content 360', description: 'Full lesson intelligence dashboard', category: 'Navigation',
       shortcut: 'G C', icon: '\uD83D\uDCDA', action: () => { window.location.hash = 'content-360'; } },
+    { name: 'Go to Companion', description: 'Learner AI companion chat', category: 'Navigation',
+      shortcut: 'G M', icon: '\uD83D\uDCAC', action: () => { window.location.hash = 'companion'; } },
 
     // Actions
     { name: 'New Think Tank Session', description: 'Start brainstorming', category: 'Actions',
