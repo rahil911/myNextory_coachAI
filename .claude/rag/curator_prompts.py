@@ -1087,7 +1087,20 @@ class CuratorEngine:
         }
 
     def generate_briefing(self, nx_user_id: int) -> Dict[str, Any]:
-        """Generate initial briefing when coach selects a learner."""
+        """Generate initial briefing when coach selects a learner.
+
+        Saves the briefing to the session so it survives page refresh.
+        """
+        # Check for existing session with messages — don't regenerate
+        session = self.session_mgr.get_or_create_session(nx_user_id)
+        if session.get("messages"):
+            return {
+                "briefing": None,
+                "session_id": session["id"],
+                "already_has_history": True,
+                "learner_name": CuratorContextAssembler(nx_user_id).get_learner_name(),
+            }
+
         assembler = CuratorContextAssembler(nx_user_id)
         memory_ctx = ""
         system_prompt = assembler.assemble_system_prompt(memory_ctx)
@@ -1106,13 +1119,22 @@ class CuratorEngine:
                 if hasattr(block, 'text'):
                     text += block.text
 
+            input_tokens = response.usage.input_tokens
+            output_tokens = response.usage.output_tokens
+
+            # Save briefing to session so it persists across page refreshes
+            self.session_mgr.add_message(session, "ai", text)
+            self.session_mgr.track_cost(session, input_tokens, output_tokens, SONNET_MODEL)
+            self.session_mgr.save_session(session["id"], session)
+
             return {
                 "briefing": text,
+                "session_id": session["id"],
                 "learner_name": assembler.get_learner_name(),
                 "context": assembler.get_briefing_context(),
                 "model": SONNET_MODEL,
-                "input_tokens": response.usage.input_tokens,
-                "output_tokens": response.usage.output_tokens,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
             }
         except Exception as e:
             logger.error("briefing_generation_failed", error=str(e))
@@ -1120,6 +1142,7 @@ class CuratorEngine:
             ctx = assembler.get_briefing_context()
             return {
                 "briefing": None,
+                "session_id": session["id"],
                 "error": str(e),
                 "learner_name": assembler.get_learner_name(),
                 "context": ctx,

@@ -2698,6 +2698,17 @@ async function loadCuratorBriefing(userId) {
     _curatorBriefing = data;
     _curatorBriefingLoading = false;
 
+    // Backend already saved briefing to session — capture session_id
+    if (data.session_id) {
+      _curatorSessionId = data.session_id;
+    }
+
+    // If backend says session already has history, reload it instead
+    if (data.already_has_history) {
+      loadCuratorSession(userId);
+      return;
+    }
+
     // Add briefing as first AI message if there's no history
     if (_curatorMessages.length === 0 && data.briefing) {
       _curatorMessages.push({
