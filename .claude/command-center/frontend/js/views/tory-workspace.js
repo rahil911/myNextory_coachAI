@@ -2137,8 +2137,8 @@ function renderSlideContent(type, content, slide) {
   if (/^stakeholder/.test(type) || type === 'answered-stakeholders')
     return _renderStakeholder(type, content);
 
-  // Category C: Multiple-choice / quiz (6)
-  if (type === 'multiple-choice')
+  // Category C: Multiple-choice / quiz (6+1)
+  if (type === 'multiple-choice' || type === 'single-choice-with-message')
     return _renderMultipleChoice(content);
 
   // Category C: True/false (3+2 = 5)
@@ -2157,8 +2157,8 @@ function renderSlideContent(type, content, slide) {
   if (type === 'three-word' || type === 'select-one-word' || type === 'one-word-select-option')
     return _renderWordSelection(type, content);
 
-  // Category C: Select-option family (2+6+9+3+5+5+3+1+1+1 = 36)
-  if (/^select-option/.test(type) || type === 'single-choice-with-message' || type === 'select-the-best')
+  // Category C: Select-option family (2+6+9+3+5+5+3+1+1 = 35)
+  if (/^select-option/.test(type) || type === 'select-the-best')
     return _renderSelectOption(type, content);
 
   // Category C: Side-by-side dropdown selector (7)
@@ -2242,6 +2242,20 @@ function _renderVideo(type, content, slide) {
     }
     html += '</div>';
   }
+  // video-with-question: questions[{word, question1, question2}]
+  if (content.questions && Array.isArray(content.questions)) {
+    if (content.content_title) html += `<div class="tw-slide-content-title">${_html(content.content_title)}</div>`;
+    html += '<div class="tw-slide-questions">';
+    for (const q of content.questions) {
+      html += `<div class="tw-slide-question-item">`;
+      if (q.word) html += `<div class="tw-slide-question-word">${_html(q.word)}</div>`;
+      if (q.question1) html += `<label>${_html(q.question1)}</label><textarea class="tw-slide-textarea" rows="2" placeholder="Your answer..."></textarea>`;
+      if (q.question2) html += `<label>${_html(q.question2)}</label><textarea class="tw-slide-textarea" rows="2" placeholder="Your answer..."></textarea>`;
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  html += _backpackBadge(content);
   return html;
 }
 
@@ -2301,7 +2315,7 @@ function _renderImage(type, content) {
 // ── Category E: Image + Interactive hybrid ──
 function _renderImageHybrid(type, content) {
   let html = '';
-  const bg = content.background_image || '';
+  const bg = content.background_image || content.image || '';
   if (bg) {
     html += `<div class="tw-slide-media"><img src="${esc(bg)}" alt="${esc(content.slide_title || '')}" loading="lazy"
       onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'tw-slide-placeholder\\'>Image unavailable</div>';"></div>`;
@@ -2309,7 +2323,13 @@ function _renderImageHybrid(type, content) {
   html += '<div class="tw-slide-text-content">';
   if (content.slide_title) html += `<h3 class="tw-slide-text-title">${_html(content.slide_title)}</h3>`;
   if (content.content_title) html += `<div class="tw-slide-content-title">${_html(content.content_title)}</div>`;
+  // image-with-content: uses content as subtitle, content_description as body
+  if (content.content && type === 'image-with-content') html += `<div class="tw-slide-content-title">${_html(content.content)}</div>`;
   if (content.content_on_image) html += `<div class="tw-slide-text-body">${_html(content.content_on_image)}</div>`;
+  if (content.content_description) html += `<div class="tw-slide-text-body">${_html(content.content_description)}</div>`;
+  // image-with-radio: card_title + card_content
+  if (content.card_title) html += `<div class="tw-slide-text-body"><strong>${_html(content.card_title)}</strong></div>`;
+  if (content.card_content) html += `<div class="tw-slide-text-body">${_html(content.card_content)}</div>`;
   // image-with-question2: options[{question, title, box, answer[]}]
   if (content.options && Array.isArray(content.options)) {
     html += '<div class="tw-slide-options">';
@@ -2334,7 +2354,11 @@ function _renderImageHybrid(type, content) {
     html += '</div>';
   }
   if (content.note) html += `<div class="tw-slide-note">${_html(content.note)}</div>`;
+  if (content.message) html += `<div class="tw-slide-feedback tw-feedback-good">${_html(content.message)}</div>`;
+  if (content.right_answer_message) html += `<div class="tw-slide-feedback tw-feedback-good">${_html(content.right_answer_message)}</div>`;
+  if (content.wrong_answer_message) html += `<div class="tw-slide-feedback tw-feedback-improve">${_html(content.wrong_answer_message)}</div>`;
   html += '</div>';
+  html += _backpackBadge(content);
   html += _headsUp(content);
   if (content.audio) {
     html += `<div class="tw-slide-audio"><audio class="tw-plyr-audio" preload="metadata"><source src="${esc(content.audio)}"></audio></div>`;
@@ -2384,8 +2408,28 @@ function _renderQuestion(type, c) {
   if (c.content_title) html += `<div class="tw-slide-content-title">${_html(c.content_title)}</div>`;
 
   // questions can be string[] or [{question, word}] or [{title, question, header}]
-  const questions = c.questions || [];
-  if (Array.isArray(questions)) {
+  // questions-example2: data typo uses "questionss" with LHS/RHS format
+  const questions = c.questions || c.questionss || [];
+  if (questions && questions.LHS) {
+    // LHS/RHS format (questions-example2)
+    const lhsItems = (typeof questions.LHS === 'string') ? questions.LHS.split('<br />').filter(Boolean) : (questions.LHS || []);
+    const rhsItems = (typeof questions.RHS === 'string') ? questions.RHS.split('<br />').filter(Boolean) : (questions.RHS || []);
+    if (c.lhs_popup_header || c.rhs_popup_header) {
+      html += '<div class="tw-slide-form-header">';
+      html += `<div class="tw-slide-form-lhs">${_html(c.lhs_popup_header || '')}</div>`;
+      html += `<div class="tw-slide-form-rhs">${_html(c.rhs_popup_header || '')}</div>`;
+      html += '</div>';
+    }
+    const count = Math.max(lhsItems.length, rhsItems.length);
+    html += '<div class="tw-slide-questions">';
+    for (let i = 0; i < count; i++) {
+      html += '<div class="tw-slide-form-row">';
+      if (i < lhsItems.length) html += `<div class="tw-slide-form-lhs">${_html(lhsItems[i])}</div>`;
+      if (i < rhsItems.length) html += `<div class="tw-slide-form-rhs">${_html(rhsItems[i])}</div>`;
+      html += '</div>';
+    }
+    html += '</div>';
+  } else if (Array.isArray(questions)) {
     html += '<div class="tw-slide-questions">';
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
@@ -2557,6 +2601,15 @@ function _renderWordSelection(type, c) {
   } else {
     if (c.content) html += `<div class="tw-slide-text-body">${_html(c.content)}</div>`;
   }
+  // one-word-select-option: options[] array of action items
+  if (c.options && Array.isArray(c.options) && type !== 'three-word') {
+    html += '<div class="tw-slide-options">';
+    for (const opt of c.options) {
+      const text = typeof opt === 'string' ? opt : (opt.option || JSON.stringify(opt));
+      html += `<div class="tw-slide-option">${_html(text)}</div>`;
+    }
+    html += '</div>';
+  }
   html += _backpackBadge(c);
   html += _headsUp(c);
   html += '</div>';
@@ -2587,6 +2640,31 @@ function _renderSelectOption(type, c) {
     html += '<div class="tw-slide-questions" style="margin-top:1rem">';
     for (const q of c.questions) html += `<div class="tw-slide-question-item"><label>${_html(q)}</label></div>`;
     html += '</div>';
+  }
+  // select-option-with-message: data[{right_option, wrong_option, message}]
+  if (c.data && Array.isArray(c.data)) {
+    html += '<div class="tw-slide-options">';
+    for (const d of c.data) {
+      if (d.right_option) html += `<div class="tw-slide-option tw-quiz-correct">${_html(d.right_option)}</div>`;
+      if (d.wrong_option) html += `<div class="tw-slide-option">${_html(d.wrong_option)}</div>`;
+      if (d.message) html += `<div class="tw-slide-feedback tw-feedback-improve">${_html(d.message)}</div>`;
+    }
+    html += '</div>';
+  }
+  // select-the-best: images[] array for image-based selection
+  if (c.images && Array.isArray(c.images)) {
+    html += '<div class="tw-slide-image-examples">';
+    for (let i = 0; i < c.images.length; i++) {
+      html += `<div class="tw-slide-image-example-card"><img src="${esc(c.images[i])}" alt="Option ${i + 1}" loading="lazy" onerror="this.style.display='none'"><div class="tw-slide-image-example-label">Option ${i + 1}</div></div>`;
+    }
+    html += '</div>';
+    if (c.right_message) html += `<div class="tw-slide-feedback tw-feedback-good">${_html(c.right_message)}</div>`;
+    if (c.wrong_message) html += `<div class="tw-slide-feedback tw-feedback-improve">${_html(c.wrong_message)}</div>`;
+  }
+  // select-option-with-button: bonus_material
+  if (c.bonus_material && c.bonus_material.is_enable) {
+    html += `<details class="tw-slide-expand-item" style="margin-top:1rem"><summary>${_html(c.bonus_material.title || 'Bonus Material')}</summary>`;
+    html += `<div class="tw-slide-text-body">${_html(c.bonus_material.content || '')}</div></details>`;
   }
   html += _backpackBadge(c);
   html += _headsUp(c);
