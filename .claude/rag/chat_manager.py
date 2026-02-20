@@ -23,11 +23,15 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_anthropic import ChatAnthropic
 import structlog
 
-from rag_config import (
-    SONNET_MODEL, OPUS_MODEL, TIER_THRESHOLD,
-    MEMORY_BUFFER_SIZE, MEMORY_SUMMARY_THRESHOLD, MEMORY_KEY_FACTS_MAX,
-    MAX_TOTAL_TOKENS,
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+SONNET_MODEL = "claude-sonnet-4-20250514"
+OPUS_MODEL = "claude-opus-4-20250514"
+TIER_THRESHOLD = 0.7
+MEMORY_BUFFER_SIZE = 10
+MEMORY_SUMMARY_THRESHOLD = 50
+MEMORY_KEY_FACTS_MAX = 100
+MAX_TOTAL_TOKENS = 1000000
 
 logger = structlog.get_logger()
 

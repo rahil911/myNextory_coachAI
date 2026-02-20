@@ -8,6 +8,7 @@ import { getState, setState, subscribe } from '../state.js';
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { h } from '../utils/dom.js';
+import { VoiceChat } from '../components/voice-chat.js';
 
 // ── Module state ──────────────────────────────────────────────────────────
 
@@ -19,6 +20,7 @@ let _progress = null;
 let _wsConnection = null;
 let _isTyping = false;
 let _chatContainer = null;
+let _voiceChat = null;
 
 // ── Mode display config ──────────────────────────────────────────────────
 
@@ -54,6 +56,7 @@ export function renderCompanionChat(root) {
         <div class="companion-user-select">
           <input type="number" id="companion-user-id" placeholder="User ID" min="1">
           <button class="companion-btn companion-btn-primary" id="companion-connect">Connect</button>
+          <span id="companion-voice-btn" style="display:none"></span>
         </div>
       </div>
     </div>
@@ -173,6 +176,9 @@ async function _connectUser(container) {
 
     // Focus textarea
     container.querySelector('#companion-textarea').focus();
+
+    // Init voice chat
+    _initVoice(container, userId);
 
   } catch (err) {
     showToast(`Failed to connect: ${err.message}`, 'error');
@@ -387,4 +393,54 @@ function _updateMode(container, mode, confidence) {
   modeEl.style.borderColor = config.color + '44';
   modeEl.innerHTML = `${config.icon} ${config.label}`;
   _currentMode = mode;
+}
+
+// ── Voice chat integration ──────────────────────────────────────────────
+
+function _initVoice(container, userId) {
+  // Destroy previous instance
+  if (_voiceChat) {
+    _voiceChat.destroy();
+    _voiceChat = null;
+  }
+
+  const voiceContainer = container.querySelector('#companion-voice-btn');
+  if (!voiceContainer) return;
+  voiceContainer.style.display = '';
+
+  _voiceChat = new VoiceChat({
+    role: 'companion',
+    userId: userId,
+    container: voiceContainer,
+    onTranscript: (text) => {
+      // Show user's spoken text as a chat message
+      _addMessage(container, 'user', text);
+    },
+    onResponse: (text) => {
+      // Show AI response as a chat message
+      _addMessage(container, 'assistant', text, _currentMode);
+    },
+    onStateChange: (state) => {
+      // Update mode pill with voice state
+      const modeEl = container.querySelector('#companion-mode');
+      if (state === 'listening') {
+        modeEl.style.display = '';
+        modeEl.style.background = '#22c55e22';
+        modeEl.style.color = '#22c55e';
+        modeEl.innerHTML = 'Listening...';
+      } else if (state === 'thinking') {
+        modeEl.style.display = '';
+        modeEl.style.background = '#f59e0b22';
+        modeEl.style.color = '#f59e0b';
+        modeEl.innerHTML = 'Thinking...';
+      } else if (state === 'speaking') {
+        modeEl.style.display = '';
+        modeEl.style.background = '#6366f122';
+        modeEl.style.color = '#6366f1';
+        modeEl.innerHTML = 'Speaking...';
+      } else if (state === 'idle') {
+        modeEl.style.display = 'none';
+      }
+    },
+  });
 }

@@ -26,10 +26,13 @@ from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.documents import Document
 from uuid import uuid4
 
-from rag_config import (
-    EMBEDDING_MODEL, EMBEDDING_DIMENSIONS,
-    RAG_FAISS_DIR, RAG_BASE_DIR,
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+_rag_dir = os.path.dirname(__file__)
+EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_DIMENSIONS = 1536
+RAG_BASE_DIR = os.path.join(_rag_dir, "indexes")
+RAG_FAISS_DIR = os.path.join(RAG_BASE_DIR, "faiss_global")
 
 logger = structlog.get_logger()
 

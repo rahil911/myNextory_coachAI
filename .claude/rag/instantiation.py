@@ -31,16 +31,23 @@ from typing import Any, Callable, Dict, List, Optional
 import structlog
 from anthropic import Anthropic
 
-from rag_config import (
-    ANTHROPIC_API_KEY,
-    DATABASE,
-    DB_QUERY_TIMEOUT,
-    OPUS_MODEL,
-    SONNET_MODEL,
-    EPP_PERSONALITY_DIMS,
-    OPUS_INPUT_PRICE_PER_1K,
-    OPUS_OUTPUT_PRICE_PER_1K,
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+import os
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+DATABASE = "baap"
+DB_QUERY_TIMEOUT = 60
+OPUS_MODEL = "claude-opus-4-20250514"
+SONNET_MODEL = "claude-sonnet-4-20250514"
+EPP_PERSONALITY_DIMS = [
+    "Achievement", "Motivation", "Competitiveness", "Managerial",
+    "Assertiveness", "Extroversion", "Cooperativeness", "Patience",
+    "SelfConfidence", "Conscientiousness", "Openness", "Stability",
+    "StressTolerance",
+]
+OPUS_INPUT_PRICE_PER_1K = 0.015
+OPUS_OUTPUT_PRICE_PER_1K = 0.075
 from session_manager import SessionManager, _db_query
 
 logger = structlog.get_logger()

@@ -18,17 +18,28 @@ from typing import Any, Dict, List, Optional
 import structlog
 from anthropic import Anthropic
 
-from rag_config import (
-    ANTHROPIC_API_KEY,
-    DATABASE,
-    DB_QUERY_TIMEOUT,
-    DEFAULT_TOP_K,
-    EPP_PERSONALITY_DIMS,
-    EPP_JOBFIT_DIMS,
-    ALL_EPP_DIMS,
-    OPUS_MODEL,
-    SONNET_MODEL,
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+import os
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+DATABASE = "baap"
+DB_QUERY_TIMEOUT = 60
+DEFAULT_TOP_K = 4
+EPP_PERSONALITY_DIMS = [
+    "Achievement", "Motivation", "Competitiveness", "Managerial",
+    "Assertiveness", "Extroversion", "Cooperativeness", "Patience",
+    "SelfConfidence", "Conscientiousness", "Openness", "Stability",
+    "StressTolerance",
+]
+EPP_JOBFIT_DIMS = [
+    "Accounting", "AdminAsst", "Analyst", "BankTeller", "Collections",
+    "CustomerService", "FrontDesk", "Manager", "MedicalAsst",
+    "Production", "Programmer", "Sales",
+]
+ALL_EPP_DIMS = EPP_PERSONALITY_DIMS + EPP_JOBFIT_DIMS
+OPUS_MODEL = "claude-opus-4-20250514"
+SONNET_MODEL = "claude-sonnet-4-20250514"
 
 logger = structlog.get_logger()
 

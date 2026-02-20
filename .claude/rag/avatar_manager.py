@@ -10,12 +10,12 @@ import requests
 from typing import Dict, Optional, Any
 import structlog
 
-from rag_config import (
-    HEYGEN_API_KEY,
-    AVATAR_ID,
-    AUDIO_ID,
-    HEYGEN_BASE_URL
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+HEYGEN_API_KEY = os.getenv("HAY_GEN_API")
+AVATAR_ID = os.getenv("AVATAR_ID")
+AUDIO_ID = os.getenv("AUDIO_ID")
+HEYGEN_BASE_URL = "https://api.heygen.com/v1"
 
 logger = structlog.get_logger()
 

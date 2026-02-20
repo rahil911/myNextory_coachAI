@@ -36,15 +36,24 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from rag_config import (
-    DATABASE, DB_QUERY_TIMEOUT,
-    EMBEDDING_MODEL, EMBEDDING_DIMENSIONS, EMBEDDING_PRICE_PER_1K_TOKENS,
-    CHUNK_SIZE_TOKENS, CHUNK_OVERLAP_TOKENS,
-    BLOOM_FILTER_MAX_ELEMENTS, BLOOM_FILTER_ERROR_RATE,
-    RAG_BASE_DIR, RAG_MANIFEST_FILE, RAG_BLOOM_FILE,
-    RAG_FAISS_DIR, RAG_TOKEN_USAGE_FILE,
-    MAX_DOCUMENTS_TO_PROCESS,
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+_rag_dir = os.path.dirname(__file__)
+DATABASE = "baap"
+DB_QUERY_TIMEOUT = 60
+EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_DIMENSIONS = 1536
+EMBEDDING_PRICE_PER_1K_TOKENS = 0.00002
+CHUNK_SIZE_TOKENS = 1000
+CHUNK_OVERLAP_TOKENS = 200
+BLOOM_FILTER_MAX_ELEMENTS = 1000000
+BLOOM_FILTER_ERROR_RATE = 0.1
+RAG_BASE_DIR = os.path.join(_rag_dir, "indexes")
+RAG_MANIFEST_FILE = os.path.join(RAG_BASE_DIR, "manifest.json")
+RAG_BLOOM_FILE = os.path.join(RAG_BASE_DIR, "dedup_bloom.pkl")
+RAG_FAISS_DIR = os.path.join(RAG_BASE_DIR, "faiss_global")
+RAG_TOKEN_USAGE_FILE = os.path.join(RAG_BASE_DIR, "token_usage.csv")
+MAX_DOCUMENTS_TO_PROCESS = None
 
 logger = structlog.get_logger()
 

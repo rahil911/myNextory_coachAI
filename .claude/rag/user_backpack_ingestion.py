@@ -29,10 +29,12 @@ import xxhash
 from bloom_filter2 import BloomFilter
 from langchain_core.documents import Document
 
-from rag_config import (
-    DATABASE, DB_QUERY_TIMEOUT, USER_OVERLAY_DIR,
-    EMBEDDING_PRICE_PER_1K_TOKENS,
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+DATABASE = "baap"
+DB_QUERY_TIMEOUT = 60
+USER_OVERLAY_DIR = os.path.join(os.path.dirname(__file__), "indexes", "user_overlays")
+EMBEDDING_PRICE_PER_1K_TOKENS = 0.00002
 
 logger = structlog.get_logger()
 

@@ -8,6 +8,7 @@ Uses: model_harness.ContextBuilder, TierRouter, GuardrailsChecker
 
 import gzip
 import json
+import os
 import subprocess
 import time
 import xml.etree.ElementTree as ET
@@ -16,17 +17,17 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import structlog
 
-from rag_config import (
-    ANTHROPIC_API_KEY,
-    DATABASE,
-    DB_QUERY_TIMEOUT,
-    SONNET_MODEL,
-    OPUS_MODEL,
-    SONNET_INPUT_PRICE_PER_1K,
-    SONNET_OUTPUT_PRICE_PER_1K,
-    OPUS_INPUT_PRICE_PER_1K,
-    OPUS_OUTPUT_PRICE_PER_1K,
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+DATABASE = "baap"
+DB_QUERY_TIMEOUT = 60
+SONNET_MODEL = "claude-sonnet-4-20250514"
+OPUS_MODEL = "claude-opus-4-20250514"
+SONNET_INPUT_PRICE_PER_1K = 0.003
+SONNET_OUTPUT_PRICE_PER_1K = 0.015
+OPUS_INPUT_PRICE_PER_1K = 0.015
+OPUS_OUTPUT_PRICE_PER_1K = 0.075
 
 logger = structlog.get_logger()
 

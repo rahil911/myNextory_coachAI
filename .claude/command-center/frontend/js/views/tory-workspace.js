@@ -7,6 +7,7 @@ import { getState, setState, subscribe, markFetched } from '../state.js';
 import { api, connectToryAgentWs, sendToryAgentMessage, disconnectToryAgentWs } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { h } from '../utils/dom.js';
+import { VoiceChat } from '../components/voice-chat.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -30,6 +31,7 @@ let _curatorMode = 'curator';     // 'curator' or 'agent' (tab in right drawer)
 let _curatorKeyFacts = [];        // Persistent key facts
 let _curatorModelTier = 'sonnet'; // Current model tier
 let _curatorCost = 0;             // Session cost
+let _curatorVoiceChat = null;     // Voice chat instance
 
 // ── Render Entry Point ─────────────────────────────────────────────────────
 
@@ -107,6 +109,7 @@ export function renderToryWorkspace(root) {
           <button class="tw-curator-tab" data-curator-tab="agent" id="tw-curator-tab-agent">Agent Log</button>
         </div>
         <span class="tw-session-badge" id="tw-session-status" style="display:none"></span>
+        <span id="tw-curator-voice-btn" style="display:none"></span>
       </div>
 
       <!-- Curator Panel -->
@@ -3434,6 +3437,9 @@ async function loadCuratorSession(userId) {
     _curatorCost = data.estimated_cost_usd || 0;
     renderCuratorPanel();
 
+    // Init voice chat for Curator
+    _initCuratorVoice(userId);
+
     // Auto-generate briefing if no conversation history
     if (_curatorMessages.length === 0) {
       loadCuratorBriefing(userId);
@@ -3442,6 +3448,7 @@ async function loadCuratorSession(userId) {
     // Non-critical — Curator just won't show history
     console.warn('Failed to load Curator session:', err);
     renderCuratorPanel();
+    _initCuratorVoice(userId);
     loadCuratorBriefing(userId);
   }
 }
@@ -3470,6 +3477,46 @@ async function loadCuratorBriefing(userId) {
     console.warn('Failed to load briefing:', err);
     renderCuratorPanel();
   }
+}
+
+function _initCuratorVoice(userId) {
+  if (_curatorVoiceChat) {
+    _curatorVoiceChat.destroy();
+    _curatorVoiceChat = null;
+  }
+
+  const voiceContainer = document.getElementById('tw-curator-voice-btn');
+  if (!voiceContainer) return;
+  voiceContainer.style.display = '';
+
+  _curatorVoiceChat = new VoiceChat({
+    role: 'curator',
+    userId: userId,
+    container: voiceContainer,
+    onTranscript: (text) => {
+      // Add user message to curator chat
+      _curatorMessages.push({ role: 'human', content: text });
+      renderCuratorPanel();
+    },
+    onResponse: (text) => {
+      // Add AI response to curator chat
+      _curatorMessages.push({ role: 'ai', content: text, modelTier: _curatorModelTier });
+      renderCuratorPanel();
+    },
+    onStateChange: (state) => {
+      const badge = document.getElementById('tw-session-status');
+      if (!badge) return;
+      if (state === 'idle') {
+        badge.style.display = 'none';
+      } else {
+        badge.style.display = '';
+        const labels = { listening: 'Listening...', thinking: 'Thinking...', speaking: 'Speaking...' };
+        badge.textContent = labels[state] || '';
+        badge.className = `tw-session-badge vc-status-label`;
+        badge.setAttribute('data-state', state);
+      }
+    },
+  });
 }
 
 async function sendCuratorMessage() {

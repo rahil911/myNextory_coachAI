@@ -25,7 +25,9 @@ try:
 except ImportError:
     HAS_FILELOCK = False
 
-from rag_config import USER_OVERLAY_DIR
+# Inline constant to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+USER_OVERLAY_DIR = os.path.join(os.path.dirname(__file__), "indexes", "user_overlays")
 
 logger = structlog.get_logger()
 

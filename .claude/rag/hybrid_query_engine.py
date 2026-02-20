@@ -30,12 +30,19 @@ from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from langchain_openai import OpenAIEmbeddings
 
-from rag_config import (
-    EMBEDDING_MODEL, EMBEDDING_DIMENSIONS,
-    SONNET_MODEL, OPUS_MODEL, TIER_THRESHOLD,
-    USER_OVERLAY_DIR, MAX_USER_OVERLAYS,
-    MAX_CONTEXT_TOKENS,
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+_rag_dir = os.path.dirname(__file__)
+EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_DIMENSIONS = 1536
+SONNET_MODEL = "claude-sonnet-4-20250514"
+OPUS_MODEL = "claude-opus-4-20250514"
+TIER_THRESHOLD = 0.7
+USER_OVERLAY_DIR = os.path.join(_rag_dir, "indexes", "user_overlays")
+MAX_USER_OVERLAYS = 100
+MAX_CONTEXT_TOKENS = 8000
+DATABASE = "baap"
+DB_QUERY_TIMEOUT = 60
 from shared_vector_manager import shared_vector_manager
 from user_manager_optimized import OptimizedUserManager
 from chat_manager import ChatManager
@@ -261,7 +268,7 @@ class HybridQueryEngine:
         try:
             import subprocess
             import xml.etree.ElementTree as ET
-            from rag_config import DATABASE, DB_QUERY_TIMEOUT
+            # Use module-level constants (already inlined above)
 
             result = subprocess.run(
                 [

@@ -19,19 +19,19 @@ from typing import Any, Dict, List, Optional
 
 import structlog
 
-from rag_config import (
-    DATABASE,
-    DB_QUERY_TIMEOUT,
-    SONNET_MODEL,
-    OPUS_MODEL,
-    SONNET_INPUT_PRICE_PER_1K,
-    SONNET_OUTPUT_PRICE_PER_1K,
-    OPUS_INPUT_PRICE_PER_1K,
-    OPUS_OUTPUT_PRICE_PER_1K,
-    MEMORY_BUFFER_SIZE,
-    MEMORY_SUMMARY_THRESHOLD,
-    MEMORY_KEY_FACTS_MAX,
-)
+# Inline constants to avoid import-path shadowing between
+# .claude/rag/config.py and .claude/command-center/backend/config.py.
+DATABASE = "baap"
+DB_QUERY_TIMEOUT = 60
+SONNET_MODEL = "claude-sonnet-4-20250514"
+OPUS_MODEL = "claude-opus-4-20250514"
+SONNET_INPUT_PRICE_PER_1K = 0.003
+SONNET_OUTPUT_PRICE_PER_1K = 0.015
+OPUS_INPUT_PRICE_PER_1K = 0.015
+OPUS_OUTPUT_PRICE_PER_1K = 0.075
+MEMORY_BUFFER_SIZE = 10
+MEMORY_SUMMARY_THRESHOLD = 50
+MEMORY_KEY_FACTS_MAX = 100
 
 logger = structlog.get_logger()
 
