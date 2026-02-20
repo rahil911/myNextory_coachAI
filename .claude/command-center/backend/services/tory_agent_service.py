@@ -323,6 +323,7 @@ class ToryAgentService:
                         "claude",
                         "--resume", resume_id,
                         "-p", prompt,
+                        "--verbose",
                         "--output-format", "stream-json",
                     ]
                 else:
@@ -331,6 +332,7 @@ class ToryAgentService:
                     cmd = [
                         "claude",
                         "-p", prompt,
+                        "--verbose",
                         "--output-format", "stream-json",
                     ]
 
