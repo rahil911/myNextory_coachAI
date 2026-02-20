@@ -129,6 +129,15 @@ export const api = {
   getToryAdminCohort:   (qs) => request('GET', `/api/tory/admin/cohort${qs ? '?' + qs : ''}`),
   getToryAdminLearner:  (id) => request('GET', `/api/tory/admin/learner/${id}`),
   getToryAdminMetrics:  () => request('GET', '/api/tory/admin/metrics'),
+  getToryAdminHeatmap:  () => request('GET', '/api/tory/admin/activity-heatmap'),
+  getToryAdminEppAgg:   () => request('GET', '/api/tory/admin/epp-aggregate'),
+  getToryAdminFunnel:   () => request('GET', '/api/tory/admin/funnel'),
+  getToryAdminActivity: (id) => request('GET', `/api/tory/admin/learner/${id}/activity`),
+  getToryAdminBackpack: (id) => request('GET', `/api/tory/admin/learner/${id}/backpack`),
+  getToryAdminScoreDist:() => request('GET', '/api/tory/admin/score-distribution'),
+  getToryAdminCoachWork:() => request('GET', '/api/tory/admin/coach-workload'),
+  getToryAdminLessonPop:() => request('GET', '/api/tory/admin/lesson-popularity'),
+  getToryAdminCompanies:() => request('GET', '/api/tory/admin/companies'),
 
   // Tory Workspace — split-view path builder
   getToryUsers: (params = {}) => {

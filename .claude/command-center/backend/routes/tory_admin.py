@@ -533,3 +533,268 @@ async def get_aggregate_metrics():
         "event_breakdown": event_breakdown,
         "pedagogy_distribution": pedagogy_distribution,
     }
+
+
+# ── Activity Heatmap ──────────────────────────────────────────────────────────
+
+@router.get("/activity-heatmap")
+async def get_activity_heatmap():
+    """Activity counts grouped by date and type for last 12 weeks."""
+    rows = _mysql_query(
+        "SELECT DATE(created_at) AS day, log_name, COUNT(*) AS cnt "
+        "FROM activity_log "
+        "WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 12 WEEK) "
+        "GROUP BY DATE(created_at), log_name "
+        "ORDER BY day"
+    )
+    # Build day→{type→count} map
+    days = {}
+    for r in rows:
+        d = r["day"]
+        if d not in days:
+            days[d] = {"date": d, "total": 0, "breakdown": {}}
+        cnt = _safe_int(r["cnt"])
+        days[d]["breakdown"][r["log_name"]] = cnt
+        days[d]["total"] += cnt
+
+    return {"days": list(days.values())}
+
+
+# ── EPP Aggregate ─────────────────────────────────────────────────────────────
+
+@router.get("/epp-aggregate")
+async def get_epp_aggregate():
+    """Aggregate EPP scores across all assessed users. Returns per-dimension averages."""
+    rows = _mysql_query(
+        "SELECT nx_user_id, assesment_result FROM nx_user_onboardings "
+        "WHERE assesment_result IS NOT NULL AND assesment_result != 'NULL' "
+        "AND assesment_result != ''"
+    )
+
+    dimension_sums = {}
+    dimension_counts = {}
+    user_count = 0
+
+    for r in rows:
+        parsed = _parse_json(r.get("assesment_result"))
+        if not isinstance(parsed, dict):
+            continue
+        user_count += 1
+        for dim, val in parsed.items():
+            score = _safe_float(val)
+            if score > 0:
+                dimension_sums[dim] = dimension_sums.get(dim, 0) + score
+                dimension_counts[dim] = dimension_counts.get(dim, 0) + 1
+
+    averages = {}
+    for dim in dimension_sums:
+        cnt = dimension_counts[dim]
+        averages[dim] = round(dimension_sums[dim] / cnt, 1) if cnt > 0 else 0
+
+    return {
+        "user_count": user_count,
+        "dimension_averages": averages,
+    }
+
+
+# ── Onboarding Funnel ────────────────────────────────────────────────────────
+
+@router.get("/funnel")
+async def get_funnel():
+    """Onboarding funnel: total_users → has_epp → has_profile → has_path → active_30d."""
+    total = _mysql_query("SELECT COUNT(*) AS cnt FROM nx_users WHERE deleted_at IS NULL")
+    total_users = _safe_int(total[0]["cnt"]) if total else 0
+
+    has_epp = _mysql_query(
+        "SELECT COUNT(DISTINCT nx_user_id) AS cnt FROM nx_user_onboardings "
+        "WHERE assesment_result IS NOT NULL AND assesment_result != 'NULL' AND assesment_result != ''"
+    )
+    epp_count = _safe_int(has_epp[0]["cnt"]) if has_epp else 0
+
+    has_profile = _mysql_query(
+        "SELECT COUNT(DISTINCT nx_user_id) AS cnt FROM tory_learner_profiles WHERE deleted_at IS NULL"
+    )
+    profile_count = _safe_int(has_profile[0]["cnt"]) if has_profile else 0
+
+    has_path = _mysql_query(
+        "SELECT COUNT(DISTINCT nx_user_id) AS cnt FROM tory_recommendations WHERE deleted_at IS NULL"
+    )
+    path_count = _safe_int(has_path[0]["cnt"]) if has_path else 0
+
+    active_30d = _mysql_query(
+        "SELECT COUNT(DISTINCT subject_id) AS cnt FROM activity_log "
+        "WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) "
+        "AND subject_type LIKE '%User%'"
+    )
+    active_count = _safe_int(active_30d[0]["cnt"]) if active_30d else 0
+
+    steps = [
+        {"label": "Total Users", "count": total_users},
+        {"label": "Completed EPP", "count": epp_count},
+        {"label": "AI Profiled", "count": profile_count},
+        {"label": "Has Learning Path", "count": path_count},
+        {"label": "Active (30d)", "count": active_count},
+    ]
+    # Add conversion percentages
+    for i, step in enumerate(steps):
+        if i == 0:
+            step["conversion"] = 100
+        else:
+            prev = steps[i - 1]["count"]
+            step["conversion"] = round(step["count"] / max(prev, 1) * 100, 1)
+
+    return {"steps": steps}
+
+
+# ── Learner Activity Timeline ────────────────────────────────────────────────
+
+@router.get("/learner/{learner_id}/activity")
+async def get_learner_activity(learner_id: int):
+    """Recent activity log entries for a specific learner."""
+    rows = _mysql_query(
+        f"SELECT log_name, description, properties, created_at "
+        f"FROM activity_log "
+        f"WHERE subject_id = {int(learner_id)} AND subject_type LIKE '%User%' "
+        f"ORDER BY created_at DESC LIMIT 50"
+    )
+    activities = []
+    for r in rows:
+        activities.append({
+            "type": r.get("log_name"),
+            "description": r.get("description"),
+            "properties": _parse_json(r.get("properties")),
+            "created_at": r.get("created_at"),
+        })
+    return {"activities": activities, "total": len(activities)}
+
+
+# ── Learner Backpack ─────────────────────────────────────────────────────────
+
+@router.get("/learner/{learner_id}/backpack")
+async def get_learner_backpack(learner_id: int):
+    """Backpack entries (reflections) for a specific learner."""
+    rows = _mysql_query(
+        f"SELECT b.id, b.form_type, b.data, b.created_at, "
+        f"l.lesson AS lesson_title, jd.journey AS journey_title "
+        f"FROM backpacks b "
+        f"LEFT JOIN nx_lessons l ON b.nx_lesson_id = l.id "
+        f"LEFT JOIN nx_journey_details jd ON b.nx_journey_detail_id = jd.id "
+        f"WHERE b.created_by = {int(learner_id)} AND b.user_type = 'User' "
+        f"AND b.deleted_at IS NULL "
+        f"ORDER BY b.created_at DESC LIMIT 30"
+    )
+    entries = []
+    for r in rows:
+        entries.append({
+            "id": _safe_int(r["id"]),
+            "form_type": r.get("form_type"),
+            "data": _parse_json(r.get("data")),
+            "lesson_title": r.get("lesson_title"),
+            "journey_title": r.get("journey_title"),
+            "created_at": r.get("created_at"),
+        })
+    return {"entries": entries, "total": len(entries)}
+
+
+# ── Match Score Distribution ─────────────────────────────────────────────────
+
+@router.get("/score-distribution")
+async def get_score_distribution():
+    """Match score histogram: count of learners per score bucket."""
+    rows = _mysql_query(
+        "SELECT "
+        "CASE "
+        "  WHEN avg_score < 20 THEN '0-20' "
+        "  WHEN avg_score < 40 THEN '20-40' "
+        "  WHEN avg_score < 60 THEN '40-60' "
+        "  WHEN avg_score < 80 THEN '60-80' "
+        "  ELSE '80-100' "
+        "END AS bucket, COUNT(*) AS cnt "
+        "FROM ("
+        "  SELECT nx_user_id, AVG(match_score) AS avg_score "
+        "  FROM tory_recommendations WHERE deleted_at IS NULL "
+        "  GROUP BY nx_user_id"
+        ") sub GROUP BY bucket ORDER BY bucket"
+    )
+    buckets = []
+    for r in rows:
+        buckets.append({"range": r["bucket"], "count": _safe_int(r["cnt"])})
+    return {"buckets": buckets}
+
+
+# ── Coach Workload ───────────────────────────────────────────────────────────
+
+@router.get("/coach-workload")
+async def get_coach_workload():
+    """Learner count per coach with average compatibility."""
+    rows = _mysql_query(
+        "SELECT c.username AS coach_name, c.id AS coach_id, "
+        "COUNT(DISTINCT cf.nx_user_id) AS learner_count, "
+        "AVG(CASE WHEN cf.compat_signal = 'green' THEN 3 "
+        "  WHEN cf.compat_signal = 'yellow' THEN 2 "
+        "  WHEN cf.compat_signal = 'red' THEN 1 ELSE 2 END) AS avg_compat "
+        "FROM tory_coach_flags cf "
+        "JOIN coaches c ON cf.coach_id = c.id "
+        "WHERE cf.deleted_at IS NULL "
+        "GROUP BY c.id, c.username "
+        "ORDER BY learner_count DESC"
+    )
+    coaches = []
+    for r in rows:
+        coaches.append({
+            "coach_name": r.get("coach_name"),
+            "coach_id": _safe_int(r["coach_id"]),
+            "learner_count": _safe_int(r["learner_count"]),
+            "avg_compat": round(_safe_float(r.get("avg_compat")), 1),
+        })
+    return {"coaches": coaches}
+
+
+# ── Lesson Popularity ────────────────────────────────────────────────────────
+
+@router.get("/lesson-popularity")
+async def get_lesson_popularity():
+    """Top 10 lessons by number of learners assigned."""
+    rows = _mysql_query(
+        "SELECT r.nx_lesson_id, l.lesson AS lesson_title, "
+        "jd.journey AS journey_title, "
+        "COUNT(DISTINCT r.nx_user_id) AS learner_count "
+        "FROM tory_recommendations r "
+        "LEFT JOIN nx_lessons l ON r.nx_lesson_id = l.id "
+        "LEFT JOIN nx_journey_details jd ON l.nx_journey_detail_id = jd.id "
+        "WHERE r.deleted_at IS NULL "
+        "GROUP BY r.nx_lesson_id, l.lesson, jd.journey "
+        "ORDER BY learner_count DESC LIMIT 10"
+    )
+    lessons = []
+    for r in rows:
+        lessons.append({
+            "lesson_id": _safe_int(r["nx_lesson_id"]),
+            "lesson_title": r.get("lesson_title") or f"Lesson {r['nx_lesson_id']}",
+            "journey_title": r.get("journey_title") or "",
+            "learner_count": _safe_int(r["learner_count"]),
+        })
+    return {"lessons": lessons}
+
+
+# ── Companies List ───────────────────────────────────────────────────────────
+
+@router.get("/companies")
+async def get_companies():
+    """All companies with learner counts."""
+    rows = _mysql_query(
+        "SELECT cl.id, cl.company_name, COUNT(DISTINCT e.nx_user_id) AS user_count "
+        "FROM clients cl "
+        "LEFT JOIN employees e ON e.client_id = cl.id AND e.deleted_at IS NULL "
+        "WHERE cl.deleted_at IS NULL "
+        "GROUP BY cl.id, cl.company_name "
+        "ORDER BY cl.company_name"
+    )
+    companies = []
+    for r in rows:
+        companies.append({
+            "id": _safe_int(r["id"]),
+            "name": r.get("company_name"),
+            "user_count": _safe_int(r["user_count"]),
+        })
+    return {"companies": companies}
