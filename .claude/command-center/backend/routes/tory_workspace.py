@@ -313,10 +313,17 @@ async def get_content_library(
         f"SELECT ct.id AS tag_id, ct.nx_lesson_id, ct.trait_tags, ct.confidence, "
         f"ct.review_status, ct.difficulty, ct.learning_style, ct.pass_agreement, "
         f"l.lesson AS lesson_name, l.description AS lesson_desc, "
-        f"jd.id AS journey_detail_id, jd.journey AS journey_name "
+        f"jd.id AS journey_detail_id, jd.journey AS journey_name, "
+        f"ct.lesson_detail_id, "
+        f"COALESCE(sc.slide_count, 0) AS slide_count "
         f"FROM tory_content_tags ct "
         f"LEFT JOIN nx_lessons l ON ct.nx_lesson_id = l.id "
         f"LEFT JOIN nx_journey_details jd ON l.nx_journey_detail_id = jd.id "
+        f"LEFT JOIN ("
+        f"  SELECT lesson_detail_id, COUNT(*) AS slide_count "
+        f"  FROM lesson_slides WHERE deleted_at IS NULL "
+        f"  GROUP BY lesson_detail_id"
+        f") sc ON sc.lesson_detail_id = ct.lesson_detail_id "
         f"WHERE ct.deleted_at IS NULL AND ct.nx_lesson_id IN ({id_list}) "
     )
     valid_statuses = {"pending", "approved", "needs_review", "dismissed", "corrected"}
@@ -355,6 +362,8 @@ async def get_content_library(
         for field in ("confidence", "difficulty", "pass_agreement"):
             row[field] = int(row[field]) if row.get(field) else None
         row["journey_detail_id"] = int(row["journey_detail_id"]) if row.get("journey_detail_id") else None
+        row["lesson_detail_id"] = int(row["lesson_detail_id"]) if row.get("lesson_detail_id") else None
+        row["slide_count"] = int(row["slide_count"]) if row.get("slide_count") else 0
 
     # Group by journey
     journey_map = {}

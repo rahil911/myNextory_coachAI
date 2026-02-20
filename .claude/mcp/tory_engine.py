@@ -4346,7 +4346,9 @@ async def _tool_list_users_with_status(
         where_parts.append(
             f"(u.email LIKE '%{safe_search}%' "
             f"OR nuo.first_name LIKE '%{safe_search}%' "
-            f"OR nuo.last_name LIKE '%{safe_search}%')"
+            f"OR nuo.last_name LIKE '%{safe_search}%' "
+            f"OR e.first_name LIKE '%{safe_search}%' "
+            f"OR e.last_name LIKE '%{safe_search}%')"
         )
     if company_filter is not None:
         where_parts.append(f"u.client_id = {int(company_filter)}")
@@ -4361,7 +4363,8 @@ async def _tool_list_users_with_status(
     # Main query with LEFT JOINs for status computation
     data_sql = (
         f"SELECT u.id, u.email, "
-        f"nuo.first_name, nuo.last_name, "
+        f"COALESCE(nuo.first_name, e.first_name, '') AS first_name, "
+        f"COALESCE(nuo.last_name, e.last_name, '') AS last_name, "
         f"u.client_id, "
         f"c.company_name, "
         f"CASE "
@@ -4374,10 +4377,11 @@ async def _tool_list_users_with_status(
         f"FROM nx_users u "
         f"LEFT JOIN clients c ON c.id = u.client_id AND c.deleted_at IS NULL "
         f"LEFT JOIN nx_user_onboardings nuo ON nuo.nx_user_id = u.id AND nuo.deleted_at IS NULL "
+        f"LEFT JOIN employees e ON e.nx_user_id = u.id AND e.deleted_at IS NULL "
         f"LEFT JOIN tory_learner_profiles tlp ON tlp.nx_user_id = u.id AND tlp.deleted_at IS NULL "
         f"LEFT JOIN tory_recommendations tr ON tr.nx_user_id = u.id AND tr.deleted_at IS NULL "
         f"WHERE {where_clause} "
-        f"GROUP BY u.id, nuo.first_name, nuo.last_name "
+        f"GROUP BY u.id, COALESCE(nuo.first_name, e.first_name, ''), COALESCE(nuo.last_name, e.last_name, '') "
         f"{having_clause} "
         f"ORDER BY u.id "
         f"LIMIT {int(limit)} OFFSET {int(offset)}"
@@ -4397,6 +4401,7 @@ async def _tool_list_users_with_status(
         f"END AS tory_status "
         f"FROM nx_users u "
         f"LEFT JOIN nx_user_onboardings nuo ON nuo.nx_user_id = u.id AND nuo.deleted_at IS NULL "
+        f"LEFT JOIN employees e ON e.nx_user_id = u.id AND e.deleted_at IS NULL "
         f"LEFT JOIN tory_learner_profiles tlp ON tlp.nx_user_id = u.id AND tlp.deleted_at IS NULL "
         f"LEFT JOIN tory_recommendations tr ON tr.nx_user_id = u.id AND tr.deleted_at IS NULL "
         f"WHERE {where_clause} "
