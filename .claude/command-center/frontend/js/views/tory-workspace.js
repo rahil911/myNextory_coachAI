@@ -1734,19 +1734,16 @@ function renderSlideModal(lessonName) {
   const slide = slides[idx];
   const total = slides.length;
 
-  // Parse slide content
-  let content = slide.slide_content;
+  // Parse slide content — API returns {type, content} not {slide_type, slide_content}
+  let content = slide.content || slide.slide_content;
   if (typeof content === 'string') {
     try { content = JSON.parse(content); } catch { content = {}; }
   }
   content = content || {};
 
-  const slideType = slide.slide_type || 'unknown';
-  const mediaUrls = slide.media_urls || {};
-  if (typeof mediaUrls === 'string') {
-    try { slide.media_urls = JSON.parse(mediaUrls); } catch { slide.media_urls = {}; }
-  }
-  const urls = slide.media_urls || {};
+  const slideType = slide.type || slide.slide_type || 'unknown';
+  // SAS URLs are embedded in content (content.background_image, content.audio, etc.)
+  const urls = slide.media_urls || content;
 
   // Render slide content based on type
   const slideHtml = renderSlideContent(slideType, content, urls);
@@ -1838,7 +1835,7 @@ function renderSlideContent(type, content, urls) {
 
   // Title
   const title = content.slide_title || content.title || '';
-  const text = content.content || content.text || content.body || '';
+  const text = content.content || content.content_title || content.text || content.body || '';
 
   // Background image
   const bgImage = urls.background_image || content.background_image || '';
