@@ -47,7 +47,7 @@ const _state = {
     page: 1,
     totalPages: 0,
     search: '',
-    filters: { status: '', company: '' },
+    filters: { status: 'has_epp', company: '' },
     companies: [],
     selectedUserId: null,
     selectedUserDetail: null,
