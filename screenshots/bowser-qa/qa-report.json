@@ -1,0 +1,307 @@
+{
+  "timestamp": "2026-02-20T00:01:22.627Z",
+  "stories_total": 10,
+  "stories_passed": 10,
+  "stories_failed": 0,
+  "verdict": "ALL_PASSED",
+  "results": [
+    {
+      "story": 1,
+      "name": "People list loads with real users",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": ".tw-person count equals 50 (got 50)"
+        },
+        {
+          "passed": true,
+          "description": "Each .tw-person contains .tw-person-status (50/50)"
+        },
+        {
+          "passed": true,
+          "description": "Each .tw-person-name has non-empty text (50/50)"
+        },
+        {
+          "passed": true,
+          "description": "Each .tw-person-meta has non-empty text (50/50)"
+        },
+        {
+          "passed": true,
+          "description": "#tw-page-info matches 'Page 1/N' where N >= 29 (got 'Page 1/29', N=29)"
+        },
+        {
+          "passed": true,
+          "description": "#tw-search visible with placeholder 'Search users...' (visible=true, placeholder='Search users...')"
+        },
+        {
+          "passed": true,
+          "description": "#tw-filter-status has 'processed' and 'has_epp' options (options: All Status, Processed, Has EPP, No Data)"
+        },
+        {
+          "passed": true,
+          "description": "#tw-topbar-stats shows count >= 1400 (got 1449)"
+        }
+      ]
+    },
+    {
+      "story": 2,
+      "name": "Search filters users by email",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": "Filtered list contains exactly 1 .tw-person (got 1)"
+        },
+        {
+          "passed": true,
+          "description": "Filtered .tw-person-meta contains 'tsigler@tocgrp.com' (got 'tsigler@tocgrp.com')"
+        },
+        {
+          "passed": true,
+          "description": "Status has class 'status-processed' (got 'tw-person-status status-processed')"
+        },
+        {
+          "passed": true,
+          "description": "After clearing, count returns to 50 (got 50)"
+        }
+      ]
+    },
+    {
+      "story": 3,
+      "name": "Status filter shows processed users",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": "Filtered list contains >= 1 .tw-person (got 1)"
+        },
+        {
+          "passed": true,
+          "description": "Every status has class 'status-processed' (1/1)"
+        },
+        {
+          "passed": true,
+          "description": "All status dots have same color (1 unique colors: rgb(34, 197, 94))"
+        },
+        {
+          "passed": true,
+          "description": "Filtered page count < unfiltered 29 (got 1)"
+        }
+      ]
+    },
+    {
+      "story": 4,
+      "name": "Click user loads profile detail",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": "Clicked .tw-person gains class 'selected' (found 1)"
+        },
+        {
+          "passed": true,
+          "description": ".tw-tab[data-tab='profile'] has class 'active'"
+        },
+        {
+          "passed": true,
+          "description": ".tw-profile-card is visible inside #tw-tab-content"
+        },
+        {
+          "passed": true,
+          "description": ".tw-profile-name displays non-empty text (got 'Patricia Sigler')"
+        },
+        {
+          "passed": true,
+          "description": ".tw-profile-email contains 'tsigler@tocgrp.com' (got 'tsigler@tocgrp.com')"
+        },
+        {
+          "passed": true,
+          "description": ".tw-profile-narrative >= 50 chars (got 492)"
+        },
+        {
+          "passed": true,
+          "description": ".tw-trait-list has >= 1 .tw-trait (got 16)"
+        },
+        {
+          "passed": true,
+          "description": "No 'undefined', 'null', or 'NaN' in profile (undefined=false, null=false, NaN=false)"
+        }
+      ]
+    },
+    {
+      "story": 5,
+      "name": "Path tab shows kanban columns",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": ".tw-tab[data-tab='path'] has class 'active'"
+        },
+        {
+          "passed": true,
+          "description": ".tw-path-board is visible inside #tw-tab-content"
+        },
+        {
+          "passed": true,
+          "description": ".tw-path-col count equals 4 (got 4)"
+        },
+        {
+          "passed": true,
+          "description": "Columns have data-col values: pool, discovery, main, completed (got: pool, discovery, main, completed)"
+        },
+        {
+          "passed": true,
+          "description": "Each .tw-path-col-title has non-empty text (Available Pool, Discovery, Main Path, Completed)"
+        },
+        {
+          "passed": true,
+          "description": "Each .tw-path-col-count shows a number (59, 5/5, 15, 0)"
+        },
+        {
+          "passed": true,
+          "description": "Total .tw-path-card >= 1 (got 79)"
+        },
+        {
+          "passed": true,
+          "description": "At least one .tw-path-card has draggable='true' (got 79)"
+        },
+        {
+          "passed": true,
+          "description": "Each .tw-path-card-title has non-empty text (sampled 5)"
+        },
+        {
+          "passed": true,
+          "description": "Each .tw-path-card contains .tw-path-score (79)"
+        }
+      ]
+    },
+    {
+      "story": 6,
+      "name": "Content tab shows lesson library",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": ".tw-tab[data-tab='content'] has class 'active'"
+        },
+        {
+          "passed": true,
+          "description": "#tw-tab-content is visible and not empty"
+        },
+        {
+          "passed": true,
+          "description": "#tw-tab-content contains text with 'Content' (found: true)"
+        },
+        {
+          "passed": true,
+          "description": "No JavaScript errors during tab switch (0 errors: )"
+        }
+      ]
+    },
+    {
+      "story": 7,
+      "name": "Agent log shows session data or empty state",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": ".tw-tab[data-tab='agentlog'] has class 'active'"
+        },
+        {
+          "passed": true,
+          "description": "#tw-tab-content is visible and not empty"
+        },
+        {
+          "passed": true,
+          "description": "Contains .tw-agentlog-toolbar or placeholder (toolbar=0, placeholder=1)"
+        },
+        {
+          "passed": true,
+          "description": "No toolbar - placeholder shown (OK for user with no sessions)"
+        },
+        {
+          "passed": true,
+          "description": "No JavaScript errors during tab switch (0 errors)"
+        }
+      ]
+    },
+    {
+      "story": 8,
+      "name": "Left drawer collapses and expands",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": "Initially .tw-people-list visible with .tw-person elements (visible=true, count=50)"
+        },
+        {
+          "passed": true,
+          "description": "After collapse, .tw-left-header and .tw-people-list hidden (header=true, list=true)"
+        },
+        {
+          "passed": true,
+          "description": "Toggle text contains 'People' (got '▶ People')"
+        },
+        {
+          "passed": true,
+          "description": "After expand, .tw-people-list visible (true)"
+        },
+        {
+          "passed": true,
+          "description": "After expand, .tw-person elements present (50)"
+        }
+      ]
+    },
+    {
+      "story": 9,
+      "name": "AI co-pilot drawer opens and shows chat interface",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": "#tw-right is visible on initial load"
+        },
+        {
+          "passed": true,
+          "description": ".tw-right-header contains 'AI Co-pilot' (got 'AI Co-pilot')"
+        },
+        {
+          "passed": true,
+          "description": "Contains .tw-right-placeholder or #tw-chat-messages (placeholder=1, chat=1)"
+        },
+        {
+          "passed": true,
+          "description": "After collapse, .tw-right-collapsed-strip is visible"
+        },
+        {
+          "passed": true,
+          "description": "After re-expand, .tw-right-header visible with 'AI Co-pilot'"
+        }
+      ]
+    },
+    {
+      "story": 10,
+      "name": "No console errors on initial load",
+      "status": "PASSED",
+      "assertions": [
+        {
+          "passed": true,
+          "description": "Zero console.error events (0 errors)"
+        },
+        {
+          "passed": true,
+          "description": "Zero network requests >= 400 (0 failures)"
+        },
+        {
+          "passed": true,
+          "description": "Page renders without uncaught exceptions"
+        },
+        {
+          "passed": true,
+          "description": ".tw-layout contains .tw-left, .tw-center, .tw-right"
+        }
+      ]
+    }
+  ]
+}

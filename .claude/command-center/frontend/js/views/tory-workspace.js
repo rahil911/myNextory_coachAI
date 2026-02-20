@@ -337,7 +337,7 @@ function renderPeopleList() {
 
     row.innerHTML = `
       <input type="checkbox" class="tw-person-check" data-uid="${user.nx_user_id}" ${tw.batchSelected.has(user.nx_user_id) ? 'checked' : ''}>
-      <div class="tw-person-status ${status}"></div>
+      <div class="tw-person-status status-${status}"></div>
       <div class="tw-person-info">
         <div class="tw-person-name">${esc(getUserName(user))}</div>
         <div class="tw-person-meta">${esc(user.email || '')}${user.client_name ? ' · ' + esc(user.client_name) : ''}</div>
@@ -423,6 +423,12 @@ function renderTabContent() {
 
   const tw = getState().toryWorkspace;
 
+  // Content tab works without a user selected (it's the content library)
+  if (tw.activeTab === 'content') {
+    renderContentTab(contentEl);
+    return;
+  }
+
   // No user selected
   if (!tw.selectedUserId) {
     contentEl.innerHTML = `
@@ -457,9 +463,6 @@ function renderTabContent() {
     case 'path':
       renderPathTab(contentEl, tw.selectedUserDetail);
       break;
-    case 'content':
-      renderContentTab(contentEl);
-      break;
     case 'agentlog':
       renderAgentLogTab(contentEl);
       break;
@@ -474,13 +477,33 @@ function renderProfileTab(el, detail) {
   el.innerHTML = '';
 
   const learner = detail.learner || {};
-  const profile = learner.profile || learner;
+  const rawProfile = learner.profile || {};
+  const user = learner.user || {};
   const coach = learner.coach || null;
+
+  // Merge user info into profile for display (profile lacks email/name)
+  const tw = getState().toryWorkspace;
+  const listUser = tw.users.find(u => u.nx_user_id === tw.selectedUserId) || {};
+  const profile = {
+    ...rawProfile,
+    email: user.email || listUser.email || rawProfile.email || '',
+    first_name: listUser.first_name || rawProfile.first_name || '',
+    last_name: listUser.last_name || rawProfile.last_name || '',
+    client_name: listUser.company_name || rawProfile.client_name || '',
+  };
+
+  // Parse strengths/gaps if stored as JSON strings
+  if (typeof profile.strengths === 'string') {
+    try { profile.strengths = JSON.parse(profile.strengths); } catch { profile.strengths = []; }
+  }
+  if (typeof profile.gaps === 'string') {
+    try { profile.gaps = JSON.parse(profile.gaps); } catch { profile.gaps = []; }
+  }
 
   const card = h('div', { class: 'tw-profile-card' });
 
   const initials = ((profile.first_name || '')[0] || '') + ((profile.last_name || '')[0] || '');
-  const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.email || `User ${getState().toryWorkspace.selectedUserId}`;
+  const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.email || `User ${tw.selectedUserId}`;
 
   let html = `
     <div class="tw-profile-header">

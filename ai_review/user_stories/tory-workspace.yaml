@@ -1,0 +1,244 @@
+# Tory Workspace — Goal-State User Stories
+# Consumed by bowser-qa-agent for UI validation against real baap data.
+#
+# Real data assertions (from baap DB 2026-02-19):
+#   Total users:      ~1,464  (nx_users)
+#   Processed user:   tsigler@tocgrp.com (id=200, has profile + 140 recommendations)
+#   Lessons:          25 across 4 journeys
+#   Journeys:         Leadership & Management, Communication & Teamwork,
+#                     Resilience & Wellbeing, Career Growth & Sales
+#   Page size:        50 users per page (~30 pages)
+
+stories:
+
+  # ── People List (stories 1-3) ──────────────────────────────────────────
+
+  - name: "People list loads with real users"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Navigate to http://localhost:8002/#tory
+      2. Wait for .tw-people-list to contain at least one .tw-person element (max 5s)
+      3. Count all .tw-person elements in .tw-people-list
+      4. For each .tw-person, verify it contains .tw-person-status, .tw-person-name, .tw-person-meta
+      5. Read #tw-page-info text content
+      6. Verify #tw-search input is visible
+      7. Verify #tw-filter-status select is visible
+      8. Verify #tw-filter-company select is visible
+      9. Read #tw-topbar-stats text content
+    assertions:
+      - ".tw-person count equals 50 (full page)"
+      - "Each .tw-person contains a .tw-person-status element (colored dot)"
+      - "Each .tw-person contains a .tw-person-name with non-empty text"
+      - "Each .tw-person contains a .tw-person-meta with non-empty text"
+      - "#tw-page-info text matches pattern 'Page 1/N' where N >= 29"
+      - "#tw-search is visible with placeholder 'Search users...'"
+      - "#tw-filter-status has options including 'processed' and 'has_epp'"
+      - "#tw-topbar-stats shows a user count >= 1400"
+    tags: [people-list, load, pagination]
+
+  - name: "Search filters users by email"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Navigate to http://localhost:8002/#tory
+      2. Wait for .tw-people-list to contain .tw-person elements (max 5s)
+      3. Type "tsigler" into #tw-search input
+      4. Wait 500ms for search debounce (300ms) plus render
+      5. Wait for .tw-people-list to update with filtered results (max 3s)
+      6. Count .tw-person elements in the filtered list
+      7. Read .tw-person-meta text of the first result
+      8. Read .tw-person-status class list of the first result
+      9. Clear #tw-search input (triple-click to select all, then press Backspace)
+      10. Wait 500ms for debounce plus render
+      11. Wait for .tw-people-list to repopulate (max 3s)
+      12. Count .tw-person elements after clearing
+    assertions:
+      - "After typing 'tsigler', filtered list contains exactly 1 .tw-person"
+      - "Filtered .tw-person .tw-person-meta contains 'tsigler@tocgrp.com'"
+      - "Filtered .tw-person .tw-person-status has class 'status-processed'"
+      - "After clearing search, .tw-person count returns to 50"
+    tags: [people-list, search, filter]
+
+  - name: "Status filter shows processed users"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Navigate to http://localhost:8002/#tory
+      2. Wait for .tw-people-list to contain .tw-person elements (max 5s)
+      3. Select "processed" value from #tw-filter-status dropdown
+      4. Wait for .tw-people-list to update with filtered results (max 3s)
+      5. Count .tw-person elements in the filtered list
+      6. For each visible .tw-person, read .tw-person-status class list
+      7. Read #tw-page-info to confirm reduced pagination
+    assertions:
+      - "Filtered list contains at least 1 .tw-person"
+      - "Every visible .tw-person has .tw-person-status with class 'status-processed'"
+      - "All visible status dots render with the processed color (green)"
+      - "#tw-page-info shows a total page count less than the unfiltered count"
+    tags: [people-list, filter, status]
+
+  # ── User Detail (stories 4-5) ──────────────────────────────────────────
+
+  - name: "Click user loads profile detail"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Navigate to http://localhost:8002/#tory
+      2. Wait for .tw-people-list to contain .tw-person elements (max 5s)
+      3. Type "tsigler" into #tw-search input
+      4. Wait 500ms for debounce plus render
+      5. Wait for filtered list to show exactly 1 result (max 3s)
+      6. Click the .tw-person row for tsigler
+      7. Wait for .tw-person.selected to exist (max 2s)
+      8. Wait for .tw-profile-card to render inside #tw-tab-content (max 5s)
+      9. Verify .tw-tab[data-tab="profile"] has class "active"
+      10. Read all text content within .tw-profile-card
+      11. Check for .tw-profile-narrative content
+      12. Check for .tw-trait-list with .tw-trait elements
+    assertions:
+      - "Clicked .tw-person row gains class 'selected'"
+      - ".tw-tab[data-tab='profile'] has class 'active'"
+      - ".tw-profile-card is visible inside #tw-tab-content"
+      - ".tw-profile-name displays non-empty text"
+      - ".tw-profile-email contains 'tsigler@tocgrp.com'"
+      - ".tw-profile-narrative contains at least 50 characters of text"
+      - ".tw-trait-list contains at least one .tw-trait element"
+      - ".tw-profile-card text does not contain literal 'undefined', 'null', or 'NaN'"
+    tags: [profile, user-detail, epp]
+
+  - name: "Path tab shows kanban columns"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Navigate to http://localhost:8002/#tory
+      2. Wait for .tw-people-list to contain .tw-person elements (max 5s)
+      3. Type "tsigler" into #tw-search input
+      4. Wait 500ms for debounce plus render
+      5. Wait for filtered results (max 3s)
+      6. Click the .tw-person row for tsigler
+      7. Wait for .tw-profile-card to render (max 5s)
+      8. Click .tw-tab[data-tab="path"]
+      9. Wait for .tw-tab[data-tab="path"] to have class "active" (max 2s)
+      10. Wait for .tw-path-board to render inside #tw-tab-content (max 5s)
+      11. Count .tw-path-col elements
+      12. Read data-col attribute from each .tw-path-col
+      13. Count total .tw-path-card elements across all columns
+      14. Read draggable attribute from .tw-path-card elements
+    assertions:
+      - ".tw-tab[data-tab='path'] has class 'active'"
+      - ".tw-path-board is visible inside #tw-tab-content"
+      - ".tw-path-col count equals 4"
+      - "Columns have data-col values: 'pool', 'discovery', 'main', 'completed'"
+      - "Each .tw-path-col has .tw-path-col-title with non-empty text"
+      - "Each .tw-path-col has .tw-path-col-count showing a number"
+      - "Total .tw-path-card count is at least 1 (tsigler has 140 recommendations)"
+      - "At least one .tw-path-card has attribute draggable='true'"
+      - "Each .tw-path-card contains .tw-path-card-title with non-empty text"
+      - "Each .tw-path-card contains .tw-path-score"
+    tags: [path, kanban, drag-drop]
+
+  # ── Content (story 6) ─────────────────────────────────────────────────
+
+  - name: "Content tab shows lesson library"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Navigate to http://localhost:8002/#tory
+      2. Wait for .tw-people-list to contain .tw-person elements (max 5s)
+      3. Click .tw-tab[data-tab="content"]
+      4. Wait for .tw-tab[data-tab="content"] to have class "active" (max 2s)
+      5. Wait for #tw-tab-content to update (max 3s)
+      6. Read #tw-tab-content inner content
+      7. Check for journey columns or placeholder state
+    assertions:
+      - ".tw-tab[data-tab='content'] has class 'active'"
+      - "#tw-tab-content is visible and not empty"
+      - "#tw-tab-content contains either lesson content or a placeholder with text containing 'Content'"
+      - "No JavaScript errors in console during tab switch"
+    tags: [content, lessons, library]
+
+  # ── Agent Log (story 7) ───────────────────────────────────────────────
+
+  - name: "Agent log shows session data or empty state"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Navigate to http://localhost:8002/#tory
+      2. Wait for .tw-people-list to contain .tw-person elements (max 5s)
+      3. Type "tsigler" into #tw-search input
+      4. Wait 500ms for debounce plus render
+      5. Wait for filtered results (max 3s)
+      6. Click the .tw-person row for tsigler
+      7. Wait for .tw-profile-card to render (max 5s)
+      8. Click .tw-tab[data-tab="agentlog"]
+      9. Wait for .tw-tab[data-tab="agentlog"] to have class "active" (max 2s)
+      10. Wait for #tw-tab-content to update (max 3s)
+      11. Check for .tw-agentlog-toolbar or placeholder content
+      12. If sessions exist, verify #tw-agentlog-session-select has options
+    assertions:
+      - ".tw-tab[data-tab='agentlog'] has class 'active'"
+      - "#tw-tab-content is visible and not empty"
+      - "#tw-tab-content contains either .tw-agentlog-toolbar with session selector or a placeholder message"
+      - "If .tw-agentlog-toolbar exists, #tw-agentlog-session-select has at least one option"
+      - "No JavaScript errors in console during tab switch"
+    tags: [agent-log, sessions]
+
+  # ── Drawer Behavior (stories 8-9) ─────────────────────────────────────
+
+  - name: "Left drawer collapses and expands"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Navigate to http://localhost:8002/#tory
+      2. Wait for .tw-people-list to contain .tw-person elements (max 5s)
+      3. Verify .tw-people-list is visible (left drawer is open)
+      4. Click #tw-toggle-left button to collapse
+      5. Wait 300ms for collapse animation
+      6. Verify .tw-people-list is hidden (display: none or parent collapsed)
+      7. Verify .tw-left has collapsed width (~48px)
+      8. Click #tw-toggle-left button again to expand
+      9. Wait 300ms for expand animation
+      10. Verify .tw-people-list is visible again
+      11. Verify .tw-person elements are present after re-expansion
+    assertions:
+      - "Initially .tw-people-list is visible with .tw-person elements"
+      - "After first click, .tw-left-header and .tw-people-list become hidden"
+      - "After first click, #tw-toggle-left text changes to show expand indicator"
+      - "After second click, .tw-people-list becomes visible again"
+      - "After second click, .tw-person elements are present in the list"
+    tags: [drawer, collapse, expand, left]
+
+  - name: "AI co-pilot drawer opens and shows chat interface"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Navigate to http://localhost:8002/#tory
+      2. Wait for .tw-layout to render (max 3s)
+      3. Verify #tw-right is visible (right drawer open by default)
+      4. Verify .tw-right-header contains text "AI Co-pilot"
+      5. Verify right drawer contains placeholder or chat interface
+      6. Click #tw-toggle-right to collapse the right drawer
+      7. Wait 300ms for collapse animation
+      8. Verify .tw-right-collapsed-strip is visible with robot icon
+      9. Click #tw-toggle-right or #tw-expand-right to re-expand
+      10. Wait 300ms for expand animation
+      11. Verify .tw-right-header is visible again with "AI Co-pilot" text
+    assertions:
+      - "#tw-right is visible on initial load"
+      - ".tw-right-header contains text 'AI Co-pilot'"
+      - "Right drawer contains .tw-right-placeholder or #tw-chat-messages"
+      - "After collapse, .tw-right-collapsed-strip is visible"
+      - "After re-expand, .tw-right-header is visible with 'AI Co-pilot' text"
+    tags: [drawer, collapse, expand, right, copilot]
+
+  # ── Error Resilience (story 10) ────────────────────────────────────────
+
+  - name: "No console errors on initial load"
+    url: "http://localhost:8002/#tory"
+    workflow: |
+      1. Open browser with console listener attached (capture all console.error events)
+      2. Attach network request listener (capture all failed requests with status >= 400)
+      3. Navigate to http://localhost:8002/#tory
+      4. Wait for .tw-people-list to contain .tw-person elements (max 5s)
+      5. Wait an additional 3s for any deferred scripts or lazy-loaded resources
+      6. Collect all captured console errors
+      7. Collect all captured network failures (4xx and 5xx responses)
+      8. Verify both collections are empty
+    assertions:
+      - "Zero console.error events captured during page load"
+      - "Zero network requests with HTTP status >= 400"
+      - "Page renders without uncaught exceptions"
+      - ".tw-layout is visible and contains .tw-left, .tw-center, .tw-right"
+    tags: [error-resilience, console, network]

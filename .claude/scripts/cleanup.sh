@@ -183,6 +183,9 @@ except: pass
     # ── End Review Gate ──────────────────────────────────────────────────────
 
     # ── LOCKED MERGE SECTION ──────────────────────────────────────────────────
+    # NOTE: Gate 4 (Browser QA) runs AFTER the merge below because it needs
+    # the latest code running on the dashboard. It does not block the merge —
+    # it creates fix beads on failure. See post-merge section after the lock.
     (
       flock -w 300 200 || { echo "ERROR: Could not acquire merge lock after 5 minutes" >&2; exit 1; }
       echo "Merge lock acquired."
@@ -212,6 +215,30 @@ except: pass
       echo "Released merge lock."
     ) 200>"$LOCK_FILE"
     # ── END LOCKED SECTION ────────────────────────────────────────────────────
+
+    # ── POST-MERGE GATE 4: Browser QA Gate ──────────────────────────────────
+    # Runs AFTER merge because the dashboard needs the latest code.
+    # Does NOT block the merge — creates fix beads on failure.
+    BROWSER_QA_SCRIPT="$PROJECT/.claude/scripts/browser-qa-gate.sh"
+    SKIP_BROWSER_QA="${SKIP_BROWSER_QA:-false}"
+
+    if [ "$SKIP_BROWSER_QA" = "true" ]; then
+      echo "[gate:browser-qa] Skipping (SKIP_BROWSER_QA=true)"
+    elif [ -x "$BROWSER_QA_SCRIPT" ]; then
+      echo "[gate:browser-qa] Running browser QA..."
+      qa_exit=0
+      "$BROWSER_QA_SCRIPT" "$NAME" "$WORKTREE" || qa_exit=$?
+      case $qa_exit in
+        0) echo "[gate:browser-qa] ALL PASSED" ;;
+        1) echo "[gate:browser-qa] PARTIAL FAILURE — fix bead created" ;;
+        2) echo "[gate:browser-qa] ALL FAILED — fix bead created" ;;
+        3) echo "[gate:browser-qa] QA infra error — proceeding with warning" ;;
+        4) echo "[gate:browser-qa] Skipped (no UI files in diff)" ;;
+      esac
+    else
+      echo "[gate:browser-qa] browser-qa-gate.sh not found. Skipping. (Install via Bead 12)"
+    fi
+    # ── End Browser QA Gate ─────────────────────────────────────────────────
     ;;
 
   discard)

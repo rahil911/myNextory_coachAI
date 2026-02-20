@@ -4409,6 +4409,21 @@ async def _tool_list_users_with_status(
     total = int(count_rows[0]["total"]) if count_rows else 0
     total_pages = math.ceil(total / limit) if limit > 0 else 0
 
+    # Fetch distinct companies for filter dropdown
+    companies_sql = (
+        "SELECT DISTINCT c.id, c.company_name "
+        "FROM clients c "
+        "INNER JOIN nx_users u ON u.client_id = c.id "
+        "WHERE c.deleted_at IS NULL AND u.deleted_at IS NULL "
+        "ORDER BY c.company_name"
+    )
+    _, company_rows = mysql_query(companies_sql)
+    companies = [
+        {"id": int(cr["id"]), "name": cr["company_name"]}
+        for cr in company_rows
+        if cr.get("id") and cr.get("company_name")
+    ]
+
     def _val(v, default=""):
         """Return default for NULL/None values from mysql output."""
         if v is None or v == "NULL":
@@ -4419,7 +4434,7 @@ async def _tool_list_users_with_status(
     for r in rows:
         cid = r.get("client_id")
         users.append({
-            "id": int(r["id"]),
+            "nx_user_id": int(r["id"]),
             "email": _val(r.get("email")),
             "first_name": _val(r.get("first_name")),
             "last_name": _val(r.get("last_name")),
@@ -4435,6 +4450,7 @@ async def _tool_list_users_with_status(
         "page": page,
         "limit": limit,
         "total_pages": total_pages,
+        "companies": companies,
     }, indent=2, default=str)
 
 

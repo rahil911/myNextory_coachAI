@@ -197,9 +197,9 @@
   border-radius: 50%;
 }
 
-.tw-person-status.processed { background: var(--green); }
-.tw-person-status.has_epp   { background: var(--yellow); }
-.tw-person-status.no_data   { background: var(--text-tertiary); }
+.tw-person-status.status-processed { background: var(--green); }
+.tw-person-status.status-has_epp   { background: var(--yellow); }
+.tw-person-status.status-no_data   { background: var(--text-tertiary); }
 
 .tw-person-info {
   flex: 1;
