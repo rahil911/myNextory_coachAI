@@ -36,6 +36,10 @@ _mcp_dir = Path(__file__).resolve().parent.parent.parent.parent / "mcp"
 if str(_mcp_dir) not in sys.path:
     sys.path.insert(0, str(_mcp_dir))
 
+_rag_dir = Path(__file__).resolve().parent.parent.parent.parent / "rag"
+if str(_rag_dir) not in sys.path:
+    sys.path.insert(0, str(_rag_dir))
+
 
 # ── Service accessors (lazy imports to avoid circular deps) ──────────────────
 
@@ -80,6 +84,18 @@ class LockRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     text: str
+
+
+class CuratorChatRequest(BaseModel):
+    user_id: int = Field(..., description="nx_user_id of the learner")
+    message: str = Field(..., min_length=1, description="Coach message")
+    session_id: int | None = Field(None, description="Resume specific session")
+
+
+class CuratorInterrogateRequest(BaseModel):
+    user_id: int = Field(..., description="nx_user_id of the learner")
+    lesson_id: int = Field(..., description="nx_lesson_id to explain")
+    question: str | None = Field(None, description="Optional additional question")
 
 
 # ── Helper: call MCP tool and parse JSON result ────────────────────────────
@@ -1023,3 +1039,73 @@ async def get_content_360_detail(lesson_detail_id: int):
 
     row["slides"] = slides
     return row
+
+
+# ── Curator AI ─────────────────────────────────────────────────────────────
+
+def _get_curator_engine():
+    """Lazy-init singleton CuratorEngine."""
+    if not hasattr(_get_curator_engine, '_instance'):
+        from curator_prompts import CuratorEngine
+        _get_curator_engine._instance = CuratorEngine()
+    return _get_curator_engine._instance
+
+
+@router.post("/curator/chat")
+async def curator_chat(req: CuratorChatRequest):
+    """Send a message to the Curator AI about a learner.
+
+    Returns AI response with model tier, cost, and guardrail flags.
+    """
+    engine = _get_curator_engine()
+
+    # Cost cap: check session cost before proceeding
+    if req.session_id:
+        session = engine.session_mgr._sessions.get(str(req.session_id))
+        if session and session.get("estimated_cost_usd", 0) >= 10.0:
+            raise HTTPException(
+                status_code=429,
+                detail="Session cost limit reached ($10). Please start a new session.",
+            )
+
+    result = engine.chat(
+        nx_user_id=req.user_id,
+        message=req.message,
+        session_id=req.session_id,
+    )
+    return result
+
+
+@router.get("/curator/session/{user_id}")
+async def curator_session(user_id: int):
+    """Get or create a Curator session for a learner.
+
+    Returns conversation history, key facts, and session metadata.
+    """
+    engine = _get_curator_engine()
+    return engine.get_session_history(user_id)
+
+
+@router.get("/curator/briefing/{user_id}")
+async def curator_briefing(user_id: int):
+    """Generate an initial briefing when coach selects a learner.
+
+    Returns AI-generated summary of the learner's profile, path, and coaching suggestions.
+    Falls back to raw data if AI is unavailable.
+    """
+    engine = _get_curator_engine()
+    return engine.generate_briefing(user_id)
+
+
+@router.post("/curator/interrogate")
+async def curator_interrogate(req: CuratorInterrogateRequest):
+    """Ask 'why was this lesson assigned?' — uses Opus for deep analysis.
+
+    Explains the EPP-trait-content matching logic for a specific lesson.
+    """
+    engine = _get_curator_engine()
+    return engine.interrogate_lesson(
+        nx_user_id=req.user_id,
+        lesson_id=req.lesson_id,
+        question=req.question,
+    )

@@ -180,6 +180,19 @@ export const api = {
     return request('GET', `/api/tory/content-360${q ? '?' + q : ''}`);
   },
   getContent360Detail: (lessonDetailId) => request('GET', `/api/tory/content-360/${lessonDetailId}`),
+
+  // Curator AI — coach-facing intelligence
+  curatorChat: (userId, message, sessionId = null) =>
+    request('POST', '/api/tory/curator/chat', {
+      user_id: userId, message, session_id: sessionId,
+    }, 90000),
+  getCuratorSession: (userId) => request('GET', `/api/tory/curator/session/${userId}`),
+  getCuratorBriefing: (userId) => request('GET', `/api/tory/curator/briefing/${userId}`, null, 90000),
+  curatorInterrogate: (userId, lessonId, question = null) =>
+    request('POST', '/api/tory/curator/interrogate', {
+      user_id: userId, lesson_id: lessonId, question,
+    }, 90000),
+  getToryUserProfile: (userId) => request('GET', `/api/tory/users/${userId}/profile`),
 };
 
 // ── WebSocket Manager ──────────────────────────────────────────────────────

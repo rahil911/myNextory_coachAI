@@ -1,0 +1,52 @@
+bd show baap-jla && bd update baap-jla --status=in_progress
+
+Your task: Build the Curator AI — a coach-facing persistent intelligence system.
+
+CONTEXT (what exists on main):
+- Model Harness: .claude/rag/model_harness.py (655 lines) — context builder, tier router, guardrails
+- Mode Detector: .claude/rag/mode_detector.py (201 lines) — 7 companion modes
+- Tools Schema: .claude/rag/tools_schema.py (203 lines) — MCP tool definitions
+- RAG Infrastructure: .claude/rag/ (8 adapted files) — FAISS, hybrid query, chat manager, user manager
+- Content Processor: .claude/mcp/content_processor.py (1211 lines) — extracts 15 fields per lesson
+- Tory Engine: .claude/mcp/tory_engine.py — existing MCP tools
+- Config: .claude/rag/config.py — model names, costs, dimensions
+- EPP Reference: .claude/knowledge/epp-dimensions.md — all 25 dimensions with meanings
+- Slide Data Model: .claude/knowledge/slide-data-model.md — 68 slide types
+- DB: MariaDB 'baap', tables: tory_ai_sessions, tory_content_tags, tory_learner_profiles, nx_user_onboardings, backpacks, tory_recommendations
+
+WHAT TO BUILD:
+1. Curator system prompt template (.claude/rag/curator_prompts.py):
+   - Third-person analytical voice ('Jack's SelfConfidence is 28...')
+   - Pre-loaded context sections: EPP profile, Q&A answers, path rationale, backpack entries
+   - Coaching prompt delivery format
+   - Guardrails: never fabricate, always cite, stay analytical
+
+2. Curator context assembler — function that loads ALL learner data:
+   - EPP scores from nx_user_onboardings.assesment_result (JSON, scores prefixed EPP*)
+   - Onboarding Q&A (why_did_you_come, best_boss, success_look_like, own_reason, etc.)
+   - Current path from tory_recommendations
+   - Backpack entries from backpacks table (created_by = nx_user_id, data is JSON array)
+   - Content metadata from tory_content_tags
+   - Coaching prompts from tory_content_tags.coaching_prompts
+
+3. Curator API endpoints (add to tory_workspace.py backend routes):
+   - POST /api/tory/curator/chat — send message, get response
+   - GET /api/tory/curator/session/:userId — get/create session
+   - GET /api/tory/curator/briefing/:userId — initial briefing when coach selects learner
+   - POST /api/tory/curator/interrogate — 'why was this lesson assigned?'
+
+4. Curator UI in the co-pilot drawer (upgrade tory-workspace.js):
+   - Persistent chat (not one-shot) with message history
+   - Initial briefing auto-generates when coach selects a learner
+   - Model tier indicator (Sonnet vs Opus badge)
+   - Tool call transparency (expandable accordion per response)
+   - 'Why?' icons on path items linking to curator explanation
+
+5. Session management:
+   - Create/resume sessions in tory_ai_sessions (role='curator')
+   - Three-tier memory: buffer (10 msgs), summary, key facts
+   - Persist to DB after each interaction
+
+IMPORTANT: Use the REAL model harness from model_harness.py. Use the REAL RAG infrastructure. Build real API endpoints that call real Claude API. No mock responses. Production grade.
+
+API keys available: ANTHROPIC_API_KEY, OPENAI_API_KEY (in environment)

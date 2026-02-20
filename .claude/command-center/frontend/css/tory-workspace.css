@@ -3754,3 +3754,244 @@ details.tw-event[open] summary::after {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ============================================================================
+   CURATOR AI STYLES
+   ============================================================================ */
+
+/* ── Curator Tab Bar ─────────────────────────────────────────────────────── */
+
+.tw-curator-tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.tw-curator-tab {
+  padding: 4px 12px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  transition: all 0.15s;
+}
+
+.tw-curator-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-2);
+}
+
+.tw-curator-tab.active {
+  color: var(--blue);
+  background: var(--bg-1);
+  border-bottom: 2px solid var(--blue);
+}
+
+/* ── Curator Panel ───────────────────────────────────────────────────────── */
+
+.tw-curator-panel,
+.tw-agent-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tw-agent-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ── Curator Meta Bar ────────────────────────────────────────────────────── */
+
+.tw-curator-meta {
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.tw-curator-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* ── Model Tier Badges ───────────────────────────────────────────────────── */
+
+.tw-model-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: var(--radius-full);
+}
+
+.tw-model-badge.sonnet {
+  background: var(--blue-bg, rgba(59, 130, 246, 0.15));
+  color: var(--blue);
+}
+
+.tw-model-badge.opus {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+.tw-model-badge.degraded {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--red);
+}
+
+.tw-model-badge-sm {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-radius: var(--radius-sm);
+}
+
+.tw-model-badge-sm.sonnet {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--blue);
+}
+
+.tw-model-badge-sm.opus {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a855f7;
+}
+
+/* ── Curator Cost & Message Count ────────────────────────────────────────── */
+
+.tw-curator-cost {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.tw-curator-msg-count {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+/* ── Briefing Bubble ─────────────────────────────────────────────────────── */
+
+.tw-briefing-bubble {
+  border-left: 3px solid var(--blue);
+  padding-left: var(--space-3) !important;
+}
+
+.tw-briefing-loading {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ── Curator Message Footer (tokens, cost, routing) ──────────────────────── */
+
+.tw-curator-msg-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: 2px 0 0 36px; /* align with bubble content */
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.tw-token-count {
+  font-family: var(--font-mono);
+}
+
+.tw-msg-cost {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* ── Tool Call Accordion ─────────────────────────────────────────────────── */
+
+.tw-tool-accordion {
+  margin-top: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: 100%;
+}
+
+.tw-tool-accordion summary {
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  background: var(--bg-2);
+  user-select: none;
+}
+
+.tw-tool-accordion summary:hover {
+  color: var(--text-primary);
+}
+
+.tw-tool-details {
+  padding: 4px 8px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  background: var(--bg-1);
+  border-top: 1px solid var(--border);
+}
+
+.tw-guardrail-flags summary {
+  color: var(--orange, #f59e0b);
+}
+
+/* ── Why? Button on Path Cards ───────────────────────────────────────────── */
+
+.tw-why-btn {
+  margin-left: auto;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--blue);
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tw-why-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--blue);
+}
+
+/* ── Agent Panel Placeholder ─────────────────────────────────────────────── */
+
+.tw-agent-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.tw-agent-input-area {
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+}
