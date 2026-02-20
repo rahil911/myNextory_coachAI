@@ -471,129 +471,346 @@ function renderTabContent() {
   }
 }
 
-// ── Profile Tab ─────────────────────────────────────────────────────────────
+// ── Profile Tab — EPP Profile Display ────────────────────────────────────────
 
-function renderProfileTab(el, detail) {
+// EPP dimension descriptions for tooltips
+const EPP_DESCRIPTIONS = {
+  Achievement: 'Drive to accomplish goals and exceed standards',
+  Motivation: 'Internal drive and energy level; self-starting tendency',
+  Competitiveness: 'Desire to outperform others and win',
+  Managerial: 'Comfort with leading, directing, and managing others',
+  Assertiveness: 'Willingness to speak up, push back, and advocate',
+  Extroversion: 'Preference for social interaction and external stimulation',
+  Cooperativeness: 'Orientation toward teamwork, harmony, and helping others',
+  Patience: 'Tolerance for delay, pace of work, frustration threshold',
+  SelfConfidence: 'Trust in own abilities and judgment',
+  Conscientiousness: 'Attention to detail, organization, and rule-following',
+  Openness: 'Receptivity to new ideas, change, and unconventional approaches',
+  Stability: 'Emotional evenness and resilience to stress',
+  StressTolerance: 'Ability to function effectively under pressure',
+};
+
+const JOBFIT_LABELS = {
+  Accounting_JobFit: 'Accounting',
+  AdminAsst_JobFit: 'Admin Asst',
+  Analyst_JobFit: 'Analyst',
+  BankTeller_JobFit: 'Bank Teller',
+  Collections_JobFit: 'Collections',
+  CustomerService_JobFit: 'Customer Svc',
+  FrontDesk_JobFit: 'Front Desk',
+  Manager_JobFit: 'Manager',
+  MedicalAsst_JobFit: 'Medical Asst',
+  Production_JobFit: 'Production',
+  Programmer_JobFit: 'Programmer',
+  Sales_JobFit: 'Sales',
+};
+
+// Track active Chart.js instances so we can destroy them on re-render
+let _eppRadarChart = null;
+let _eppBarChart = null;
+
+// Cache for loaded EPP profile data (keyed by user_id)
+const _eppProfileCache = {};
+
+async function renderProfileTab(el, detail) {
   el.innerHTML = '';
 
   const learner = detail.learner || {};
-  const rawProfile = learner.profile || {};
   const user = learner.user || {};
   const coach = learner.coach || null;
+  const rawProfile = learner.profile || {};
 
-  // Merge user info into profile for display (profile lacks email/name)
   const tw = getState().toryWorkspace;
-  const listUser = tw.users.find(u => u.nx_user_id === tw.selectedUserId) || {};
-  const profile = {
-    ...rawProfile,
-    email: user.email || listUser.email || rawProfile.email || '',
-    first_name: listUser.first_name || rawProfile.first_name || '',
-    last_name: listUser.last_name || rawProfile.last_name || '',
-    client_name: listUser.company_name || rawProfile.client_name || '',
-  };
+  const userId = tw.selectedUserId;
+  const listUser = tw.users.find(u => u.nx_user_id === userId) || {};
 
-  // Parse strengths/gaps if stored as JSON strings
-  if (typeof profile.strengths === 'string') {
-    try { profile.strengths = JSON.parse(profile.strengths); } catch { profile.strengths = []; }
-  }
-  if (typeof profile.gaps === 'string') {
-    try { profile.gaps = JSON.parse(profile.gaps); } catch { profile.gaps = []; }
-  }
+  const displayFirst = listUser.first_name || user.first_name || rawProfile.first_name || '';
+  const displayLast = listUser.last_name || user.last_name || rawProfile.last_name || '';
+  const displayEmail = user.email || listUser.email || rawProfile.email || '';
+  const displayCompany = listUser.company_name || rawProfile.client_name || '';
+  const initials = ((displayFirst)[0] || '') + ((displayLast)[0] || '');
+  const displayName = [displayFirst, displayLast].filter(Boolean).join(' ') || displayEmail || `User ${userId}`;
 
-  const card = h('div', { class: 'tw-profile-card' });
-
-  const initials = ((profile.first_name || '')[0] || '') + ((profile.last_name || '')[0] || '');
-  const displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.email || `User ${tw.selectedUserId}`;
-
-  let html = `
+  // Build skeleton HTML immediately
+  const container = h('div', { class: 'tw-epp-profile' });
+  container.innerHTML = `
     <div class="tw-profile-header">
       <div class="tw-profile-avatar">${esc(initials) || '?'}</div>
       <div>
         <div class="tw-profile-name">${esc(displayName)}</div>
-        <div class="tw-profile-email">${esc(profile.email || '')}</div>
-        ${profile.client_name ? `<div class="tw-profile-company">${esc(profile.client_name)}</div>` : ''}
+        <div class="tw-profile-email">${esc(displayEmail)}</div>
+        ${displayCompany ? `<div class="tw-profile-company">${esc(displayCompany)}</div>` : ''}
       </div>
+      <div class="tw-epp-source-badge" id="tw-epp-source"></div>
     </div>
-  `;
-
-  // Coach
-  if (coach) {
-    const signalMap = { green: '#22c55e', yellow: '#f59e0b', red: '#ef4444' };
-    const signalColor = signalMap[coach.compat_signal] || signalMap.green;
-    html += `
+    ${coach ? `
       <div class="tw-coach-card">
-        <div class="tw-coach-signal" style="color:${signalColor}">&#9679;</div>
+        <div class="tw-coach-signal" style="color:${({green:'#22c55e',yellow:'#f59e0b',red:'#ef4444'})[coach.compat_signal] || '#22c55e'}">&#9679;</div>
         <div>
           <div class="tw-coach-name">Coach: ${esc(coach.coach_name || 'Assigned')}</div>
           <div class="tw-coach-compat">${esc(coach.compat_message || '')}</div>
         </div>
       </div>
-    `;
-  }
-
-  // Narrative
-  if (profile.profile_narrative) {
-    html += `
-      <div class="tw-profile-section">
-        <div class="tw-profile-section-label">Narrative</div>
-        <div class="tw-profile-narrative">${esc(profile.profile_narrative)}</div>
-      </div>
-    `;
-  }
-
-  // Strengths
-  const strengths = profile.strengths || [];
-  if (strengths.length > 0) {
-    html += `
-      <div class="tw-profile-section">
-        <div class="tw-profile-section-label">Strengths</div>
-        <div class="tw-trait-list">
-          ${strengths.slice(0, 8).map(s => `<span class="tw-trait tw-trait-strength">${esc(s.trait)} ${Math.round(s.score)}</span>`).join('')}
+    ` : ''}
+    <div id="tw-epp-loading" class="tw-loading"><div class="tw-spinner"></div> Loading EPP profile...</div>
+    <div id="tw-epp-content" style="display:none">
+      <div class="tw-epp-charts-row">
+        <div class="tw-epp-chart-wrap">
+          <div class="tw-profile-section-label">Personality Dimensions</div>
+          <canvas id="tw-epp-radar" width="400" height="400"></canvas>
+        </div>
+        <div class="tw-epp-chart-wrap">
+          <div class="tw-profile-section-label">Job Fit Dimensions</div>
+          <canvas id="tw-epp-bar" width="400" height="300"></canvas>
         </div>
       </div>
-    `;
-  }
-
-  // Gaps
-  const gaps = profile.gaps || [];
-  if (gaps.length > 0) {
-    html += `
-      <div class="tw-profile-section">
-        <div class="tw-profile-section-label">Growth Areas</div>
-        <div class="tw-trait-list">
-          ${gaps.slice(0, 8).map(g => `<span class="tw-trait tw-trait-gap">${esc(g.trait)} ${Math.round(g.score)}</span>`).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  // Learning style + stats
-  html += `<div class="tw-profile-section"><div class="tw-profile-section-label">Info</div><div class="tw-profile-stats">`;
-  if (profile.learning_style) {
-    html += `<div class="tw-profile-stat"><div class="tw-profile-stat-value">${esc(profile.learning_style)}</div><div class="tw-profile-stat-label">Learning Style</div></div>`;
-  }
-  if (profile.confidence != null) {
-    html += `<div class="tw-profile-stat"><div class="tw-profile-stat-value">${profile.confidence}%</div><div class="tw-profile-stat-label">Confidence</div></div>`;
-  }
-  if (profile.version != null) {
-    html += `<div class="tw-profile-stat"><div class="tw-profile-stat-value">v${profile.version}</div><div class="tw-profile-stat-label">Version</div></div>`;
-  }
-  html += `</div></div>`;
-
-  // Process button
-  html += `
+      <div class="tw-epp-pills-row" id="tw-epp-pills"></div>
+      <div id="tw-epp-narrative-section"></div>
+      <div id="tw-epp-qa-section"></div>
+    </div>
     <div class="tw-profile-section" style="text-align:center">
       <button class="btn btn-primary" id="tw-process-user">Process with AI</button>
     </div>
   `;
+  el.appendChild(container);
 
-  card.innerHTML = html;
-  el.appendChild(card);
-
-  // Process button handler
-  const processBtn = card.querySelector('#tw-process-user');
+  // Process button
+  const processBtn = container.querySelector('#tw-process-user');
   if (processBtn) {
-    processBtn.addEventListener('click', () => processUser(getState().toryWorkspace.selectedUserId));
+    processBtn.addEventListener('click', () => processUser(userId));
+  }
+
+  // Fetch EPP profile data
+  try {
+    let profileData = _eppProfileCache[userId];
+    if (!profileData) {
+      const resp = await api(`/api/tory/users/${userId}/profile`);
+      profileData = resp;
+      _eppProfileCache[userId] = profileData;
+    }
+
+    container.querySelector('#tw-epp-loading').style.display = 'none';
+    container.querySelector('#tw-epp-content').style.display = 'block';
+
+    // Source badge
+    const sourceBadge = container.querySelector('#tw-epp-source');
+    if (profileData.source === 'tory_profile') {
+      sourceBadge.textContent = 'AI Profile';
+      sourceBadge.classList.add('source-ai');
+    } else if (profileData.source === 'raw_assessment') {
+      sourceBadge.textContent = 'Raw EPP';
+      sourceBadge.classList.add('source-raw');
+    } else {
+      sourceBadge.textContent = 'No EPP';
+      sourceBadge.classList.add('source-none');
+    }
+
+    // ── Radar Chart (13 personality dims) ──
+    const personalityScores = profileData.personality_scores || {};
+    const radarLabels = Object.keys(EPP_DESCRIPTIONS);
+    const radarValues = radarLabels.map(d => personalityScores[d] ?? null);
+
+    // Color each point: red <30, yellow 30-70, green >70
+    const radarPointColors = radarValues.map(v =>
+      v == null ? '#555' : v <= 30 ? '#f87171' : v >= 70 ? '#4ade80' : '#fbbf24'
+    );
+
+    // Destroy previous charts
+    if (_eppRadarChart) { _eppRadarChart.destroy(); _eppRadarChart = null; }
+    if (_eppBarChart) { _eppBarChart.destroy(); _eppBarChart = null; }
+
+    const radarCanvas = container.querySelector('#tw-epp-radar');
+    if (radarCanvas && radarLabels.length > 0 && radarValues.some(v => v != null)) {
+      const radarCtx = radarCanvas.getContext('2d');
+      _eppRadarChart = new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+          labels: radarLabels.map(d => d.replace('SelfConfidence', 'Self-Confidence').replace('StressTolerance', 'Stress Tol.')),
+          datasets: [{
+            label: 'Score',
+            data: radarValues,
+            backgroundColor: 'rgba(88, 166, 255, 0.15)',
+            borderColor: '#58a6ff',
+            borderWidth: 2,
+            pointBackgroundColor: radarPointColors,
+            pointBorderColor: radarPointColors,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            r: {
+              min: 0,
+              max: 100,
+              ticks: {
+                stepSize: 20,
+                backdropColor: 'transparent',
+                color: '#888',
+                font: { size: 10 },
+              },
+              grid: { color: 'rgba(255,255,255,0.06)' },
+              angleLines: { color: 'rgba(255,255,255,0.08)' },
+              pointLabels: {
+                color: '#ccc',
+                font: { size: 11 },
+              },
+            },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  const idx = items[0]?.dataIndex;
+                  return radarLabels[idx] || '';
+                },
+                label: (item) => {
+                  const dim = radarLabels[item.dataIndex];
+                  const score = item.raw;
+                  const zone = score <= 30 ? 'Gap' : score >= 70 ? 'Strength' : 'Average';
+                  return [`Score: ${score} (${zone})`, EPP_DESCRIPTIONS[dim] || ''];
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // ── Bar Chart (12 job fit dims) ──
+    const jobfitScores = profileData.jobfit_scores || {};
+    const barDims = Object.keys(JOBFIT_LABELS);
+    const barLabels = barDims.map(d => JOBFIT_LABELS[d]);
+    const barValues = barDims.map(d => jobfitScores[d] ?? 0);
+    const barColors = barValues.map(v =>
+      v <= 30 ? '#f87171' : v >= 70 ? '#4ade80' : '#fbbf24'
+    );
+
+    const barCanvas = container.querySelector('#tw-epp-bar');
+    if (barCanvas && barValues.some(v => v > 0)) {
+      const barCtx = barCanvas.getContext('2d');
+      _eppBarChart = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: barLabels,
+          datasets: [{
+            label: 'Job Fit',
+            data: barValues,
+            backgroundColor: barColors.map(c => c + '99'),
+            borderColor: barColors,
+            borderWidth: 1,
+            borderRadius: 3,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          indexAxis: 'y',
+          scales: {
+            x: {
+              min: 0, max: 100,
+              ticks: { color: '#888', font: { size: 10 } },
+              grid: { color: 'rgba(255,255,255,0.06)' },
+            },
+            y: {
+              ticks: { color: '#ccc', font: { size: 11 } },
+              grid: { display: false },
+            },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (item) => `Score: ${item.raw}`,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // ── Strengths + Gaps Pills ──
+    const pillsEl = container.querySelector('#tw-epp-pills');
+    const topStrengths = profileData.top_strengths || [];
+    const topGaps = profileData.top_gaps || [];
+    let pillsHtml = '';
+
+    if (topStrengths.length > 0) {
+      pillsHtml += `<div class="tw-epp-pill-group"><span class="tw-epp-pill-label">Strengths</span>`;
+      pillsHtml += topStrengths.map(s =>
+        `<span class="tw-trait tw-trait-strength">${esc(s.trait)} ${Math.round(s.score)}</span>`
+      ).join('');
+      pillsHtml += '</div>';
+    }
+    if (topGaps.length > 0) {
+      pillsHtml += `<div class="tw-epp-pill-group"><span class="tw-epp-pill-label">Growth Areas</span>`;
+      pillsHtml += topGaps.map(g =>
+        `<span class="tw-trait tw-trait-gap">${esc(g.trait)} ${Math.round(g.score)}</span>`
+      ).join('');
+      pillsHtml += '</div>';
+    }
+    if (pillsHtml) pillsEl.innerHTML = pillsHtml;
+
+    // ── Narrative ──
+    const narrativeSection = container.querySelector('#tw-epp-narrative-section');
+    if (profileData.profile_narrative) {
+      narrativeSection.innerHTML = `
+        <div class="tw-profile-section">
+          <div class="tw-profile-section-label">Profile Narrative</div>
+          <blockquote class="tw-epp-narrative">${esc(profileData.profile_narrative)}</blockquote>
+        </div>
+      `;
+    }
+
+    // ── Learning style + motivation ──
+    if (profileData.learning_style || (profileData.motivation_cluster && profileData.motivation_cluster.length > 0)) {
+      let metaHtml = '<div class="tw-profile-section"><div class="tw-profile-section-label">Learning Profile</div><div class="tw-epp-meta-row">';
+      if (profileData.learning_style) {
+        metaHtml += `<div class="tw-profile-stat"><div class="tw-profile-stat-value">${esc(profileData.learning_style)}</div><div class="tw-profile-stat-label">Learning Style</div></div>`;
+      }
+      metaHtml += '</div>';
+      if (profileData.motivation_cluster && profileData.motivation_cluster.length > 0) {
+        metaHtml += `<div class="tw-epp-motivation"><span class="tw-epp-pill-label">Motivators</span>`;
+        metaHtml += profileData.motivation_cluster.map(m =>
+          `<span class="tw-trait tw-trait-motivation">${esc(typeof m === 'string' ? m : JSON.stringify(m))}</span>`
+        ).join('');
+        metaHtml += '</div>';
+      }
+      metaHtml += '</div>';
+      narrativeSection.innerHTML += metaHtml;
+    }
+
+    // ── Onboarding Q&A Cards ──
+    const qaSection = container.querySelector('#tw-epp-qa-section');
+    const qaItems = profileData.onboarding_qa || [];
+    if (qaItems.length > 0) {
+      let qaHtml = '<div class="tw-profile-section"><div class="tw-profile-section-label">Onboarding Q&A</div><div class="tw-epp-qa-grid">';
+      for (const qa of qaItems) {
+        const val = qa.value;
+        let displayVal;
+        if (Array.isArray(val)) {
+          displayVal = val.map(v => `<span class="tw-epp-qa-tag">${esc(String(v))}</span>`).join('');
+        } else {
+          displayVal = `<p class="tw-epp-qa-text">${esc(String(val))}</p>`;
+        }
+        qaHtml += `
+          <div class="tw-epp-qa-card">
+            <div class="tw-epp-qa-label">${esc(qa.label)}</div>
+            <div class="tw-epp-qa-value">${displayVal}</div>
+          </div>
+        `;
+      }
+      qaHtml += '</div></div>';
+      qaSection.innerHTML = qaHtml;
+    }
+
+  } catch (err) {
+    console.error('Failed to load EPP profile:', err);
+    container.querySelector('#tw-epp-loading').innerHTML =
+      `<div class="tw-epp-error">Failed to load EPP data. ${esc(String(err.message || err))}</div>`;
   }
 }
 

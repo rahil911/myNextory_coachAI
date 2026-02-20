@@ -3190,3 +3190,193 @@ details.tw-event[open] summary::after {
     gap: 10px;
   }
 }
+
+/* ==========================================================================
+   EPP PROFILE DISPLAY — Radar chart, bar chart, Q&A cards, narrative
+   ========================================================================== */
+
+.tw-epp-profile {
+  max-width: 960px;
+}
+
+.tw-epp-profile .tw-profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* Source badge (AI Profile / Raw EPP / No EPP) */
+.tw-epp-source-badge {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.tw-epp-source-badge.source-ai {
+  background: var(--green-dim);
+  color: var(--green);
+}
+.tw-epp-source-badge.source-raw {
+  background: var(--yellow-dim);
+  color: var(--yellow);
+}
+.tw-epp-source-badge.source-none {
+  background: var(--bg-3);
+  color: var(--text-tertiary);
+}
+
+/* Charts row: radar left, bar right */
+.tw-epp-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.tw-epp-chart-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.tw-epp-chart-wrap .tw-profile-section-label {
+  margin-bottom: var(--space-3);
+}
+
+.tw-epp-chart-wrap canvas {
+  max-height: 360px;
+}
+
+/* Strengths + Gaps pills row */
+.tw-epp-pills-row {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
+}
+
+.tw-epp-pill-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.tw-epp-pill-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-right: var(--space-1);
+}
+
+/* Narrative quote block */
+.tw-epp-narrative {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--accent);
+  background: var(--bg-card);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-style: italic;
+}
+
+/* Learning profile meta row */
+.tw-epp-meta-row {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+/* Motivation tags */
+.tw-epp-motivation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
+.tw-trait-motivation {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Q&A card grid */
+.tw-epp-qa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-3);
+}
+
+.tw-epp-qa-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.tw-epp-qa-card:hover {
+  border-color: var(--border-hover);
+}
+
+.tw-epp-qa-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+
+.tw-epp-qa-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tw-epp-qa-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tw-epp-qa-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--bg-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+}
+
+/* Error state */
+.tw-epp-error {
+  color: var(--red);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: var(--space-4);
+}
+
+/* Responsive: stack charts vertically on narrow screens */
+@media (max-width: 860px) {
+  .tw-epp-charts-row {
+    grid-template-columns: 1fr;
+  }
+  .tw-epp-qa-grid {
+    grid-template-columns: 1fr;
+  }
+}
