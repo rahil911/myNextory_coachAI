@@ -539,3 +539,223 @@ async def lock_recommendation(user_id: int, recommendation_id: int, req: LockReq
         recommendation_id=recommendation_id,
         reason=req.reason,
     )
+
+
+# ── Content 360 ────────────────────────────────────────────────────────────
+
+@router.get("/content-360")
+async def get_content_360(
+    search: str | None = Query(None),
+    journey: str | None = Query(None),
+    difficulty: int | None = Query(None, ge=1, le=5),
+    emotional_tone: str | None = Query(None),
+    learning_style: str | None = Query(None),
+    seniority: str | None = Query(None),
+):
+    """Content 360: all lessons with full AI-generated metadata.
+
+    LEFT JOINs tory_content_tags so lessons always show even without AI tags.
+    """
+    import subprocess
+
+    sql = (
+        "SELECT ld.id AS lesson_detail_id, ld.nx_lesson_id, "
+        "nl.lesson AS lesson_name, nl.description AS lesson_desc, "
+        "njd.id AS journey_detail_id, njd.journey AS journey_name, "
+        "ncd.id AS chapter_detail_id, ncd.chapter AS chapter_name, "
+        "COALESCE(sc.slide_count, 0) AS slide_count, "
+        "ct.id AS tag_id, ct.summary, ct.difficulty, ct.learning_style, "
+        "ct.emotional_tone, ct.target_seniority, ct.estimated_minutes, "
+        "ct.key_concepts, ct.content_quality, ct.learning_objectives, "
+        "ct.coaching_prompts, ct.pair_recommendations, ct.slide_analysis, "
+        "ct.trait_tags, ct.confidence, ct.review_status "
+        "FROM lesson_details ld "
+        "JOIN nx_lessons nl ON ld.nx_lesson_id = nl.id "
+        "LEFT JOIN nx_journey_details njd ON ld.nx_journey_detail_id = njd.id "
+        "LEFT JOIN nx_chapter_details ncd ON ld.nx_chapter_detail_id = ncd.id "
+        "LEFT JOIN ("
+        "  SELECT lesson_detail_id, COUNT(*) AS slide_count "
+        "  FROM lesson_slides WHERE deleted_at IS NULL "
+        "  GROUP BY lesson_detail_id"
+        ") sc ON sc.lesson_detail_id = ld.id "
+        "LEFT JOIN tory_content_tags ct "
+        "  ON ct.lesson_detail_id = ld.id AND ct.deleted_at IS NULL "
+        "WHERE ld.deleted_at IS NULL AND nl.deleted_at IS NULL "
+    )
+
+    if journey:
+        safe_j = journey.replace("'", "''")
+        sql += f"AND njd.journey = '{safe_j}' "
+    if difficulty:
+        sql += f"AND ct.difficulty = {int(difficulty)} "
+    if emotional_tone:
+        safe_e = emotional_tone.replace("'", "''")
+        sql += f"AND ct.emotional_tone = '{safe_e}' "
+    if learning_style:
+        safe_l = learning_style.replace("'", "''")
+        sql += f"AND ct.learning_style = '{safe_l}' "
+    if seniority:
+        safe_s = seniority.replace("'", "''")
+        sql += f"AND ct.target_seniority = '{safe_s}' "
+    if search:
+        safe_q = search.replace("'", "''").replace("%", "\\%")
+        sql += (
+            f"AND (nl.lesson LIKE '%{safe_q}%' "
+            f"OR ct.summary LIKE '%{safe_q}%' "
+            f"OR ct.key_concepts LIKE '%{safe_q}%') "
+        )
+
+    sql += "ORDER BY njd.journey, ncd.chapter, nl.priority, ld.id"
+
+    proc = subprocess.run(
+        ["mysql", "baap", "--batch", "--raw", "-e", sql],
+        capture_output=True, text=True, timeout=15,
+    )
+    if proc.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"DB query failed: {proc.stderr.strip()}")
+
+    output = proc.stdout.strip()
+    if not output:
+        return {"lessons": [], "total": 0, "journeys": [], "stats": {}}
+
+    lines = output.split("\n")
+    headers = lines[0].split("\t")
+    rows = []
+    for line in lines[1:]:
+        vals = line.split("\t")
+        rows.append({col: (vals[i] if i < len(vals) and vals[i] != "NULL" else None) for i, col in enumerate(headers)})
+
+    json_fields = [
+        "key_concepts", "content_quality", "learning_objectives",
+        "coaching_prompts", "pair_recommendations", "slide_analysis", "trait_tags",
+    ]
+    int_fields = [
+        "lesson_detail_id", "nx_lesson_id", "journey_detail_id",
+        "chapter_detail_id", "slide_count", "tag_id", "difficulty",
+        "estimated_minutes", "confidence",
+    ]
+
+    journeys_set = set()
+    for row in rows:
+        for f in int_fields:
+            row[f] = int(row[f]) if row.get(f) else None
+        for f in json_fields:
+            if row.get(f):
+                try:
+                    row[f] = json.loads(row[f])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        row["slide_count"] = row.get("slide_count") or 0
+        if row.get("journey_name"):
+            journeys_set.add(row["journey_name"])
+
+    stats = {
+        "total": len(rows),
+        "tagged": sum(1 for r in rows if r.get("tag_id")),
+        "untagged": sum(1 for r in rows if not r.get("tag_id")),
+    }
+
+    return {
+        "lessons": rows,
+        "total": len(rows),
+        "journeys": sorted(journeys_set),
+        "stats": stats,
+    }
+
+
+@router.get("/content-360/{lesson_detail_id}")
+async def get_content_360_detail(lesson_detail_id: int):
+    """Single lesson with full detail including slide breakdown."""
+    import subprocess
+
+    sql = (
+        "SELECT ld.id AS lesson_detail_id, ld.nx_lesson_id, "
+        "nl.lesson AS lesson_name, nl.description AS lesson_desc, "
+        "njd.id AS journey_detail_id, njd.journey AS journey_name, "
+        "ncd.id AS chapter_detail_id, ncd.chapter AS chapter_name, "
+        "COALESCE(sc.slide_count, 0) AS slide_count, "
+        "ct.id AS tag_id, ct.summary, ct.difficulty, ct.learning_style, "
+        "ct.emotional_tone, ct.target_seniority, ct.estimated_minutes, "
+        "ct.key_concepts, ct.content_quality, ct.learning_objectives, "
+        "ct.coaching_prompts, ct.pair_recommendations, ct.slide_analysis, "
+        "ct.trait_tags, ct.confidence, ct.review_status "
+        "FROM lesson_details ld "
+        "JOIN nx_lessons nl ON ld.nx_lesson_id = nl.id "
+        "LEFT JOIN nx_journey_details njd ON ld.nx_journey_detail_id = njd.id "
+        "LEFT JOIN nx_chapter_details ncd ON ld.nx_chapter_detail_id = ncd.id "
+        "LEFT JOIN ("
+        "  SELECT lesson_detail_id, COUNT(*) AS slide_count "
+        "  FROM lesson_slides WHERE deleted_at IS NULL "
+        "  GROUP BY lesson_detail_id"
+        ") sc ON sc.lesson_detail_id = ld.id "
+        "LEFT JOIN tory_content_tags ct "
+        "  ON ct.lesson_detail_id = ld.id AND ct.deleted_at IS NULL "
+        f"WHERE ld.id = {int(lesson_detail_id)} "
+        "AND ld.deleted_at IS NULL AND nl.deleted_at IS NULL"
+    )
+
+    proc = subprocess.run(
+        ["mysql", "baap", "--batch", "--raw", "-e", sql],
+        capture_output=True, text=True, timeout=15,
+    )
+    if proc.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"DB query failed: {proc.stderr.strip()}")
+
+    output = proc.stdout.strip()
+    if not output:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    lines = output.split("\n")
+    headers = lines[0].split("\t")
+    if len(lines) < 2:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    vals = lines[1].split("\t")
+    row = {col: (vals[i] if i < len(vals) and vals[i] != "NULL" else None) for i, col in enumerate(headers)}
+
+    json_fields = [
+        "key_concepts", "content_quality", "learning_objectives",
+        "coaching_prompts", "pair_recommendations", "slide_analysis", "trait_tags",
+    ]
+    int_fields = [
+        "lesson_detail_id", "nx_lesson_id", "journey_detail_id",
+        "chapter_detail_id", "slide_count", "tag_id", "difficulty",
+        "estimated_minutes", "confidence",
+    ]
+
+    for f in int_fields:
+        row[f] = int(row[f]) if row.get(f) else None
+    for f in json_fields:
+        if row.get(f):
+            try:
+                row[f] = json.loads(row[f])
+            except (json.JSONDecodeError, TypeError):
+                pass
+    row["slide_count"] = row.get("slide_count") or 0
+
+    # Fetch individual slides for this lesson
+    slide_sql = (
+        "SELECT ls.id, ls.type, ls.priority, ls.video_library_id "
+        f"FROM lesson_slides ls WHERE ls.lesson_detail_id = {int(lesson_detail_id)} "
+        "AND ls.deleted_at IS NULL ORDER BY ls.priority"
+    )
+
+    slide_proc = subprocess.run(
+        ["mysql", "baap", "--batch", "--raw", "-e", slide_sql],
+        capture_output=True, text=True, timeout=10,
+    )
+
+    slides = []
+    if slide_proc.returncode == 0 and slide_proc.stdout.strip():
+        slines = slide_proc.stdout.strip().split("\n")
+        sheaders = slines[0].split("\t")
+        for sline in slines[1:]:
+            svals = sline.split("\t")
+            slide = {col: (svals[i] if i < len(svals) and svals[i] != "NULL" else None) for i, col in enumerate(sheaders)}
+            slide["id"] = int(slide["id"]) if slide.get("id") else None
+            slide["priority"] = int(slide["priority"]) if slide.get("priority") else None
+            slide["video_library_id"] = int(slide["video_library_id"]) if slide.get("video_library_id") else None
+            slides.append(slide)
+
+    row["slides"] = slides
+    return row

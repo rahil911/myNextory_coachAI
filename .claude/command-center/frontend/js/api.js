@@ -166,6 +166,20 @@ export const api = {
   reviewBulkApprove:    (reviewerId, minConfidence = 70) =>
     request('POST', '/api/tory/review/bulk-approve', { reviewer_id: reviewerId, min_confidence: minConfidence }),
   getReviewStats:       () => request('GET', '/api/tory/review/stats'),
+
+  // Content 360
+  getContent360: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.search) qs.set('search', params.search);
+    if (params.journey) qs.set('journey', params.journey);
+    if (params.difficulty) qs.set('difficulty', params.difficulty);
+    if (params.learning_style) qs.set('learning_style', params.learning_style);
+    if (params.emotional_tone) qs.set('emotional_tone', params.emotional_tone);
+    if (params.seniority) qs.set('seniority', params.seniority);
+    const q = qs.toString();
+    return request('GET', `/api/tory/content-360${q ? '?' + q : ''}`);
+  },
+  getContent360Detail: (lessonDetailId) => request('GET', `/api/tory/content-360/${lessonDetailId}`),
 };
 
 // ── WebSocket Manager ──────────────────────────────────────────────────────
