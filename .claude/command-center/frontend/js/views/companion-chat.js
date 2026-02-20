@@ -1,7 +1,7 @@
 // ==========================================================================
 // COMPANION-CHAT.JS — Learner-Facing AI Companion Chat Interface
-// Modern chat UI with mode detection, quick actions, backpack cards,
-// progress bar, and markdown rendering.
+// Two-panel layout: Left sidebar (user list + filters), Right (chat area).
+// Reuses /api/tory/users endpoint for user list with filter support.
 // ==========================================================================
 
 import { getState, setState, subscribe } from '../state.js';
@@ -22,6 +22,24 @@ let _isTyping = false;
 let _chatContainer = null;
 let _voiceChat = null;
 
+// ── User list state ───────────────────────────────────────────────────────
+
+let _users = [];
+let _companies = [];
+let _totalUsers = 0;
+let _totalPages = 1;
+let _currentPage = 1;
+let _filters = {
+  search: '',
+  company: '',
+  status: 'has_epp',       // Default: Has EPP
+  has_backpack: 'yes',     // Default: Has Backpack
+};
+let _usersLoading = false;
+let _searchDebounce = null;
+
+const PAGE_SIZE = 50;
+
 // ── Mode display config ──────────────────────────────────────────────────
 
 const MODE_CONFIG = {
@@ -39,9 +57,10 @@ const MODE_CONFIG = {
 export function renderCompanionChat(root) {
   const container = h('div', { class: 'companion-layout' });
   container.innerHTML = `
-    <!-- User Selector Bar -->
+    <!-- Top Bar -->
     <div class="companion-topbar">
       <div class="companion-topbar-left">
+        <button class="cc-sidebar-toggle" id="cc-toggle-sidebar" title="Toggle user list">&#9664; Users</button>
         <span class="companion-logo">T</span>
         <span class="companion-title">Tory Companion</span>
         <span class="companion-mode-pill" id="companion-mode" style="display:none"></span>
@@ -53,41 +72,75 @@ export function renderCompanionChat(root) {
         </div>
       </div>
       <div class="companion-topbar-right">
-        <div class="companion-user-select">
-          <input type="number" id="companion-user-id" placeholder="User ID" min="1">
-          <button class="companion-btn companion-btn-primary" id="companion-connect">Connect</button>
-          <span id="companion-voice-btn" style="display:none"></span>
-        </div>
+        <div class="cc-topbar-stats" id="cc-topbar-stats"></div>
+        <span id="companion-voice-btn" style="display:none"></span>
       </div>
     </div>
 
-    <!-- Main chat area -->
-    <div class="companion-main">
-      <!-- Chat messages -->
-      <div class="companion-messages" id="companion-messages">
-        <div class="companion-welcome" id="companion-welcome">
-          <div class="companion-welcome-icon">T</div>
-          <h2>Meet Tory, your learning companion</h2>
-          <p>Enter a learner's User ID above to start a personalized conversation.</p>
-          <p class="companion-welcome-sub">Tory knows your learning path, your personality profile, and your own words from lesson reflections.</p>
+    <!-- Body: Sidebar + Chat -->
+    <div class="companion-body">
+      <!-- Left Sidebar: User List -->
+      <div class="cc-sidebar" id="cc-sidebar">
+        <div class="cc-sidebar-header">
+          <div class="cc-search-row">
+            <span class="cc-search-icon">&#128269;</span>
+            <input type="text" id="cc-search" placeholder="Search name or email...">
+          </div>
+          <div class="cc-filters">
+            <select id="cc-filter-company">
+              <option value="">All Companies</option>
+            </select>
+            <select id="cc-filter-status">
+              <option value="">All Status</option>
+              <option value="has_epp" selected>Has EPP</option>
+              <option value="processed">Processed</option>
+              <option value="no_data">No Data</option>
+            </select>
+            <select id="cc-filter-backpack">
+              <option value="">All Backpack</option>
+              <option value="yes" selected>Has Backpack</option>
+              <option value="no">No Backpack</option>
+            </select>
+          </div>
+        </div>
+        <div class="cc-user-list" id="cc-user-list"></div>
+        <div class="cc-sidebar-footer">
+          <div class="cc-pagination">
+            <button class="cc-page-btn" id="cc-prev-page" disabled>&lt;</button>
+            <span class="cc-page-info" id="cc-page-info">Page 1/1</span>
+            <button class="cc-page-btn" id="cc-next-page" disabled>&gt;</button>
+          </div>
         </div>
       </div>
 
-      <!-- Quick action pills -->
-      <div class="companion-actions" id="companion-actions" style="display:none">
-        <div class="companion-actions-scroll" id="companion-actions-scroll"></div>
-      </div>
-
-      <!-- Input area -->
-      <div class="companion-input-area" id="companion-input-area" style="display:none">
-        <div class="companion-input-wrapper">
-          <textarea id="companion-textarea" placeholder="Ask Tory anything about your learning..." rows="1" maxlength="5000"></textarea>
-          <button class="companion-send-btn" id="companion-send" disabled>
-            <span class="companion-send-arrow">&uarr;</span>
-          </button>
+      <!-- Right: Chat Area -->
+      <div class="companion-main">
+        <!-- Chat messages -->
+        <div class="companion-messages" id="companion-messages">
+          <div class="companion-welcome" id="companion-welcome">
+            <div class="companion-welcome-icon">T</div>
+            <h2>Meet Tory, your learning companion</h2>
+            <p>Select a learner from the sidebar to start a personalized conversation.</p>
+            <p class="companion-welcome-sub">Tory knows your learning path, your personality profile, and your own words from lesson reflections.</p>
+          </div>
         </div>
-        <div class="companion-input-hint">
-          Press Enter to send, Shift+Enter for new line
+
+        <!-- Quick action pills -->
+        <div class="companion-actions" id="companion-actions" style="display:none">
+          <div class="companion-actions-scroll" id="companion-actions-scroll"></div>
+        </div>
+
+        <!-- Input area -->
+        <div class="companion-input-area" id="companion-input-area" style="display:none">
+          <div class="companion-input-wrapper">
+            <textarea id="companion-textarea" placeholder="Ask Tory anything about your learning..." rows="1" maxlength="5000"></textarea>
+            <button class="companion-send-btn" id="companion-send" disabled>
+              <span class="companion-send-arrow">&uarr;</span>
+            </button>
+          </div>
+          <div class="companion-input-hint">
+            Press Enter to send, Shift+Enter for new line
+          </div>
         </div>
       </div>
     </div>
@@ -98,18 +151,66 @@ export function renderCompanionChat(root) {
 
   // Wire events
   _wireEvents(container);
+
+  // Load users on mount
+  _loadUsers();
 }
 
 // ── Event wiring ─────────────────────────────────────────────────────────
 
 function _wireEvents(container) {
-  // Connect button
-  const connectBtn = container.querySelector('#companion-connect');
-  const userInput = container.querySelector('#companion-user-id');
+  // Sidebar toggle
+  container.querySelector('#cc-toggle-sidebar').addEventListener('click', () => {
+    const sidebar = container.querySelector('#cc-sidebar');
+    const btn = container.querySelector('#cc-toggle-sidebar');
+    sidebar.classList.toggle('collapsed');
+    btn.classList.toggle('collapsed');
+    btn.innerHTML = sidebar.classList.contains('collapsed') ? '&#9654; Users' : '&#9664; Users';
+  });
 
-  connectBtn.addEventListener('click', () => _connectUser(container));
-  userInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') _connectUser(container);
+  // Search
+  container.querySelector('#cc-search').addEventListener('input', (e) => {
+    clearTimeout(_searchDebounce);
+    _searchDebounce = setTimeout(() => {
+      _filters.search = e.target.value.trim();
+      _currentPage = 1;
+      _loadUsers();
+    }, 300);
+  });
+
+  // Filter: company
+  container.querySelector('#cc-filter-company').addEventListener('change', (e) => {
+    _filters.company = e.target.value;
+    _currentPage = 1;
+    _loadUsers();
+  });
+
+  // Filter: status
+  container.querySelector('#cc-filter-status').addEventListener('change', (e) => {
+    _filters.status = e.target.value;
+    _currentPage = 1;
+    _loadUsers();
+  });
+
+  // Filter: backpack
+  container.querySelector('#cc-filter-backpack').addEventListener('change', (e) => {
+    _filters.has_backpack = e.target.value;
+    _currentPage = 1;
+    _loadUsers();
+  });
+
+  // Pagination
+  container.querySelector('#cc-prev-page').addEventListener('click', () => {
+    if (_currentPage > 1) {
+      _currentPage--;
+      _loadUsers();
+    }
+  });
+  container.querySelector('#cc-next-page').addEventListener('click', () => {
+    if (_currentPage < _totalPages) {
+      _currentPage++;
+      _loadUsers();
+    }
   });
 
   // Send button
@@ -132,22 +233,139 @@ function _wireEvents(container) {
   });
 }
 
+// ── User list loading ────────────────────────────────────────────────────
+
+async function _loadUsers() {
+  _usersLoading = true;
+  const listEl = _chatContainer.querySelector('#cc-user-list');
+  if (listEl) listEl.innerHTML = '<div class="cc-loading"><div class="cc-spinner"></div> Loading users...</div>';
+
+  try {
+    const params = { page: _currentPage, limit: PAGE_SIZE };
+    if (_filters.search) params.search = _filters.search;
+    if (_filters.status) params.status_filter = _filters.status;
+    if (_filters.company) params.company_filter = _filters.company;
+    if (_filters.has_backpack) params.has_backpack = _filters.has_backpack;
+
+    const data = await api.getToryUsers(params);
+    _users = data.users || [];
+    _totalUsers = data.total || 0;
+    _totalPages = data.total_pages || Math.ceil(_totalUsers / PAGE_SIZE) || 1;
+
+    if (data.companies && data.companies.length > 0) {
+      _companies = data.companies;
+      _populateCompanyFilter();
+    }
+
+    _usersLoading = false;
+    _renderUserList();
+    _renderPagination();
+    _renderTopbarStats();
+  } catch (err) {
+    _usersLoading = false;
+    if (listEl) listEl.innerHTML = `<div class="cc-empty">Failed to load users: ${_esc(err.message)}</div>`;
+    showToast(`Failed to load users: ${err.message}`, 'error');
+  }
+}
+
+function _populateCompanyFilter() {
+  const select = _chatContainer.querySelector('#cc-filter-company');
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = '<option value="">All Companies</option>';
+  for (const company of _companies) {
+    const opt = document.createElement('option');
+    opt.value = company.id || '';
+    opt.textContent = company.name || `Company ${company.id || ''}`;
+    select.appendChild(opt);
+  }
+  if (current) select.value = current;
+}
+
+function _renderUserList() {
+  const listEl = _chatContainer.querySelector('#cc-user-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  if (_users.length === 0) {
+    listEl.innerHTML = '<div class="cc-empty">No users found</div>';
+    return;
+  }
+
+  for (const user of _users) {
+    const card = document.createElement('div');
+    const isSelected = user.nx_user_id === _userId;
+    card.className = `cc-user-card${isSelected ? ' selected' : ''}`;
+
+    const name = _getUserName(user);
+    const status = user.tory_status || 'no_data';
+
+    // Build badge HTML
+    let badges = '';
+    if (status === 'has_epp' || status === 'processed' || status === 'profiled') {
+      badges += `<span class="cc-badge cc-badge-epp">EPP</span>`;
+    }
+    if (user.has_backpack) {
+      badges += `<span class="cc-badge cc-badge-backpack">Backpack</span>`;
+    }
+    if (status === 'processed') {
+      badges += `<span class="cc-badge cc-badge-processed">Path</span>`;
+    }
+
+    card.innerHTML = `
+      <div class="cc-user-card-main">
+        <div class="cc-user-avatar">${_getInitials(user)}</div>
+        <div class="cc-user-info">
+          <div class="cc-user-name">${_esc(name)}</div>
+          <div class="cc-user-meta">${_esc(user.email || '')}</div>
+          ${user.company_name ? `<div class="cc-user-meta">${_esc(user.company_name)}</div>` : ''}
+        </div>
+      </div>
+      <div class="cc-user-badges">${badges}</div>
+    `;
+
+    card.addEventListener('click', () => _connectUser(_chatContainer, user.nx_user_id));
+    listEl.appendChild(card);
+  }
+}
+
+function _renderPagination() {
+  const prevBtn = _chatContainer.querySelector('#cc-prev-page');
+  const nextBtn = _chatContainer.querySelector('#cc-next-page');
+  const info = _chatContainer.querySelector('#cc-page-info');
+  if (prevBtn) prevBtn.disabled = _currentPage <= 1;
+  if (nextBtn) nextBtn.disabled = _currentPage >= _totalPages;
+  if (info) info.textContent = `Page ${_currentPage}/${_totalPages || 1}`;
+}
+
+function _renderTopbarStats() {
+  const el = _chatContainer.querySelector('#cc-topbar-stats');
+  if (!el) return;
+  el.innerHTML = `<span class="cc-stat"><strong>${_totalUsers}</strong> users</span>`;
+}
+
 // ── Connect to user ─────────────────────────────────────────────────────
 
-async function _connectUser(container) {
-  const input = container.querySelector('#companion-user-id');
-  const userId = parseInt(input.value);
+async function _connectUser(container, userId) {
   if (!userId || userId < 1) {
-    showToast('Enter a valid User ID', 'warning');
+    showToast('Invalid User ID', 'warning');
     return;
   }
 
   _userId = userId;
   _messages = [];
 
+  // Highlight selected user in list
+  _renderUserList();
+
   // Show loading state
   const welcome = container.querySelector('#companion-welcome');
+  const messagesEl = container.querySelector('#companion-messages');
   if (welcome) welcome.innerHTML = '<div class="companion-loading">Connecting...</div>';
+  // Clear previous messages if reconnecting
+  if (!welcome && messagesEl) {
+    messagesEl.innerHTML = '<div class="companion-loading">Connecting...</div>';
+  }
 
   try {
     // Load greeting + session in parallel
@@ -158,6 +376,9 @@ async function _connectUser(container) {
 
     _sessionId = greetingData.session_id || sessionData.session_id;
     _progress = greetingData.progress;
+
+    // Clear messages area for fresh conversation
+    if (messagesEl) messagesEl.innerHTML = '';
 
     // Update progress bar
     _updateProgress(container, greetingData.progress);
@@ -171,7 +392,7 @@ async function _connectUser(container) {
     // Show input area
     container.querySelector('#companion-input-area').style.display = '';
 
-    // Remove welcome
+    // Remove welcome if still present
     if (welcome) welcome.remove();
 
     // Focus textarea
@@ -182,11 +403,13 @@ async function _connectUser(container) {
 
   } catch (err) {
     showToast(`Failed to connect: ${err.message}`, 'error');
-    if (welcome) {
-      welcome.innerHTML = `
-        <div class="companion-welcome-icon">T</div>
-        <h2>Connection failed</h2>
-        <p>${err.message}</p>
+    if (messagesEl) {
+      messagesEl.innerHTML = `
+        <div class="companion-welcome">
+          <div class="companion-welcome-icon">T</div>
+          <h2>Connection failed</h2>
+          <p>${err.message}</p>
+        </div>
       `;
     }
   }
@@ -443,4 +666,24 @@ function _initVoice(container, userId) {
       }
     },
   });
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+function _getUserName(user) {
+  const parts = [user.first_name, user.last_name].filter(Boolean);
+  return parts.length > 0 ? parts.join(' ') : user.email || `User ${user.nx_user_id}`;
+}
+
+function _getInitials(user) {
+  const first = (user.first_name || '')[0] || '';
+  const last = (user.last_name || '')[0] || '';
+  return (first + last).toUpperCase() || '?';
+}
+
+function _esc(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
 }

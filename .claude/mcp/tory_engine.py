@@ -4377,6 +4377,7 @@ async def _tool_list_users_with_status(
     search: str | None = None,
     status_filter: str | None = None,
     company_filter: int | None = None,
+    has_backpack: str | None = None,
 ) -> str:
     """Paginated user list with Tory processing status."""
     offset = (page - 1) * limit
@@ -4398,9 +4399,22 @@ async def _tool_list_users_with_status(
     where_clause = " AND ".join(where_parts)
 
     # If status_filter is set, we need a HAVING clause
-    having_clause = ""
+    having_parts = []
     if status_filter:
-        having_clause = f"HAVING tory_status = '{status_filter}'"
+        having_parts.append(f"tory_status = '{status_filter}'")
+    if has_backpack == "yes":
+        having_parts.append("has_backpack = 1")
+    elif has_backpack == "no":
+        having_parts.append("has_backpack = 0")
+    having_clause = ("HAVING " + " AND ".join(having_parts)) if having_parts else ""
+
+    # Backpack subquery for has_backpack flag
+    backpack_select = (
+        "CASE WHEN MAX(bp.id) IS NOT NULL THEN 1 ELSE 0 END AS has_backpack"
+    )
+    backpack_join = (
+        "LEFT JOIN backpacks bp ON bp.created_by = u.id AND bp.deleted_at IS NULL "
+    )
 
     # Main query with LEFT JOINs for status computation
     data_sql = (
@@ -4415,13 +4429,15 @@ async def _tool_list_users_with_status(
         f"  WHEN MAX(nuo.id) IS NOT NULL THEN 'has_epp' "
         f"  ELSE 'no_data' "
         f"END AS tory_status, "
-        f"COUNT(DISTINCT tr.id) AS recommendation_count "
+        f"COUNT(DISTINCT tr.id) AS recommendation_count, "
+        f"{backpack_select} "
         f"FROM nx_users u "
         f"LEFT JOIN clients c ON c.id = u.client_id AND c.deleted_at IS NULL "
         f"LEFT JOIN nx_user_onboardings nuo ON nuo.nx_user_id = u.id AND nuo.deleted_at IS NULL "
         f"LEFT JOIN employees e ON e.nx_user_id = u.id AND e.deleted_at IS NULL "
         f"LEFT JOIN tory_learner_profiles tlp ON tlp.nx_user_id = u.id AND tlp.deleted_at IS NULL "
         f"LEFT JOIN tory_recommendations tr ON tr.nx_user_id = u.id AND tr.deleted_at IS NULL "
+        f"{backpack_join}"
         f"WHERE {where_clause} "
         f"GROUP BY u.id, COALESCE(nuo.first_name, e.first_name, ''), COALESCE(nuo.last_name, e.last_name, '') "
         f"{having_clause} "
@@ -4440,12 +4456,14 @@ async def _tool_list_users_with_status(
         f"  WHEN MAX(tlp.id) IS NOT NULL THEN 'profiled' "
         f"  WHEN MAX(nuo.id) IS NOT NULL THEN 'has_epp' "
         f"  ELSE 'no_data' "
-        f"END AS tory_status "
+        f"END AS tory_status, "
+        f"{backpack_select} "
         f"FROM nx_users u "
         f"LEFT JOIN nx_user_onboardings nuo ON nuo.nx_user_id = u.id AND nuo.deleted_at IS NULL "
         f"LEFT JOIN employees e ON e.nx_user_id = u.id AND e.deleted_at IS NULL "
         f"LEFT JOIN tory_learner_profiles tlp ON tlp.nx_user_id = u.id AND tlp.deleted_at IS NULL "
         f"LEFT JOIN tory_recommendations tr ON tr.nx_user_id = u.id AND tr.deleted_at IS NULL "
+        f"{backpack_join}"
         f"WHERE {where_clause} "
         f"GROUP BY u.id "
         f"{having_clause}"
@@ -4489,6 +4507,7 @@ async def _tool_list_users_with_status(
             "company_name": _val(r.get("company_name")),
             "tory_status": r.get("tory_status", "no_data"),
             "recommendation_count": int(r.get("recommendation_count", 0)),
+            "has_backpack": int(r.get("has_backpack", 0)) == 1,
         })
 
     return json.dumps({

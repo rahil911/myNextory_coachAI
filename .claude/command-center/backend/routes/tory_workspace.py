@@ -118,6 +118,7 @@ async def list_users(
     search: str | None = Query(None),
     status_filter: str | None = Query(None),
     company_filter: int | None = Query(None),
+    has_backpack: str | None = Query(None),
 ):
     """Paginated user list with Tory processing status.
 
@@ -132,6 +133,7 @@ async def list_users(
         search=search,
         status_filter=status_filter,
         company_filter=company_filter,
+        has_backpack=has_backpack,
     )
 
 
