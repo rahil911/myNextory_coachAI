@@ -578,6 +578,27 @@ const EPP_DESCRIPTIONS = {
   StressTolerance: 'Ability to function effectively under pressure',
 };
 
+// EPP dimension → category mapping (11 top-level dimensions, Criteria Corp style)
+const EPP_CATEGORIES = {
+  'Attitudes & Outlook': ['Achievement', 'Motivation', 'Openness', 'SelfConfidence'],
+  'Work Habits': ['Conscientiousness'],
+  'Temperament': ['Patience', 'Competitiveness', 'StressTolerance'],
+  'Interaction Style': ['Assertiveness', 'Extroversion', 'Cooperativeness'],
+};
+const CATEGORY_COLORS = {
+  'Attitudes & Outlook': '#0d9488',
+  'Work Habits': '#1e3a5f',
+  'Temperament': '#f59e0b',
+  'Interaction Style': '#ef4444',
+};
+// Build reverse lookup: dimension → color
+const EPP_DIM_COLOR = {};
+for (const [cat, dims] of Object.entries(EPP_CATEGORIES)) {
+  for (const d of dims) EPP_DIM_COLOR[d] = CATEGORY_COLORS[cat];
+}
+// Ordered list of the 11 radar dimensions (matches Criteria Corp layout)
+const EPP_RADAR_DIMS = Object.values(EPP_CATEGORIES).flat();
+
 const JOBFIT_LABELS = {
   Accounting_JobFit: 'Accounting',
   AdminAsst_JobFit: 'Admin Asst',
@@ -643,9 +664,19 @@ async function renderProfileTab(el, detail) {
     <div id="tw-epp-loading" class="tw-loading"><div class="tw-spinner"></div> Loading EPP profile...</div>
     <div id="tw-epp-content" style="display:none">
       <div class="tw-epp-charts-row">
-        <div class="tw-epp-chart-wrap">
-          <div class="tw-profile-section-label">Personality Dimensions</div>
-          <canvas id="tw-epp-radar" width="400" height="400"></canvas>
+        <div class="tw-epp-chart-wrap tw-radar-wrap">
+          <div class="tw-profile-section-label tw-radar-title">${esc(displayName)}'s Report Summary</div>
+          <div class="tw-radar-container">
+            <span class="tw-cat-badge tw-cat-tl" style="--cat-color:#0d9488">Attitudes &amp; Outlook</span>
+            <span class="tw-cat-badge tw-cat-tr" style="--cat-color:#1e3a5f">Work Habits</span>
+            <span class="tw-cat-badge tw-cat-bl" style="--cat-color:#f59e0b">Temperament</span>
+            <span class="tw-cat-badge tw-cat-br" style="--cat-color:#ef4444">Interaction Style</span>
+            <canvas id="tw-epp-radar" width="400" height="400"></canvas>
+          </div>
+          <div class="tw-radar-legend">
+            <span class="tw-legend-item"><span class="tw-legend-swatch tw-legend-solid"></span>${esc(displayFirst || 'User')}</span>
+            <span class="tw-legend-item"><span class="tw-legend-swatch tw-legend-dashed"></span>General Population</span>
+          </div>
         </div>
         <div class="tw-epp-chart-wrap">
           <div class="tw-profile-section-label">Job Fit Dimensions</div>
@@ -715,15 +746,15 @@ async function renderProfileTab(el, detail) {
       sourceBadge.classList.add('source-none');
     }
 
-    // ── Radar Chart (13 personality dims) ──
+    // ── Radar Chart (11 personality dims — Criteria Corp style) ──
     const personalityScores = profileData.personality_scores || {};
-    const radarLabels = Object.keys(EPP_DESCRIPTIONS);
+    const radarLabels = EPP_RADAR_DIMS;
     const radarValues = radarLabels.map(d => personalityScores[d] ?? null);
-
-    // Color each point: red <30, yellow 30-70, green >70
-    const radarPointColors = radarValues.map(v =>
-      v == null ? '#555' : v <= 30 ? '#f87171' : v >= 70 ? '#4ade80' : '#fbbf24'
+    const radarDisplayLabels = radarLabels.map(d =>
+      d.replace('SelfConfidence', 'Self-Confidence').replace('StressTolerance', 'Stress Tol.')
     );
+    // Color each label by its EPP category
+    const radarLabelColors = radarLabels.map(d => EPP_DIM_COLOR[d] || '#ccc');
 
     // Destroy previous charts
     if (_eppRadarChart) { _eppRadarChart.destroy(); _eppRadarChart = null; }
@@ -735,18 +766,36 @@ async function renderProfileTab(el, detail) {
       _eppRadarChart = new Chart(radarCtx, {
         type: 'radar',
         data: {
-          labels: radarLabels.map(d => d.replace('SelfConfidence', 'Self-Confidence').replace('StressTolerance', 'Stress Tol.')),
-          datasets: [{
-            label: 'Score',
-            data: radarValues,
-            backgroundColor: 'rgba(88, 166, 255, 0.15)',
-            borderColor: '#58a6ff',
-            borderWidth: 2,
-            pointBackgroundColor: radarPointColors,
-            pointBorderColor: radarPointColors,
-            pointRadius: 5,
-            pointHoverRadius: 8,
-          }],
+          labels: radarDisplayLabels,
+          datasets: [
+            // Dataset 1: User scores (solid navy fill)
+            {
+              label: displayFirst || 'User',
+              data: radarValues,
+              backgroundColor: 'rgba(26, 54, 93, 0.3)',
+              borderColor: '#1a365d',
+              borderWidth: 2,
+              pointBackgroundColor: '#1a365d',
+              pointBorderColor: '#fff',
+              pointRadius: 4,
+              pointHoverRadius: 7,
+              order: 1,
+            },
+            // Dataset 2: General Population (dashed gray at 50th percentile)
+            {
+              label: 'General Population',
+              data: radarLabels.map(() => 50),
+              backgroundColor: 'rgba(156, 163, 175, 0.08)',
+              borderColor: '#9ca3af',
+              borderWidth: 1.5,
+              borderDash: [5, 5],
+              pointBackgroundColor: '#9ca3af',
+              pointBorderColor: '#9ca3af',
+              pointRadius: 2,
+              pointHoverRadius: 4,
+              order: 2,
+            },
+          ],
         },
         options: {
           responsive: true,
@@ -764,8 +813,8 @@ async function renderProfileTab(el, detail) {
               grid: { color: 'rgba(255,255,255,0.06)' },
               angleLines: { color: 'rgba(255,255,255,0.08)' },
               pointLabels: {
-                color: '#ccc',
-                font: { size: 11 },
+                color: (ctx) => radarLabelColors[ctx.index] || '#ccc',
+                font: { size: 11, weight: '600' },
               },
             },
           },
@@ -778,6 +827,7 @@ async function renderProfileTab(el, detail) {
                   return radarLabels[idx] || '';
                 },
                 label: (item) => {
+                  if (item.datasetIndex === 1) return `General Population: 50`;
                   const dim = radarLabels[item.dataIndex];
                   const score = item.raw;
                   const zone = score <= 30 ? 'Gap' : score >= 70 ? 'Strength' : 'Average';
