@@ -20,6 +20,17 @@ let _copilotMessages = [];      // Chat history
 let _copilotStreaming = false;   // Is agent currently streaming?
 let _copilotWsConnected = false;
 
+// ── Curator AI state ────────────────────────────────────────────────────
+let _curatorSessionId = null;     // tory_ai_sessions.id
+let _curatorMessages = [];        // Full conversation history
+let _curatorLoading = false;      // Is Curator processing?
+let _curatorBriefing = null;      // Auto-generated briefing
+let _curatorBriefingLoading = false;
+let _curatorMode = 'curator';     // 'curator' or 'agent' (tab in right drawer)
+let _curatorKeyFacts = [];        // Persistent key facts
+let _curatorModelTier = 'sonnet'; // Current model tier
+let _curatorCost = 0;             // Session cost
+
 // ── Render Entry Point ─────────────────────────────────────────────────────
 
 export function renderToryWorkspace(root) {
@@ -35,7 +46,7 @@ export function renderToryWorkspace(root) {
         <div class="tw-topbar-stats" id="tw-topbar-stats"></div>
       </div>
       <div class="tw-topbar-right">
-        <button class="tw-toggle-btn active" id="tw-toggle-right">AI Co-pilot &#9654;</button>
+        <button class="tw-toggle-btn active" id="tw-toggle-right">Curator AI &#9654;</button>
       </div>
     </div>
 
@@ -88,27 +99,58 @@ export function renderToryWorkspace(root) {
       </div>
     </div>
 
-    <!-- Right Drawer: AI Co-pilot -->
+    <!-- Right Drawer: Curator AI -->
     <div class="tw-right" id="tw-right">
       <div class="tw-right-header">
-        <span class="tw-right-title">AI Co-pilot</span>
+        <div class="tw-curator-tabs">
+          <button class="tw-curator-tab active" data-curator-tab="curator" id="tw-curator-tab-curator">Curator AI</button>
+          <button class="tw-curator-tab" data-curator-tab="agent" id="tw-curator-tab-agent">Agent Log</button>
+        </div>
         <span class="tw-session-badge" id="tw-session-status" style="display:none"></span>
       </div>
-      <div class="tw-session-meta" id="tw-session-meta" style="display:none"></div>
-      <div class="tw-chat-messages" id="tw-chat-messages"></div>
-      <div class="tw-right-placeholder" id="tw-right-placeholder">
-        <div class="tw-right-placeholder-icon">&#129302;</div>
-        <div class="tw-right-placeholder-text">Select a user and process them to start chatting with the AI co-pilot</div>
-      </div>
-      <div class="tw-chat-input-area" id="tw-chat-input" style="display:none">
-        <div class="tw-chat-input-wrapper">
-          <textarea id="tw-chat-textarea" placeholder="Ask Tory AI..." rows="1"></textarea>
-          <button class="tw-chat-send-btn" id="tw-chat-send">Send</button>
+
+      <!-- Curator Panel -->
+      <div class="tw-curator-panel" id="tw-curator-panel">
+        <div class="tw-curator-meta" id="tw-curator-meta" style="display:none">
+          <div class="tw-curator-meta-row">
+            <span class="tw-model-badge sonnet" id="tw-curator-model-badge">Sonnet</span>
+            <span class="tw-curator-cost" id="tw-curator-cost">$0.00</span>
+            <span class="tw-curator-msg-count" id="tw-curator-msg-count">0 msgs</span>
+          </div>
+        </div>
+        <div class="tw-curator-briefing" id="tw-curator-briefing" style="display:none"></div>
+        <div class="tw-chat-messages" id="tw-chat-messages"></div>
+        <div class="tw-right-placeholder" id="tw-right-placeholder">
+          <div class="tw-right-placeholder-icon">&#129302;</div>
+          <div class="tw-right-placeholder-text">Select a learner to start the Curator AI</div>
+        </div>
+        <div class="tw-chat-input-area" id="tw-chat-input" style="display:none">
+          <div class="tw-chat-input-wrapper">
+            <textarea id="tw-chat-textarea" placeholder="Ask about this learner..." rows="1"></textarea>
+            <button class="tw-chat-send-btn" id="tw-chat-send">Send</button>
+          </div>
         </div>
       </div>
+
+      <!-- Agent Panel (old copilot) -->
+      <div class="tw-agent-panel" id="tw-agent-panel" style="display:none">
+        <div class="tw-session-meta" id="tw-session-meta" style="display:none"></div>
+        <div class="tw-agent-messages" id="tw-agent-messages"></div>
+        <div class="tw-agent-placeholder" id="tw-agent-placeholder">
+          <div class="tw-right-placeholder-icon">&#128736;</div>
+          <div class="tw-right-placeholder-text">Process this user to see agent activity</div>
+        </div>
+        <div class="tw-agent-input-area" id="tw-agent-input" style="display:none">
+          <div class="tw-chat-input-wrapper">
+            <textarea id="tw-agent-textarea" placeholder="Send follow-up to agent..." rows="1"></textarea>
+            <button class="tw-chat-send-btn" id="tw-agent-send">Send</button>
+          </div>
+        </div>
+      </div>
+
       <div class="tw-right-collapsed-strip" id="tw-right-collapsed">
         <div class="tw-collapsed-icon" id="tw-expand-right">&#129302;</div>
-        <span class="tw-collapsed-label">AI Co-pilot</span>
+        <span class="tw-collapsed-label">Curator AI</span>
       </div>
     </div>
   `;
@@ -177,7 +219,20 @@ export function renderToryWorkspace(root) {
     renderTabContent();
   });
 
-  // Chat
+  // Curator tab switching
+  container.querySelectorAll('.tw-curator-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      _curatorMode = tab.dataset.curatorTab;
+      container.querySelectorAll('.tw-curator-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const curatorPanel = document.getElementById('tw-curator-panel');
+      const agentPanel = document.getElementById('tw-agent-panel');
+      if (curatorPanel) curatorPanel.style.display = _curatorMode === 'curator' ? '' : 'none';
+      if (agentPanel) agentPanel.style.display = _curatorMode === 'agent' ? '' : 'none';
+    });
+  });
+
+  // Chat (Curator)
   const chatTextarea = container.querySelector('#tw-chat-textarea');
   chatTextarea.addEventListener('input', () => {
     chatTextarea.style.height = 'auto';
@@ -186,10 +241,27 @@ export function renderToryWorkspace(root) {
   chatTextarea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendChatMessage();
+      sendCuratorMessage();
     }
   });
-  container.querySelector('#tw-chat-send').addEventListener('click', sendChatMessage);
+  container.querySelector('#tw-chat-send').addEventListener('click', sendCuratorMessage);
+
+  // Agent panel chat (old copilot)
+  const agentTextarea = container.querySelector('#tw-agent-textarea');
+  if (agentTextarea) {
+    agentTextarea.addEventListener('input', () => {
+      agentTextarea.style.height = 'auto';
+      agentTextarea.style.height = Math.min(agentTextarea.scrollHeight, 100) + 'px';
+    });
+    agentTextarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage();
+      }
+    });
+  }
+  const agentSendBtn = container.querySelector('#tw-agent-send');
+  if (agentSendBtn) agentSendBtn.addEventListener('click', sendChatMessage);
 
   // ── State Subscriptions ──────────────────────────────────────────────
 
@@ -268,6 +340,16 @@ async function loadUserDetail(userId) {
     _copilotWsConnected = false;
     _agentLogSessionId = null;
     _agentLogEvents = [];
+
+    // Reset Curator state
+    _curatorSessionId = null;
+    _curatorMessages = [];
+    _curatorLoading = false;
+    _curatorBriefing = null;
+    _curatorBriefingLoading = false;
+    _curatorKeyFacts = [];
+    _curatorModelTier = 'sonnet';
+    _curatorCost = 0;
   }
 
   setState({ toryWorkspace: { ...tw, selectedUserId: userId, detailLoading: true, selectedUserDetail: null } });
@@ -288,6 +370,9 @@ async function loadUserDetail(userId) {
 
     // Also load agent sessions for this user
     loadAgentSessions(userId);
+
+    // Load Curator session + trigger briefing
+    loadCuratorSession(userId);
   } catch (err) {
     setState({ toryWorkspace: { ...getState().toryWorkspace, detailLoading: false } });
     showToast(`Failed to load user detail: ${err.message}`, 'error');
@@ -999,15 +1084,17 @@ function buildPathCard(rec, colId, idx) {
     ? `<span class="tw-path-seq">#${rec.sequence || idx + 1}</span>` : '';
   const lockIcon = isLocked ? '<span class="tw-path-lock" title="Locked by coach">&#128274;</span>' : '';
 
+  const lessonName = rec.lesson_name || rec.lesson_title || 'Lesson ' + rec.nx_lesson_id;
   card.innerHTML = `
     <div class="tw-path-card-top">
       <span class="tw-path-journey" style="background:${jColor}20;color:${jColor}">${esc(rec.journey_name || rec.journey_title || 'J' + (rec.journey_id || '?'))}</span>
       <span class="tw-path-score">Score ${score}</span>
     </div>
-    <div class="tw-path-card-title">${seqBadge}${lockIcon}${esc(rec.lesson_name || rec.lesson_title || 'Lesson ' + rec.nx_lesson_id)}</div>
+    <div class="tw-path-card-title">${seqBadge}${lockIcon}${esc(lessonName)}</div>
     <div class="tw-path-card-bottom">
       ${difficultyDots(rec.difficulty)}
       <span class="tw-path-source ${rec.source || 'tory'}">${esc(rec.source || 'tory')}</span>
+      <button class="tw-why-btn" title="Ask Curator: why this lesson?" onclick="window._interrogateLesson(${rec.nx_lesson_id}, '${esc(lessonName).replace(/'/g, "\\'")}')">Why?</button>
     </div>
   `;
 
@@ -3040,14 +3127,330 @@ function appendTimelineEvent(event) {
   el.scrollTop = el.scrollHeight;
 }
 
-// ── Co-pilot Drawer ─────────────────────────────────────────────────────────
+// ── Curator AI ──────────────────────────────────────────────────────────────
+
+async function loadCuratorSession(userId) {
+  try {
+    const data = await api.getCuratorSession(userId);
+    _curatorSessionId = data.session_id;
+    _curatorMessages = (data.messages || []).map(m => ({
+      role: m.role === 'human' ? 'human' : 'ai',
+      content: m.content,
+      timestamp: m.timestamp,
+    }));
+    _curatorKeyFacts = data.key_facts || [];
+    _curatorModelTier = data.model_tier || 'sonnet';
+    _curatorCost = data.estimated_cost_usd || 0;
+    renderCuratorPanel();
+
+    // Auto-generate briefing if no conversation history
+    if (_curatorMessages.length === 0) {
+      loadCuratorBriefing(userId);
+    }
+  } catch (err) {
+    // Non-critical — Curator just won't show history
+    console.warn('Failed to load Curator session:', err);
+    renderCuratorPanel();
+    loadCuratorBriefing(userId);
+  }
+}
+
+async function loadCuratorBriefing(userId) {
+  _curatorBriefingLoading = true;
+  renderCuratorPanel();
+
+  try {
+    const data = await api.getCuratorBriefing(userId);
+    _curatorBriefing = data;
+    _curatorBriefingLoading = false;
+
+    // Add briefing as first AI message if there's no history
+    if (_curatorMessages.length === 0 && data.briefing) {
+      _curatorMessages.push({
+        role: 'ai',
+        content: data.briefing,
+        modelTier: 'sonnet',
+        isBriefing: true,
+      });
+    }
+    renderCuratorPanel();
+  } catch (err) {
+    _curatorBriefingLoading = false;
+    console.warn('Failed to load briefing:', err);
+    renderCuratorPanel();
+  }
+}
+
+async function sendCuratorMessage() {
+  const textarea = document.getElementById('tw-chat-textarea');
+  if (!textarea) return;
+  const text = textarea.value.trim();
+  if (!text || _curatorLoading) return;
+
+  textarea.value = '';
+  textarea.style.height = 'auto';
+
+  const tw = getState().toryWorkspace;
+  if (!tw.selectedUserId) {
+    appendCuratorMessage('ai', 'Please select a learner first.');
+    return;
+  }
+
+  // Show user message immediately
+  appendCuratorMessage('human', text);
+  _curatorLoading = true;
+  renderCuratorPanel();
+
+  try {
+    const result = await api.curatorChat(tw.selectedUserId, text, _curatorSessionId);
+    _curatorLoading = false;
+    _curatorSessionId = result.session_id;
+    _curatorModelTier = result.model_tier || 'sonnet';
+    _curatorCost = result.total_session_cost || 0;
+
+    // Add AI response with metadata
+    _curatorMessages.push({
+      role: 'ai',
+      content: result.response,
+      modelTier: result.model_tier,
+      inputTokens: result.input_tokens,
+      outputTokens: result.output_tokens,
+      costUsd: result.cost_usd,
+      guardrailFlags: result.guardrail_flags || [],
+      tierRouting: result.tier_routing,
+    });
+
+    // Show cost warning if any
+    if (result.cost_warning) {
+      appendCuratorMessage('system', result.cost_warning);
+    }
+
+    renderCuratorPanel();
+  } catch (err) {
+    _curatorLoading = false;
+    appendCuratorMessage('ai', `Error: ${err.message}`);
+    renderCuratorPanel();
+  }
+}
+
+function appendCuratorMessage(role, content) {
+  _curatorMessages.push({ role, content });
+  renderCuratorPanel();
+}
+
+function renderCuratorPanel() {
+  const placeholder = document.getElementById('tw-right-placeholder');
+  const chatMessagesEl = document.getElementById('tw-chat-messages');
+  const chatInput = document.getElementById('tw-chat-input');
+  const metaEl = document.getElementById('tw-curator-meta');
+  const briefingEl = document.getElementById('tw-curator-briefing');
+
+  const tw = getState().toryWorkspace;
+
+  if (!tw.selectedUserId) {
+    if (placeholder) placeholder.style.display = '';
+    if (chatMessagesEl) chatMessagesEl.style.display = 'none';
+    if (chatInput) chatInput.style.display = 'none';
+    if (metaEl) metaEl.style.display = 'none';
+    if (briefingEl) briefingEl.style.display = 'none';
+    return;
+  }
+
+  // Show chat UI
+  if (placeholder) placeholder.style.display = 'none';
+  if (chatMessagesEl) chatMessagesEl.style.display = '';
+  if (chatInput) chatInput.style.display = '';
+  if (metaEl) metaEl.style.display = '';
+
+  // Update meta bar
+  const modelBadge = document.getElementById('tw-curator-model-badge');
+  if (modelBadge) {
+    const tier = _curatorModelTier || 'sonnet';
+    modelBadge.textContent = tier === 'opus' ? 'Opus' : 'Sonnet';
+    modelBadge.className = `tw-model-badge ${tier}`;
+  }
+  const costEl = document.getElementById('tw-curator-cost');
+  if (costEl) costEl.textContent = `$${(_curatorCost || 0).toFixed(2)}`;
+  const countEl = document.getElementById('tw-curator-msg-count');
+  if (countEl) countEl.textContent = `${_curatorMessages.filter(m => m.role !== 'system').length} msgs`;
+
+  // Render messages
+  if (chatMessagesEl) {
+    chatMessagesEl.innerHTML = '';
+
+    if (_curatorBriefingLoading && _curatorMessages.length === 0) {
+      const loading = document.createElement('div');
+      loading.className = 'tw-chat-message ai';
+      loading.innerHTML = `
+        <div class="tw-chat-avatar ai">AI</div>
+        <div class="tw-chat-bubble tw-chat-streaming">
+          <span class="tw-briefing-loading">Generating briefing...</span>
+          <span class="tw-typing-dots"><span>.</span><span>.</span><span>.</span></span>
+        </div>
+      `;
+      chatMessagesEl.appendChild(loading);
+    }
+
+    for (const msg of _curatorMessages) {
+      renderCuratorMessageEl(chatMessagesEl, msg);
+    }
+
+    if (_curatorLoading) {
+      const indicator = document.createElement('div');
+      indicator.className = 'tw-chat-message ai';
+      indicator.innerHTML = `
+        <div class="tw-chat-avatar ai">AI</div>
+        <div class="tw-chat-bubble tw-chat-streaming">
+          <span class="tw-typing-dots"><span>.</span><span>.</span><span>.</span></span>
+        </div>
+      `;
+      chatMessagesEl.appendChild(indicator);
+    }
+
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  }
+}
+
+function renderCuratorMessageEl(container, msg) {
+  const { role, content, modelTier, inputTokens, outputTokens, costUsd, guardrailFlags, tierRouting, isBriefing } = msg;
+
+  if (role === 'system') {
+    const el = document.createElement('div');
+    el.className = 'tw-chat-message system';
+    el.innerHTML = `<span class="tw-chat-system">${esc(content)}</span>`;
+    container.appendChild(el);
+    return;
+  }
+
+  const el = document.createElement('div');
+  el.className = `tw-chat-message ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `tw-chat-avatar ${role}`;
+  avatar.textContent = role === 'ai' ? 'AI' : 'You';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'tw-chat-bubble';
+  if (isBriefing) bubble.classList.add('tw-briefing-bubble');
+
+  // Render markdown content
+  if (typeof marked !== 'undefined') {
+    marked.setOptions({ breaks: true, gfm: true });
+    bubble.innerHTML = marked.parse(content || '');
+  } else {
+    bubble.textContent = content || '';
+  }
+
+  el.appendChild(avatar);
+  el.appendChild(bubble);
+
+  // Add metadata footer for AI messages
+  if (role === 'ai' && (modelTier || costUsd != null)) {
+    const footer = document.createElement('div');
+    footer.className = 'tw-curator-msg-footer';
+    const parts = [];
+    if (modelTier) {
+      const tierClass = modelTier === 'opus' ? 'opus' : 'sonnet';
+      parts.push(`<span class="tw-model-badge-sm ${tierClass}">${modelTier}</span>`);
+    }
+    if (inputTokens || outputTokens) {
+      parts.push(`<span class="tw-token-count">${inputTokens || 0}/${outputTokens || 0} tokens</span>`);
+    }
+    if (costUsd != null && costUsd > 0) {
+      parts.push(`<span class="tw-msg-cost">$${costUsd.toFixed(4)}</span>`);
+    }
+    footer.innerHTML = parts.join(' ');
+
+    // Tool call transparency: expandable details
+    if (tierRouting && tierRouting.reasons && tierRouting.reasons.length > 0) {
+      const accordion = document.createElement('details');
+      accordion.className = 'tw-tool-accordion';
+      accordion.innerHTML = `
+        <summary>Model routing</summary>
+        <div class="tw-tool-details">
+          <div>Score: ${tierRouting.score || 0}</div>
+          <div>Reasons: ${tierRouting.reasons.join(', ')}</div>
+        </div>
+      `;
+      footer.appendChild(accordion);
+    }
+
+    if (guardrailFlags && guardrailFlags.length > 0) {
+      const flagsEl = document.createElement('details');
+      flagsEl.className = 'tw-tool-accordion tw-guardrail-flags';
+      flagsEl.innerHTML = `
+        <summary>Guardrail flags (${guardrailFlags.length})</summary>
+        <div class="tw-tool-details">
+          ${guardrailFlags.map(f => `<div>${f.check}: ${f.severity}</div>`).join('')}
+        </div>
+      `;
+      footer.appendChild(flagsEl);
+    }
+
+    el.appendChild(footer);
+  }
+
+  container.appendChild(el);
+}
+
+// 'Why?' button handler for path items
+async function interrogateLesson(lessonId, lessonName) {
+  const tw = getState().toryWorkspace;
+  if (!tw.selectedUserId) return;
+
+  // Switch to Curator tab
+  _curatorMode = 'curator';
+  document.querySelectorAll('.tw-curator-tab').forEach(t => t.classList.remove('active'));
+  const curatorTab = document.getElementById('tw-curator-tab-curator');
+  if (curatorTab) curatorTab.classList.add('active');
+  const curatorPanel = document.getElementById('tw-curator-panel');
+  const agentPanel = document.getElementById('tw-agent-panel');
+  if (curatorPanel) curatorPanel.style.display = '';
+  if (agentPanel) agentPanel.style.display = 'none';
+
+  // Open drawer if collapsed
+  const layout = document.querySelector('.tw-layout');
+  if (layout && layout.classList.contains('right-collapsed')) {
+    toggleRightDrawer();
+  }
+
+  appendCuratorMessage('human', `Why was "${lessonName}" assigned?`);
+  _curatorLoading = true;
+  renderCuratorPanel();
+
+  try {
+    const result = await api.curatorInterrogate(tw.selectedUserId, lessonId);
+    _curatorLoading = false;
+    if (result.explanation) {
+      _curatorMessages.push({
+        role: 'ai',
+        content: result.explanation,
+        modelTier: 'opus',
+        inputTokens: result.input_tokens,
+        outputTokens: result.output_tokens,
+      });
+    } else if (result.error) {
+      appendCuratorMessage('ai', `Could not explain: ${result.error}`);
+    }
+    renderCuratorPanel();
+  } catch (err) {
+    _curatorLoading = false;
+    appendCuratorMessage('ai', `Error: ${err.message}`);
+    renderCuratorPanel();
+  }
+}
+
+// Make interrogateLesson available globally for path item buttons
+window._interrogateLesson = interrogateLesson;
+
+// ── Co-pilot Drawer (Agent Panel) ────────────────────────────────────────────
 
 function renderCopilotDrawer() {
   const tw = getState().toryWorkspace;
   const sessions = tw.agentSessions || [];
-  const placeholder = document.getElementById('tw-right-placeholder');
-  const chatMessagesEl = document.getElementById('tw-chat-messages');
-  const chatInput = document.getElementById('tw-chat-input');
+  const placeholder = document.getElementById('tw-agent-placeholder');
+  const chatMessagesEl = document.getElementById('tw-agent-messages');
+  const chatInput = document.getElementById('tw-agent-input');
   const sessionMeta = document.getElementById('tw-session-meta');
   const sessionStatus = document.getElementById('tw-session-status');
 
@@ -3234,7 +3637,7 @@ function handleCopilotMessage(data) {
 
 function appendChatMessage(role, content) {
   _copilotMessages.push({ role, content });
-  const chatMessagesEl = document.getElementById('tw-chat-messages');
+  const chatMessagesEl = document.getElementById('tw-agent-messages');
   if (!chatMessagesEl) return;
   renderChatMessageEl(chatMessagesEl, role, content);
   chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
@@ -3277,7 +3680,7 @@ function renderStreamingIndicator(container) {
 }
 
 function refreshChatDisplay() {
-  const chatMessagesEl = document.getElementById('tw-chat-messages');
+  const chatMessagesEl = document.getElementById('tw-agent-messages');
   if (!chatMessagesEl) return;
   chatMessagesEl.innerHTML = '';
   for (const msg of _copilotMessages) {
@@ -3307,7 +3710,7 @@ function getUserNameFromState() {
 }
 
 async function sendChatMessage() {
-  const textarea = document.getElementById('tw-chat-textarea');
+  const textarea = document.getElementById('tw-agent-textarea');
   if (!textarea) return;
   const text = textarea.value.trim();
   if (!text) return;
@@ -3424,7 +3827,7 @@ function toggleRightDrawer() {
 
   if (btn) {
     btn.classList.toggle('active', !collapsed);
-    btn.innerHTML = collapsed ? 'AI Co-pilot &#9654;' : 'AI Co-pilot &#9654;';
+    btn.innerHTML = collapsed ? 'Curator AI &#9654;' : 'Curator AI &#9654;';
   }
 
   const tw = getState().toryWorkspace;
