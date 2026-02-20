@@ -2085,13 +2085,15 @@ details.tw-event[open] summary::after {
 }
 
 /* ==========================================================================
-   SLIDE VIEWER MODAL (Layer 3)
+   SLIDE VIEWER MODAL (Layer 3) — Swiper + Plyr
    ========================================================================== */
 
 .tw-slide-modal {
   position: fixed;
   inset: 0;
   z-index: 1000;
+  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2100,21 +2102,18 @@ details.tw-event[open] summary::after {
 .tw-slide-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(4px);
 }
 
-.tw-slide-content {
+.tw-slide-container {
   position: relative;
-  width: 90%;
-  max-width: 900px;
-  max-height: 85vh;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  max-width: 960px;
+  width: 95vw;
+  max-height: 90vh;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--bg-surface, var(--bg-card));
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   animation: tw-slide-up 0.25s var(--ease-out);
 }
 
@@ -2138,8 +2137,8 @@ details.tw-event[open] summary::after {
 }
 
 .tw-slide-counter {
-  font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  color: var(--text-muted, var(--text-tertiary));
   white-space: nowrap;
 }
 
@@ -2158,14 +2157,34 @@ details.tw-event[open] summary::after {
   color: var(--text-primary);
 }
 
-.tw-slide-body {
+/* ── Swiper overrides for dark theme ──────────────────────────────────── */
+
+.tw-swiper {
+  --swiper-theme-color: var(--accent);
+  --swiper-navigation-color: white;
+  --swiper-pagination-color: white;
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tw-swiper .swiper-slide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: var(--space-3);
+  overflow-y: auto;
+  position: relative;
+}
+
+.tw-slide-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
+  width: 100%;
+  max-height: 100%;
 }
 
 /* ── Slide Media ─────────────────────────────────────────────────────── */
@@ -2178,52 +2197,59 @@ details.tw-event[open] summary::after {
 
 .tw-slide-media img {
   max-width: 100%;
-  max-height: 50vh;
+  max-height: 65vh;
   object-fit: contain;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
+  display: block;
+  margin: 0 auto;
 }
 
 .tw-slide-media video {
   max-width: 100%;
-  max-height: 50vh;
-  border-radius: var(--radius-md);
+  max-height: 65vh;
+  border-radius: 12px;
+  display: block;
+  margin: 0 auto;
 }
 
 /* ── Slide Text Content ──────────────────────────────────────────────── */
 
 .tw-slide-text-content {
-  width: 100%;
+  padding: 2rem;
+  text-align: center;
   max-width: 700px;
+  margin: auto;
 }
 
 .tw-slide-text-title {
-  font-size: var(--font-size-md);
+  font-size: 1.5rem;
   font-weight: 600;
+  margin-bottom: 1rem;
   color: var(--text-strong);
-  margin: 0 0 var(--space-2);
 }
 
 .tw-slide-text-body {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  line-height: 1.7;
+  font-size: 1rem;
+  color: var(--text-muted, var(--text-secondary));
+  line-height: 1.6;
   margin: 0;
 }
 
 .tw-slide-options {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-top: var(--space-2);
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 1rem;
 }
 
 .tw-slide-option {
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg-3);
+  padding: 8px 16px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
+  border-radius: 8px;
+  font-size: 0.85rem;
   color: var(--text-primary);
+  background: var(--bg-3);
 }
 
 .tw-slide-json {
@@ -2239,6 +2265,7 @@ details.tw-event[open] summary::after {
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
+  text-align: left;
 }
 
 /* ── Slide Audio ─────────────────────────────────────────────────────── */
@@ -2248,83 +2275,35 @@ details.tw-event[open] summary::after {
   max-width: 500px;
 }
 
-.tw-slide-audio audio {
-  width: 100%;
-}
+/* ── Slide Placeholder (broken images) ───────────────────────────────── */
 
-/* ── Slide Navigation ────────────────────────────────────────────────── */
-
-.tw-slide-nav {
+.tw-slide-placeholder {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.tw-slide-arrow {
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: var(--font-size-md);
-  padding: 4px 12px;
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.tw-slide-arrow:hover:not(:disabled) {
-  background: var(--accent-dim);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.tw-slide-arrow:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.tw-slide-dots {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow-x: auto;
-  max-width: 60%;
-  padding: 2px 0;
-}
-
-.tw-slide-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--bg-4);
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-
-.tw-slide-dot:hover {
-  background: var(--text-tertiary);
-}
-
-.tw-slide-dot.active {
-  background: var(--accent);
-  width: 10px;
-  height: 10px;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-muted, var(--text-tertiary));
+  font-size: var(--font-size-sm);
 }
 
 /* ── Slide Type Badge ────────────────────────────────────────────────── */
 
 .tw-slide-type-badge {
   position: absolute;
-  bottom: 52px;
-  left: var(--space-3);
-  font-size: 10px;
-  font-weight: 500;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-3);
+  bottom: 8px;
+  left: 8px;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-surface, var(--bg-card));
   color: var(--text-tertiary);
   font-family: var(--font-mono);
+  pointer-events: none;
+}
+
+/* ── Plyr overrides ──────────────────────────────────────────────────── */
+
+.tw-slide-modal .plyr {
+  --plyr-color-main: var(--accent);
 }

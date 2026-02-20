@@ -1690,7 +1690,8 @@ async function openSlideViewer(lessonDetailId, lessonName) {
 }
 
 function renderSlideModal(lessonName) {
-  // Remove existing
+  // Remove existing modal & clean up Swiper/Plyr instances
+  _destroySlideViewerInstances();
   document.getElementById('tw-slide-modal')?.remove();
 
   const modal = document.createElement('div');
@@ -1700,7 +1701,7 @@ function renderSlideModal(lessonName) {
   if (_contentSlidesLoading) {
     modal.innerHTML = `
       <div class="tw-slide-overlay"></div>
-      <div class="tw-slide-content">
+      <div class="tw-slide-container">
         <div class="tw-slide-header">
           <span class="tw-slide-title">${esc(lessonName || 'Slides')}</span>
           <button class="tw-slide-close" id="tw-slide-close">&times;</button>
@@ -1709,7 +1710,7 @@ function renderSlideModal(lessonName) {
       </div>
     `;
     document.body.appendChild(modal);
-    wireSlideModalBase(modal);
+    _wireSlideClose(modal);
     return;
   }
 
@@ -1717,7 +1718,7 @@ function renderSlideModal(lessonName) {
   if (slides.length === 0) {
     modal.innerHTML = `
       <div class="tw-slide-overlay"></div>
-      <div class="tw-slide-content">
+      <div class="tw-slide-container">
         <div class="tw-slide-header">
           <span class="tw-slide-title">${esc(lessonName || 'Slides')}</span>
           <button class="tw-slide-close" id="tw-slide-close">&times;</button>
@@ -1726,151 +1727,151 @@ function renderSlideModal(lessonName) {
       </div>
     `;
     document.body.appendChild(modal);
-    wireSlideModalBase(modal);
+    _wireSlideClose(modal);
     return;
   }
 
-  const idx = Math.max(0, Math.min(_contentSlideIdx, slides.length - 1));
-  const slide = slides[idx];
   const total = slides.length;
 
-  // Parse slide content — API returns {type, content} not {slide_type, slide_content}
-  let content = slide.content || slide.slide_content;
-  if (typeof content === 'string') {
-    try { content = JSON.parse(content); } catch { content = {}; }
-  }
-  content = content || {};
-
-  const slideType = slide.type || slide.slide_type || 'unknown';
-  // SAS URLs are embedded in content (content.background_image, content.audio, etc.)
-  const urls = slide.media_urls || content;
-
-  // Render slide content based on type
-  const slideHtml = renderSlideContent(slideType, content, urls);
-
-  // Dots navigation
-  const dots = Array.from({ length: total }, (_, i) =>
-    `<span class="tw-slide-dot${i === idx ? ' active' : ''}" data-idx="${i}"></span>`
-  ).join('');
+  // Build swiper-slide elements for each slide
+  const swiperSlides = slides.map((slide, i) => {
+    let content = slide.content || slide.slide_content;
+    if (typeof content === 'string') {
+      try { content = JSON.parse(content); } catch { content = {}; }
+    }
+    content = content || {};
+    const slideType = slide.type || slide.slide_type || 'unknown';
+    const slideHtml = renderSlideContent(slideType, content);
+    return `<div class="swiper-slide">
+      <div class="tw-slide-inner">${slideHtml}</div>
+      <div class="tw-slide-type-badge">${esc(slideType)}</div>
+    </div>`;
+  }).join('');
 
   modal.innerHTML = `
     <div class="tw-slide-overlay"></div>
-    <div class="tw-slide-content">
+    <div class="tw-slide-container">
       <div class="tw-slide-header">
         <span class="tw-slide-title">${esc(lessonName || 'Slides')}</span>
-        <span class="tw-slide-counter">Slide ${idx + 1}/${total}</span>
+        <span class="tw-slide-counter" id="tw-slide-counter">Slide 1 / ${total}</span>
         <button class="tw-slide-close" id="tw-slide-close">&times;</button>
       </div>
-      <div class="tw-slide-body">
-        ${slideHtml}
+      <div class="swiper tw-swiper" id="tw-swiper">
+        <div class="swiper-wrapper">${swiperSlides}</div>
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
+        <div class="swiper-pagination"></div>
       </div>
-      <div class="tw-slide-nav">
-        <button class="tw-slide-arrow" id="tw-slide-prev" ${idx === 0 ? 'disabled' : ''}>&larr;</button>
-        <div class="tw-slide-dots">${dots}</div>
-        <button class="tw-slide-arrow" id="tw-slide-next" ${idx >= total - 1 ? 'disabled' : ''}>&rarr;</button>
-      </div>
-      <div class="tw-slide-type-badge">${esc(slideType)}</div>
     </div>
   `;
 
   document.body.appendChild(modal);
-  wireSlideModalBase(modal);
+  _wireSlideClose(modal);
 
-  // Nav arrows
-  modal.querySelector('#tw-slide-prev')?.addEventListener('click', () => {
-    if (_contentSlideIdx > 0) {
-      _contentSlideIdx--;
-      renderSlideModal(lessonName);
-    }
+  // Initialize Swiper
+  const startIdx = Math.max(0, Math.min(_contentSlideIdx, total - 1));
+  const swiper = new Swiper('#tw-swiper', {
+    initialSlide: startIdx,
+    effect: 'slide',
+    speed: 300,
+    keyboard: { enabled: true, onlyInViewport: false },
+    navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+    pagination: { el: '.swiper-pagination', clickable: true, type: 'bullets' },
   });
-  modal.querySelector('#tw-slide-next')?.addEventListener('click', () => {
-    if (_contentSlideIdx < total - 1) {
-      _contentSlideIdx++;
-      renderSlideModal(lessonName);
-    }
-  });
+  modal._swiperInstance = swiper;
 
-  // Dot navigation
-  modal.querySelectorAll('.tw-slide-dot').forEach(dot => {
-    dot.addEventListener('click', () => {
-      _contentSlideIdx = parseInt(dot.dataset.idx, 10);
-      renderSlideModal(lessonName);
-    });
+  // Update counter on slide change
+  const counterEl = modal.querySelector('#tw-slide-counter');
+  swiper.on('slideChange', () => {
+    _contentSlideIdx = swiper.activeIndex;
+    if (counterEl) counterEl.textContent = `Slide ${swiper.activeIndex + 1} / ${total}`;
   });
 
-  // Keyboard navigation
+  // Initialize Plyr for video and audio elements
+  const plyrInstances = [];
+  modal.querySelectorAll('.tw-plyr-video').forEach(el => {
+    plyrInstances.push(new Plyr(el, { controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'] }));
+  });
+  modal.querySelectorAll('.tw-plyr-audio').forEach(el => {
+    plyrInstances.push(new Plyr(el, { controls: ['play', 'progress', 'current-time', 'mute', 'volume'] }));
+  });
+  modal._plyrInstances = plyrInstances;
+
+  // Escape key handler
   modal._keyHandler = (e) => {
-    if (e.key === 'ArrowLeft' && _contentSlideIdx > 0) {
-      _contentSlideIdx--;
-      renderSlideModal(lessonName);
-    } else if (e.key === 'ArrowRight' && _contentSlideIdx < total - 1) {
-      _contentSlideIdx++;
-      renderSlideModal(lessonName);
-    } else if (e.key === 'Escape') {
-      closeSlideViewer();
-    }
+    if (e.key === 'Escape') closeSlideViewer();
   };
   document.addEventListener('keydown', modal._keyHandler);
 }
 
-function wireSlideModalBase(modal) {
-  // Close button
+function _wireSlideClose(modal) {
   modal.querySelector('#tw-slide-close')?.addEventListener('click', closeSlideViewer);
-  // Click overlay to close
   modal.querySelector('.tw-slide-overlay')?.addEventListener('click', closeSlideViewer);
+  // Escape for loading/empty states
+  modal._keyHandler = (e) => {
+    if (e.key === 'Escape') closeSlideViewer();
+  };
+  document.addEventListener('keydown', modal._keyHandler);
+}
+
+function _destroySlideViewerInstances() {
+  const existing = document.getElementById('tw-slide-modal');
+  if (!existing) return;
+  if (existing._swiperInstance) { try { existing._swiperInstance.destroy(true, true); } catch {} }
+  if (existing._plyrInstances) { existing._plyrInstances.forEach(p => { try { p.destroy(); } catch {} }); }
 }
 
 function closeSlideViewer() {
   const modal = document.getElementById('tw-slide-modal');
   if (modal) {
     if (modal._keyHandler) document.removeEventListener('keydown', modal._keyHandler);
+    _destroySlideViewerInstances();
     modal.remove();
   }
   _contentSlides = null;
   _contentSlideIdx = 0;
 }
 
-function renderSlideContent(type, content, urls) {
+function renderSlideContent(type, content) {
   let html = '';
 
-  // Title
   const title = content.slide_title || content.title || '';
   const text = content.content || content.content_title || content.text || content.body || '';
+  const bgImage = content.background_image || '';
+  const videoUrl = content.video_url || content.video || '';
+  const audioUrl = content.audio || content.audio_url || '';
 
-  // Background image
-  const bgImage = urls.background_image || content.background_image || '';
-
-  // Video
-  const videoUrl = urls.video || content.video_url || '';
-
-  // Audio
-  const audioUrl = urls.audio || content.audio_url || '';
-
+  // ── IMAGE slides ──
   if (type.startsWith('image') || (bgImage && !type.startsWith('video'))) {
-    // Image slide
     if (bgImage) {
-      html += `<div class="tw-slide-media"><img src="${esc(bgImage)}" alt="${esc(title)}" loading="lazy"></div>`;
+      html += `<div class="tw-slide-media"><img src="${esc(bgImage)}" alt="${esc(title)}" loading="lazy"
+        onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'tw-slide-placeholder\\'>&#128444; Image unavailable</div>';"></div>`;
+    } else {
+      html += `<div class="tw-slide-media"><div class="tw-slide-placeholder">&#128444; No image</div></div>`;
     }
-  } else if (type.startsWith('video') || videoUrl) {
-    // Video slide
+  }
+  // ── VIDEO slides ──
+  else if (type.startsWith('video') || videoUrl) {
     if (videoUrl) {
-      html += `<div class="tw-slide-media"><video controls preload="metadata" src="${esc(videoUrl)}"></video></div>`;
+      html += `<div class="tw-slide-media"><video class="tw-plyr-video" playsinline controls preload="metadata"><source src="${esc(videoUrl)}"></video></div>`;
     } else if (bgImage) {
-      html += `<div class="tw-slide-media"><img src="${esc(bgImage)}" alt="${esc(title)}" loading="lazy"></div>`;
+      html += `<div class="tw-slide-media"><img src="${esc(bgImage)}" alt="${esc(title)}" loading="lazy"
+        onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'tw-slide-placeholder\\'>&#128444; Image unavailable</div>';"></div>`;
     }
   }
 
-  // Slide types with text content
+  // ── TEXT slides (greetings, take-away, celebrate) ──
   if (type === 'greetings' || type === 'take-away' || type === 'celebrate') {
     html += `<div class="tw-slide-text-content">`;
     if (title) html += `<h3 class="tw-slide-text-title">${esc(title)}</h3>`;
     if (text) html += `<p class="tw-slide-text-body">${esc(text)}</p>`;
     html += `</div>`;
-  } else if (type.startsWith('question-answer') || type.includes('question')) {
+  }
+  // ── QUESTION slides ──
+  else if (type.startsWith('question-answer') || type.startsWith('questions-example') || type.includes('question')) {
     html += `<div class="tw-slide-text-content">`;
     if (title) html += `<h3 class="tw-slide-text-title">${esc(title)}</h3>`;
     if (text) html += `<p class="tw-slide-text-body">${esc(text)}</p>`;
-    // Render answer options if present
     const options = content.options || content.answers || content.choices || [];
     if (options.length > 0) {
       html += '<div class="tw-slide-options">';
@@ -1881,7 +1882,9 @@ function renderSlideContent(type, content, urls) {
       html += '</div>';
     }
     html += `</div>`;
-  } else if (type.startsWith('select-') || type.startsWith('choose-')) {
+  }
+  // ── SELECT / CHOOSE slides ──
+  else if (type.startsWith('select-') || type.startsWith('choose-')) {
     html += `<div class="tw-slide-text-content">`;
     if (title) html += `<h3 class="tw-slide-text-title">${esc(title)}</h3>`;
     if (text) html += `<p class="tw-slide-text-body">${esc(text)}</p>`;
@@ -1895,22 +1898,22 @@ function renderSlideContent(type, content, urls) {
       html += '</div>';
     }
     html += `</div>`;
-  } else {
-    // Default: show title + text, or formatted JSON
+  }
+  // ── DEFAULT ──
+  else {
     html += `<div class="tw-slide-text-content">`;
     if (title) html += `<h3 class="tw-slide-text-title">${esc(title)}</h3>`;
     if (text) {
       html += `<p class="tw-slide-text-body">${esc(text)}</p>`;
     } else if (!bgImage && !videoUrl) {
-      // No media and no text — show formatted JSON
       html += `<pre class="tw-slide-json">${esc(JSON.stringify(content, null, 2))}</pre>`;
     }
     html += `</div>`;
   }
 
-  // Audio player
+  // ── Audio (any slide with audio) ──
   if (audioUrl) {
-    html += `<div class="tw-slide-audio"><audio controls preload="metadata" src="${esc(audioUrl)}"></audio></div>`;
+    html += `<div class="tw-slide-audio"><audio class="tw-plyr-audio" preload="metadata"><source src="${esc(audioUrl)}"></audio></div>`;
   }
 
   return html;
