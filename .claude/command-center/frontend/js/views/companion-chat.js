@@ -32,7 +32,7 @@ let _currentPage = 1;
 let _filters = {
   search: '',
   company: '',
-  status: 'has_epp',       // Default: Has EPP
+  status: '',              // No status filter — 'has_epp' was too restrictive with has_backpack combo
   has_backpack: 'yes',     // Default: Has Backpack
 };
 let _usersLoading = false;
@@ -92,7 +92,7 @@ export function renderCompanionChat(root) {
             </select>
             <select id="cc-filter-status">
               <option value="">All Status</option>
-              <option value="has_epp" selected>Has EPP</option>
+              <option value="has_epp">Has EPP</option>
               <option value="processed">Processed</option>
               <option value="no_data">No Data</option>
             </select>
