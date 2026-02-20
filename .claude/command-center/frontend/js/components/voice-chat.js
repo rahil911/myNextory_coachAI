@@ -3,13 +3,11 @@
 // Handles mic capture, WebSocket streaming, audio playback, and visual states.
 // ==========================================================================
 
-// Build both ws:// and wss:// base URLs for fallback logic.
-// When the page is served over HTTPS but uvicorn has no TLS, wss:// will fail.
-// We try wss:// first (if HTTPS), then fall back to ws:// after a timeout.
+// Match WebSocket protocol to page protocol (wss:// for HTTPS, ws:// for HTTP).
+// Browsers block ws:// from HTTPS pages (Mixed Content), so no fallback is possible.
 const _host = window.location.host;
 const _isSecure = window.location.protocol === 'https:';
-const WS_BASE_PRIMARY   = `${_isSecure ? 'wss:' : 'ws:'}//${_host}`;
-const WS_BASE_FALLBACK  = _isSecure ? `ws://${_host}` : null;
+const WS_BASE = `${_isSecure ? 'wss:' : 'ws:'}//${_host}`;
 
 // ── Audio worklet processor (inline) ──────────────────────────────────────
 
@@ -151,40 +149,15 @@ export class VoiceChat {
 
   _connectWs() {
     const path = `/api/voice/ws/${this.role}/${this.userId}`;
-    const primaryUrl = `${WS_BASE_PRIMARY}${path}`;
-
-    if (WS_BASE_FALLBACK) {
-      // HTTPS page → try wss:// first, fall back to ws:// after 3s
-      const fallbackUrl = `${WS_BASE_FALLBACK}${path}`;
-      this._tryConnect(primaryUrl, () => {
-        console.log('[VoiceChat] wss:// failed, falling back to ws://');
-        this._tryConnect(fallbackUrl, null);
-      });
-    } else {
-      // HTTP page → ws:// directly, no fallback needed
-      this._tryConnect(primaryUrl, null);
-    }
+    const url = `${WS_BASE}${path}`;
+    this._tryConnect(url, null);
   }
 
-  /**
-   * Attempt a WebSocket connection. If it fails within 3s and fallbackFn is
-   * provided, call fallbackFn instead of entering error state.
-   */
-  _tryConnect(url, fallbackFn) {
+  _tryConnect(url) {
     const ws = new WebSocket(url);
     ws.binaryType = 'arraybuffer';
 
-    const fallbackTimer = fallbackFn
-      ? setTimeout(() => {
-          // Connection didn't open in time — try fallback
-          ws.onopen = ws.onclose = ws.onerror = ws.onmessage = null;
-          ws.close();
-          fallbackFn();
-        }, 3000)
-      : null;
-
     ws.onopen = () => {
-      clearTimeout(fallbackTimer);
       this._ws = ws;
       console.log(`[VoiceChat] Connected: ${url}`);
     };
@@ -201,7 +174,6 @@ export class VoiceChat {
     };
 
     ws.onclose = () => {
-      clearTimeout(fallbackTimer);
       console.log('[VoiceChat] Disconnected');
       if (this._state !== 'idle' && this._state !== 'error') {
         this._cleanup();
@@ -210,13 +182,7 @@ export class VoiceChat {
     };
 
     ws.onerror = (err) => {
-      clearTimeout(fallbackTimer);
       console.error('[VoiceChat] WebSocket error:', err);
-      if (fallbackFn) {
-        ws.onopen = ws.onclose = ws.onerror = ws.onmessage = null;
-        ws.close();
-        fallbackFn();
-      }
     };
   }
 
