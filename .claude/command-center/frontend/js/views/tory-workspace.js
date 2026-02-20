@@ -3490,7 +3490,7 @@ function appendTimelineEvent(event) {
 async function loadCuratorSession(userId) {
   // Check if user has EPP data before auto-generating briefing
   const tw = getState().toryWorkspace;
-  const user = (tw.users || []).find(u => u.id === userId);
+  const user = (tw.users || []).find(u => u.nx_user_id === userId);
   const hasEpp = user && (user.tory_status === 'has_epp' || user.tory_status === 'processed' || user.has_epp || user.has_path);
 
   try {
