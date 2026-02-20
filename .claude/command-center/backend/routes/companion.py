@@ -44,12 +44,24 @@ class ChatRequest(BaseModel):
     context: Optional[dict] = Field(None, description="Additional context (e.g., just_completed_lesson)")
 
 
+class ReferencedLesson(BaseModel):
+    lesson_detail_id: int
+    lesson_title: str
+    journey_name: str = ""
+    summary: str = ""
+    difficulty: Optional[int] = None
+    estimated_minutes: Optional[int] = None
+    has_video: bool = False
+    slide_count: int = 0
+
+
 class ChatResponse(BaseModel):
     response: str
     mode: str
     mode_confidence: float
     session_id: int
     sources: list = []
+    referenced_lessons: list[ReferencedLesson] = []
     flags: list = []
     escalate: bool = False
     model_used: str = "sonnet"
@@ -253,6 +265,91 @@ def _save_session_memory(session_id: int, messages: list, key_facts: list):
     )
 
 
+# ── Referenced lesson extraction ──────────────────────────────────────────────
+
+def _extract_referenced_lessons(rag_sources: list) -> list[dict]:
+    """Extract unique lesson details from RAG sources returned by the AI pipeline.
+
+    Uses lesson names from RAG metadata to query full lesson info including
+    journey name, summary, difficulty, video availability, and slide count.
+    """
+    if not rag_sources:
+        return []
+
+    # Collect unique lesson names from RAG sources
+    seen_names = set()
+    lesson_names = []
+    for src in rag_sources:
+        name = src.get("lesson_name", "").strip()
+        if name and name not in seen_names:
+            seen_names.add(name)
+            lesson_names.append(name)
+
+    if not lesson_names:
+        return []
+
+    # Query lesson details for each referenced lesson (max 5)
+    results = []
+    for name in lesson_names[:5]:
+        safe_name = _escape(f"%{name}%")
+        rows = _mysql_query(
+            f"SELECT ld.id AS lesson_detail_id, nl.lesson AS title, "
+            f"njd.journey AS journey_name, "
+            f"tc.summary, tc.difficulty, tc.estimated_minutes, "
+            f"(SELECT COUNT(*) FROM lesson_slides ls "
+            f" WHERE ls.lesson_detail_id = ld.id AND ls.deleted_at IS NULL) AS slide_count "
+            f"FROM lesson_details ld "
+            f"JOIN nx_lessons nl ON nl.id = ld.nx_lesson_id "
+            f"JOIN nx_journey_details njd ON njd.id = ld.nx_journey_detail_id "
+            f"LEFT JOIN tory_content_tags tc ON tc.lesson_detail_id = ld.id "
+            f"WHERE nl.lesson LIKE {safe_name} "
+            f"AND nl.deleted_at IS NULL "
+            f"LIMIT 1"
+        )
+        if not rows:
+            continue
+
+        row = rows[0]
+        detail_id = int(row["lesson_detail_id"])
+
+        # Check for video slides (URL resolution happens via /api/tory/lesson/{id}/slides)
+        has_video = False
+        video_rows = _mysql_query(
+            f"SELECT 1 FROM lesson_slides ls "
+            f"WHERE ls.lesson_detail_id = {detail_id} "
+            f"AND ls.video_library_id IS NOT NULL "
+            f"AND ls.deleted_at IS NULL "
+            f"LIMIT 1"
+        )
+        if video_rows:
+            has_video = True
+
+        difficulty = None
+        try:
+            difficulty = int(row.get("difficulty")) if row.get("difficulty") else None
+        except (ValueError, TypeError):
+            pass
+
+        est_min = None
+        try:
+            est_min = int(row.get("estimated_minutes")) if row.get("estimated_minutes") else None
+        except (ValueError, TypeError):
+            pass
+
+        results.append({
+            "lesson_detail_id": detail_id,
+            "lesson_title": row.get("title", name),
+            "journey_name": row.get("journey_name", ""),
+            "summary": (row.get("summary") or "")[:300],
+            "difficulty": difficulty,
+            "estimated_minutes": est_min,
+            "has_video": has_video,
+            "slide_count": int(row.get("slide_count", 0)),
+        })
+
+    return results
+
+
 # ── Core chat engine ─────────────────────────────────────────────────────────
 
 def _process_chat(user_id: int, message: str, session_id: int,
@@ -385,12 +482,15 @@ def _process_chat(user_id: int, message: str, session_id: int,
     if escalate:
         mode = "escalate"
 
-    # 11. Update conversation memory
+    # 11. Extract referenced lessons from RAG sources
+    referenced_lessons = _extract_referenced_lessons(rag_sources)
+
+    # 12. Update conversation memory
     memory_messages.append({"role": "user", "content": message[:500]})
     memory_messages.append({"role": "assistant", "content": final_answer[:500]})
     _save_session_memory(session_id, memory_messages, key_facts)
 
-    # 12. Update session stats
+    # 13. Update session stats
     _update_session_stats(session_id, input_tokens, output_tokens, model_tier)
 
     elapsed = time.time() - start
@@ -401,6 +501,7 @@ def _process_chat(user_id: int, message: str, session_id: int,
         "mode_confidence": mode_result.confidence,
         "session_id": session_id,
         "sources": rag_sources,
+        "referenced_lessons": referenced_lessons,
         "flags": [f.get("check", "") for f in flags],
         "escalate": escalate,
         "model_used": model_tier,
@@ -721,6 +822,7 @@ async def companion_ws(ws: WebSocket, user_id: int):
                     "data": {
                         "mode": result["mode"],
                         "sources": result["sources"],
+                        "referenced_lessons": result.get("referenced_lessons", []),
                         "flags": result["flags"],
                         "escalate": result["escalate"],
                         "model_used": result["model_used"],
