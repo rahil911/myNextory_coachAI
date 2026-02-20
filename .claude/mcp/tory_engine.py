@@ -2263,7 +2263,7 @@ async def list_tools() -> list[Tool]:
             name="tory_list_users_with_status",
             description=(
                 "Paginated user list with Tory processing status. Returns users from "
-                "nx_users with computed status fields (processed/profiled/has_epp/no_data), "
+                "nx_users with computed status fields (processed/profiled/has_epp/has_qa/no_data), "
                 "company name, and recommendation count. Supports search and filtering."
             ),
             inputSchema={
@@ -2286,7 +2286,7 @@ async def list_tools() -> list[Tool]:
                     "status_filter": {
                         "type": "string",
                         "description": "Filter by Tory status",
-                        "enum": ["processed", "profiled", "has_epp", "no_data"],
+                        "enum": ["processed", "profiled", "has_epp", "has_qa", "no_data"],
                     },
                     "company_filter": {
                         "type": "integer",
@@ -4426,7 +4426,8 @@ async def _tool_list_users_with_status(
         f"CASE "
         f"  WHEN MAX(tr.id) IS NOT NULL THEN 'processed' "
         f"  WHEN MAX(tlp.id) IS NOT NULL THEN 'profiled' "
-        f"  WHEN MAX(nuo.id) IS NOT NULL THEN 'has_epp' "
+        f"  WHEN MAX(nuo.assesment_result) IS NOT NULL THEN 'has_epp' "
+        f"  WHEN MAX(nuo.id) IS NOT NULL THEN 'has_qa' "
         f"  ELSE 'no_data' "
         f"END AS tory_status, "
         f"COUNT(DISTINCT tr.id) AS recommendation_count, "
@@ -4454,7 +4455,8 @@ async def _tool_list_users_with_status(
         f"CASE "
         f"  WHEN MAX(tr.id) IS NOT NULL THEN 'processed' "
         f"  WHEN MAX(tlp.id) IS NOT NULL THEN 'profiled' "
-        f"  WHEN MAX(nuo.id) IS NOT NULL THEN 'has_epp' "
+        f"  WHEN MAX(nuo.assesment_result) IS NOT NULL THEN 'has_epp' "
+        f"  WHEN MAX(nuo.id) IS NOT NULL THEN 'has_qa' "
         f"  ELSE 'no_data' "
         f"END AS tory_status, "
         f"{backpack_select} "
@@ -4929,7 +4931,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             if status_filter is not None:
                 status_filter = validate_enum(
                     status_filter, "status_filter",
-                    {"processed", "profiled", "has_epp", "no_data"},
+                    {"processed", "profiled", "has_epp", "has_qa", "no_data"},
                 )
             company_filter = None
             if arguments.get("company_filter") is not None:
