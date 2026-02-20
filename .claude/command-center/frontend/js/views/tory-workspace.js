@@ -1168,13 +1168,755 @@ async function loadAvailablePool(currentRecs) {
 
 // ── Content Tab ─────────────────────────────────────────────────────────────
 
+// Module-level content library state
+let _contentCache = null;        // Cached content library data
+let _contentSearch = '';         // Search filter
+let _contentJourneyFilter = '';  // Journey filter
+let _contentReviewFilter = '';   // Review status filter
+let _contentExpanded = null;     // { lessonId, tagId } of expanded card
+let _contentSlides = null;       // Current slides data for modal
+let _contentSlideIdx = 0;        // Current slide index
+let _contentSlidesLoading = false;
+
+// Known EPP traits for tag editor
+const EPP_TRAITS = [
+  'Achievement', 'Assertiveness', 'Attention to Detail', 'Cooperativeness',
+  'Creativity', 'Dependability', 'Flexibility', 'Initiative',
+  'Leadership', 'Optimism', 'Patience', 'Persistence',
+  'Self-Confidence', 'Self-Control', 'Social Orientation', 'Stress Tolerance',
+];
+
 function renderContentTab(el) {
-  el.innerHTML = `
-    <div class="tw-placeholder">
-      <div class="tw-placeholder-icon">&#128218;</div>
-      <div class="tw-placeholder-text">Content library — coming in a future update</div>
+  el.innerHTML = '';
+
+  // Show loading on first load
+  if (!_contentCache) {
+    el.innerHTML = '<div class="tw-loading"><div class="tw-spinner"></div> Loading content library...</div>';
+    loadContentLibrary().then(() => {
+      const freshEl = document.getElementById('tw-tab-content');
+      if (freshEl) renderContentTab(freshEl);
+    });
+    return;
+  }
+
+  const journeys = _contentCache.journeys || [];
+
+  // ── Toolbar ──
+  const toolbar = document.createElement('div');
+  toolbar.className = 'tw-content-toolbar';
+  toolbar.innerHTML = `
+    <div class="tw-content-toolbar-left">
+      <div class="tw-search-row">
+        <span class="tw-search-icon">&#128269;</span>
+        <input type="text" id="tw-content-search" placeholder="Search lessons..." value="${esc(_contentSearch)}">
+      </div>
+      <select id="tw-content-journey-filter">
+        <option value="">All Journeys</option>
+        ${journeys.map(j => `<option value="${esc(j.journey_name)}" ${_contentJourneyFilter === j.journey_name ? 'selected' : ''}>${esc(j.journey_name)} (${(j.lessons || []).length})</option>`).join('')}
+      </select>
+      <select id="tw-content-review-filter">
+        <option value="">All Status</option>
+        <option value="pending" ${_contentReviewFilter === 'pending' ? 'selected' : ''}>Pending</option>
+        <option value="approved" ${_contentReviewFilter === 'approved' ? 'selected' : ''}>Approved</option>
+        <option value="needs_review" ${_contentReviewFilter === 'needs_review' ? 'selected' : ''}>Needs Review</option>
+        <option value="corrected" ${_contentReviewFilter === 'corrected' ? 'selected' : ''}>Corrected</option>
+      </select>
+    </div>
+    <div class="tw-content-toolbar-right">
+      <button class="btn btn-ghost btn-sm" id="tw-content-refresh" title="Refresh content library">Refresh</button>
+      <button class="btn btn-primary btn-sm" id="tw-content-bulk-approve">Bulk Approve (70%+)</button>
     </div>
   `;
+  el.appendChild(toolbar);
+
+  // Wire toolbar events
+  let contentSearchTimer = null;
+  toolbar.querySelector('#tw-content-search').addEventListener('input', (e) => {
+    clearTimeout(contentSearchTimer);
+    contentSearchTimer = setTimeout(() => {
+      _contentSearch = e.target.value.trim().toLowerCase();
+      renderContentLibraryBody();
+    }, DEBOUNCE_MS);
+  });
+  toolbar.querySelector('#tw-content-journey-filter').addEventListener('change', (e) => {
+    _contentJourneyFilter = e.target.value;
+    renderContentLibraryBody();
+  });
+  toolbar.querySelector('#tw-content-review-filter').addEventListener('change', (e) => {
+    _contentReviewFilter = e.target.value;
+    renderContentLibraryBody();
+  });
+  toolbar.querySelector('#tw-content-refresh').addEventListener('click', () => {
+    _contentCache = null;
+    renderContentTab(el);
+  });
+  toolbar.querySelector('#tw-content-bulk-approve').addEventListener('click', bulkApproveContent);
+
+  // ── Library Body (swim lanes) ──
+  const body = document.createElement('div');
+  body.className = 'tw-content-library';
+  body.id = 'tw-content-library';
+  el.appendChild(body);
+
+  renderContentLibraryBody();
+}
+
+async function loadContentLibrary() {
+  try {
+    const data = await api.getToryContentLibrary();
+    _contentCache = data;
+  } catch (err) {
+    showToast(`Failed to load content library: ${err.message}`, 'error');
+    _contentCache = { journeys: [] };
+  }
+}
+
+function renderContentLibraryBody() {
+  const body = document.getElementById('tw-content-library');
+  if (!body || !_contentCache) return;
+
+  body.innerHTML = '';
+  const journeys = _contentCache.journeys || [];
+
+  // Get user path data if user is selected
+  const tw = getState().toryWorkspace;
+  const pathRecs = tw.selectedUserDetail?.path?.path || [];
+  const pathMap = new Map();
+  for (const rec of pathRecs) {
+    pathMap.set(parseInt(rec.nx_lesson_id, 10), rec);
+  }
+
+  // Filter journeys
+  const filtered = _contentJourneyFilter
+    ? journeys.filter(j => j.journey_name === _contentJourneyFilter)
+    : journeys;
+
+  if (filtered.length === 0) {
+    body.innerHTML = '<div class="tw-placeholder"><div class="tw-placeholder-text">No journeys found</div></div>';
+    return;
+  }
+
+  for (const journey of filtered) {
+    const lessons = filterLessons(journey.lessons || []);
+    if (lessons.length === 0 && _contentSearch) continue;
+
+    const inPathCount = lessons.filter(l => pathMap.has(parseInt(l.nx_lesson_id, 10))).length;
+
+    // Journey row
+    const row = document.createElement('div');
+    row.className = 'tw-content-journey';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'tw-content-journey-header';
+    header.innerHTML = `
+      <span class="tw-content-journey-name">${esc(journey.journey_name)}</span>
+      <span class="tw-content-journey-count">${lessons.length} lesson${lessons.length !== 1 ? 's' : ''}${pathMap.size > 0 ? ` · ${inPathCount} in path` : ''}</span>
+    `;
+    row.appendChild(header);
+
+    // Swim lane
+    const lane = document.createElement('div');
+    lane.className = 'tw-content-lane';
+
+    for (const lesson of lessons) {
+      const lessonId = parseInt(lesson.nx_lesson_id, 10);
+      const pathRec = pathMap.get(lessonId);
+      lane.appendChild(buildContentCard(lesson, pathRec, journey));
+    }
+
+    if (lessons.length === 0) {
+      lane.innerHTML = '<div class="tw-content-lane-empty">No matching lessons</div>';
+    }
+
+    row.appendChild(lane);
+    body.appendChild(row);
+
+    // Expansion panel (rendered below the row if a card in this journey is expanded)
+    if (_contentExpanded) {
+      const expandedLesson = lessons.find(l =>
+        parseInt(l.nx_lesson_id, 10) === _contentExpanded.lessonId
+      );
+      if (expandedLesson) {
+        const panel = buildContentPreview(expandedLesson, pathMap.get(_contentExpanded.lessonId), journey);
+        body.appendChild(panel);
+      }
+    }
+  }
+}
+
+function filterLessons(lessons) {
+  return lessons.filter(l => {
+    if (_contentSearch) {
+      const name = (l.lesson_name || '').toLowerCase();
+      const desc = (l.lesson_desc || '').toLowerCase();
+      if (!name.includes(_contentSearch) && !desc.includes(_contentSearch)) return false;
+    }
+    if (_contentReviewFilter && l.review_status !== _contentReviewFilter) return false;
+    return true;
+  });
+}
+
+function buildContentCard(lesson, pathRec, journey) {
+  const lessonId = parseInt(lesson.nx_lesson_id, 10);
+  const isExpanded = _contentExpanded && _contentExpanded.lessonId === lessonId;
+
+  const card = document.createElement('div');
+  card.className = `tw-content-card${isExpanded ? ' expanded' : ''}`;
+  card.dataset.lessonId = lessonId;
+
+  const confidence = Math.round(lesson.confidence || 0);
+  const difficulty = lesson.difficulty || 3;
+  const reviewStatus = lesson.review_status || 'pending';
+  const learningStyle = lesson.learning_style || '';
+  const slideCount = lesson.slide_count || 0;
+
+  // Review status color map
+  const reviewColors = {
+    approved: 'var(--green)',
+    pending: 'var(--yellow)',
+    needs_review: 'var(--red)',
+    corrected: 'var(--blue)',
+    dismissed: 'var(--text-tertiary)',
+  };
+  const reviewColor = reviewColors[reviewStatus] || reviewColors.pending;
+
+  // Match score overlay (when user selected)
+  let matchOverlay = '';
+  if (pathRec) {
+    const score = Math.round(pathRec.match_score || 0);
+    const matchClass = score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low';
+    matchOverlay = `<div class="tw-content-match ${matchClass}">${score}</div>`;
+
+    // Path position badge
+    const seq = pathRec.sequence || '?';
+    const isDiscovery = pathRec.is_discovery;
+    matchOverlay += `<div class="tw-content-path-badge">In Path #${seq}</div>`;
+    if (isDiscovery) {
+      matchOverlay += `<div class="tw-content-discovery-badge">Discovery</div>`;
+    }
+  }
+
+  // Media icons for production content
+  let mediaIcons = '';
+  if (slideCount > 0) {
+    mediaIcons = `<span class="tw-content-slides-badge" title="${slideCount} slides">&#128444; ${slideCount}</span>`;
+  }
+
+  card.innerHTML = `
+    ${matchOverlay}
+    <div class="tw-content-card-title">${esc(lesson.lesson_name || 'Untitled')}</div>
+    <div class="tw-content-card-meta">
+      ${difficultyDots(difficulty)}
+      ${learningStyle ? `<span class="tw-content-ls-badge">${esc(learningStyle)}</span>` : ''}
+    </div>
+    <div class="tw-content-card-bottom">
+      <span class="tw-content-review" style="color:${reviewColor}">${esc(reviewStatus)}</span>
+      <div class="tw-content-confidence" title="Confidence: ${confidence}%">
+        <div class="tw-content-confidence-bar" style="width:${confidence}%"></div>
+      </div>
+      ${mediaIcons}
+    </div>
+  `;
+
+  // Click to expand
+  card.addEventListener('click', () => {
+    if (_contentExpanded && _contentExpanded.lessonId === lessonId) {
+      _contentExpanded = null;
+    } else {
+      _contentExpanded = { lessonId, tagId: lesson.tag_id };
+    }
+    renderContentLibraryBody();
+  });
+
+  return card;
+}
+
+// ── Layer 2: Lesson Detail Preview ──────────────────────────────────────────
+
+function buildContentPreview(lesson, pathRec, journey) {
+  const panel = document.createElement('div');
+  panel.className = 'tw-content-preview';
+
+  const tags = lesson.trait_tags || [];
+  if (typeof tags === 'string') {
+    try { lesson.trait_tags = JSON.parse(tags); } catch { lesson.trait_tags = []; }
+  }
+  const traitTags = Array.isArray(lesson.trait_tags) ? lesson.trait_tags : [];
+
+  const directionColors = { builds: 'var(--green)', leverages: 'var(--blue)', challenges: 'var(--yellow)' };
+  const slideCount = lesson.slide_count || 0;
+
+  let html = `
+    <div class="tw-content-preview-header">
+      <div class="tw-content-preview-title">${esc(lesson.lesson_name || 'Untitled')}</div>
+      <button class="tw-content-preview-close" id="tw-preview-close">&times;</button>
+    </div>
+    <div class="tw-content-preview-body">
+      <div class="tw-content-preview-info">
+        <span class="tw-content-preview-journey">${esc(journey.journey_name)}</span>
+        <span>Difficulty: ${difficultyDots(lesson.difficulty || 3)}</span>
+        <span>Style: ${esc(lesson.learning_style || '—')}</span>
+      </div>
+      ${lesson.lesson_desc ? `<p class="tw-content-preview-desc">${esc(lesson.lesson_desc)}</p>` : ''}
+
+      <div class="tw-content-preview-section">
+        <div class="tw-content-preview-label">Trait Tags</div>
+        <div class="tw-content-tags">
+          ${traitTags.length > 0 ? traitTags.map(t => {
+            const color = directionColors[t.direction] || 'var(--text-secondary)';
+            return `<span class="tw-content-tag" style="border-left-color:${color}">
+              <strong>${esc(t.trait)}</strong> ${t.relevance_score || ''}
+              <em>${esc(t.direction || '')}</em>
+            </span>`;
+          }).join('') : '<span class="tw-content-tag-empty">No tags</span>'}
+        </div>
+      </div>
+
+      <div class="tw-content-preview-section">
+        <div class="tw-content-preview-label">Review</div>
+        <div class="tw-content-preview-review">
+          <span>Status: <strong>${esc(lesson.review_status || 'pending')}</strong></span>
+          <span>Confidence: <strong>${Math.round(lesson.confidence || 0)}%</strong></span>
+        </div>
+      </div>
+  `;
+
+  // Path info if user selected
+  if (pathRec) {
+    html += `
+      <div class="tw-content-preview-section">
+        <div class="tw-content-preview-label">Path Match</div>
+        <div class="tw-content-preview-match">
+          <span>Score: <strong>${Math.round(pathRec.match_score || 0)}</strong></span>
+          <span>Position: <strong>#${pathRec.sequence || '?'}</strong></span>
+          ${pathRec.is_discovery ? '<span class="tw-content-discovery-badge">Discovery</span>' : ''}
+        </div>
+        ${pathRec.rationale ? `<p class="tw-content-preview-rationale">${esc(pathRec.rationale)}</p>` : ''}
+      </div>
+    `;
+  }
+
+  html += '</div>'; // close preview body
+
+  // Action buttons
+  html += `
+    <div class="tw-content-preview-actions">
+      ${slideCount > 0 ? `<button class="btn btn-primary btn-sm" id="tw-view-slides" data-ldid="${esc(String(lesson.lesson_detail_id || ''))}" data-name="${esc(lesson.lesson_name || '')}">View Slides (${slideCount})</button>` : ''}
+      <button class="btn btn-ghost btn-sm tw-action-approve" data-tag-id="${lesson.tag_id || ''}">Approve</button>
+      <button class="btn btn-ghost btn-sm tw-action-dismiss" data-tag-id="${lesson.tag_id || ''}">Dismiss</button>
+      <button class="btn btn-ghost btn-sm tw-action-edit-tags" data-tag-id="${lesson.tag_id || ''}">Edit Tags</button>
+    </div>
+  `;
+
+  // Tag editor (hidden initially)
+  html += `
+    <div class="tw-tag-editor" id="tw-tag-editor" style="display:none">
+      <div class="tw-tag-editor-title">Edit Tags</div>
+      <div id="tw-tag-editor-rows"></div>
+      <button class="btn btn-ghost btn-sm" id="tw-tag-add-row">+ Add Tag</button>
+      <div class="tw-tag-editor-actions">
+        <button class="btn btn-ghost btn-sm" id="tw-tag-cancel">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="tw-tag-save" data-tag-id="${lesson.tag_id || ''}">Save Tags</button>
+      </div>
+    </div>
+  `;
+
+  panel.innerHTML = html;
+
+  // Wire events
+  panel.querySelector('#tw-preview-close').addEventListener('click', () => {
+    _contentExpanded = null;
+    renderContentLibraryBody();
+  });
+
+  // View slides
+  const viewSlidesBtn = panel.querySelector('#tw-view-slides');
+  if (viewSlidesBtn) {
+    viewSlidesBtn.addEventListener('click', () => {
+      const ldId = viewSlidesBtn.dataset.ldid;
+      const name = viewSlidesBtn.dataset.name;
+      if (ldId) openSlideViewer(ldId, name);
+    });
+  }
+
+  // Approve
+  panel.querySelector('.tw-action-approve')?.addEventListener('click', async (e) => {
+    const tagId = parseInt(e.target.dataset.tagId, 10);
+    if (!tagId) return;
+    try {
+      await api.reviewApprove(tagId, 0, '');
+      showToast('Tag approved', 'success');
+      _contentCache = null;
+      renderContentTab(document.getElementById('tw-tab-content'));
+    } catch (err) {
+      showToast(`Approve failed: ${err.message}`, 'error');
+    }
+  });
+
+  // Dismiss
+  panel.querySelector('.tw-action-dismiss')?.addEventListener('click', async (e) => {
+    const tagId = parseInt(e.target.dataset.tagId, 10);
+    if (!tagId) return;
+    try {
+      await api.reviewDismiss(tagId, 0, 'Dismissed via content library');
+      showToast('Tag dismissed', 'success');
+      _contentCache = null;
+      renderContentTab(document.getElementById('tw-tab-content'));
+    } catch (err) {
+      showToast(`Dismiss failed: ${err.message}`, 'error');
+    }
+  });
+
+  // Edit tags toggle
+  panel.querySelector('.tw-action-edit-tags')?.addEventListener('click', () => {
+    const editor = panel.querySelector('#tw-tag-editor');
+    if (!editor) return;
+    const isVisible = editor.style.display !== 'none';
+    editor.style.display = isVisible ? 'none' : '';
+    if (!isVisible) populateTagEditor(panel, traitTags);
+  });
+
+  // Tag editor cancel
+  panel.querySelector('#tw-tag-cancel')?.addEventListener('click', () => {
+    panel.querySelector('#tw-tag-editor').style.display = 'none';
+  });
+
+  // Tag editor add row
+  panel.querySelector('#tw-tag-add-row')?.addEventListener('click', () => {
+    addTagEditorRow(panel.querySelector('#tw-tag-editor-rows'), null);
+  });
+
+  // Tag editor save
+  panel.querySelector('#tw-tag-save')?.addEventListener('click', async (e) => {
+    const tagId = parseInt(e.target.dataset.tagId, 10);
+    if (!tagId) return;
+    const rows = panel.querySelectorAll('.tw-tag-row');
+    const correctedTags = [];
+    rows.forEach(row => {
+      const trait = row.querySelector('.tw-tag-trait')?.value;
+      const score = parseInt(row.querySelector('.tw-tag-relevance')?.value || '50', 10);
+      const direction = row.querySelector('.tw-tag-direction')?.value || 'builds';
+      if (trait) correctedTags.push({ trait, relevance_score: score, direction });
+    });
+    try {
+      await api.reviewCorrect(tagId, 0, correctedTags);
+      showToast('Tags updated', 'success');
+      _contentCache = null;
+      renderContentTab(document.getElementById('tw-tab-content'));
+    } catch (err) {
+      showToast(`Tag correction failed: ${err.message}`, 'error');
+    }
+  });
+
+  return panel;
+}
+
+function populateTagEditor(panel, existingTags) {
+  const container = panel.querySelector('#tw-tag-editor-rows');
+  if (!container) return;
+  container.innerHTML = '';
+  if (existingTags.length === 0) {
+    addTagEditorRow(container, null);
+  } else {
+    for (const tag of existingTags) {
+      addTagEditorRow(container, tag);
+    }
+  }
+}
+
+function addTagEditorRow(container, tag) {
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'tw-tag-row';
+  row.innerHTML = `
+    <select class="tw-tag-trait">
+      <option value="">Select trait...</option>
+      ${EPP_TRAITS.map(t => `<option value="${esc(t)}" ${tag && tag.trait === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+    </select>
+    <input type="range" class="tw-tag-relevance" min="0" max="100" value="${tag ? tag.relevance_score || 50 : 50}">
+    <span class="tw-tag-relevance-val">${tag ? tag.relevance_score || 50 : 50}</span>
+    <select class="tw-tag-direction">
+      <option value="builds" ${tag && tag.direction === 'builds' ? 'selected' : ''}>builds</option>
+      <option value="leverages" ${tag && tag.direction === 'leverages' ? 'selected' : ''}>leverages</option>
+      <option value="challenges" ${tag && tag.direction === 'challenges' ? 'selected' : ''}>challenges</option>
+    </select>
+    <button class="tw-tag-remove" title="Remove">&times;</button>
+  `;
+
+  // Wire range display
+  const range = row.querySelector('.tw-tag-relevance');
+  const rangeVal = row.querySelector('.tw-tag-relevance-val');
+  range.addEventListener('input', () => { rangeVal.textContent = range.value; });
+
+  // Wire remove
+  row.querySelector('.tw-tag-remove').addEventListener('click', () => row.remove());
+
+  container.appendChild(row);
+}
+
+async function bulkApproveContent() {
+  try {
+    const result = await api.reviewBulkApprove(0, 70);
+    const count = result.approved_count || result.count || 0;
+    showToast(`Bulk approved ${count} tags with 70%+ confidence`, 'success');
+    _contentCache = null;
+    renderContentTab(document.getElementById('tw-tab-content'));
+  } catch (err) {
+    showToast(`Bulk approve failed: ${err.message}`, 'error');
+  }
+}
+
+// ── Layer 3: Slide Viewer Modal ─────────────────────────────────────────────
+
+async function openSlideViewer(lessonDetailId, lessonName) {
+  _contentSlides = null;
+  _contentSlideIdx = 0;
+  _contentSlidesLoading = true;
+
+  // Create modal immediately with loading
+  renderSlideModal(lessonName);
+
+  try {
+    const data = await api.getToryLessonSlides(lessonDetailId);
+    _contentSlides = data.slides || data || [];
+    _contentSlidesLoading = false;
+    renderSlideModal(lessonName);
+  } catch (err) {
+    _contentSlidesLoading = false;
+    showToast(`Failed to load slides: ${err.message}`, 'error');
+    closeSlideViewer();
+  }
+}
+
+function renderSlideModal(lessonName) {
+  // Remove existing
+  document.getElementById('tw-slide-modal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'tw-slide-modal';
+  modal.id = 'tw-slide-modal';
+
+  if (_contentSlidesLoading) {
+    modal.innerHTML = `
+      <div class="tw-slide-overlay"></div>
+      <div class="tw-slide-content">
+        <div class="tw-slide-header">
+          <span class="tw-slide-title">${esc(lessonName || 'Slides')}</span>
+          <button class="tw-slide-close" id="tw-slide-close">&times;</button>
+        </div>
+        <div class="tw-loading" style="flex:1"><div class="tw-spinner"></div> Loading slides...</div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    wireSlideModalBase(modal);
+    return;
+  }
+
+  const slides = _contentSlides || [];
+  if (slides.length === 0) {
+    modal.innerHTML = `
+      <div class="tw-slide-overlay"></div>
+      <div class="tw-slide-content">
+        <div class="tw-slide-header">
+          <span class="tw-slide-title">${esc(lessonName || 'Slides')}</span>
+          <button class="tw-slide-close" id="tw-slide-close">&times;</button>
+        </div>
+        <div class="tw-placeholder" style="flex:1"><div class="tw-placeholder-text">No slides found</div></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    wireSlideModalBase(modal);
+    return;
+  }
+
+  const idx = Math.max(0, Math.min(_contentSlideIdx, slides.length - 1));
+  const slide = slides[idx];
+  const total = slides.length;
+
+  // Parse slide content
+  let content = slide.slide_content;
+  if (typeof content === 'string') {
+    try { content = JSON.parse(content); } catch { content = {}; }
+  }
+  content = content || {};
+
+  const slideType = slide.slide_type || 'unknown';
+  const mediaUrls = slide.media_urls || {};
+  if (typeof mediaUrls === 'string') {
+    try { slide.media_urls = JSON.parse(mediaUrls); } catch { slide.media_urls = {}; }
+  }
+  const urls = slide.media_urls || {};
+
+  // Render slide content based on type
+  const slideHtml = renderSlideContent(slideType, content, urls);
+
+  // Dots navigation
+  const dots = Array.from({ length: total }, (_, i) =>
+    `<span class="tw-slide-dot${i === idx ? ' active' : ''}" data-idx="${i}"></span>`
+  ).join('');
+
+  modal.innerHTML = `
+    <div class="tw-slide-overlay"></div>
+    <div class="tw-slide-content">
+      <div class="tw-slide-header">
+        <span class="tw-slide-title">${esc(lessonName || 'Slides')}</span>
+        <span class="tw-slide-counter">Slide ${idx + 1}/${total}</span>
+        <button class="tw-slide-close" id="tw-slide-close">&times;</button>
+      </div>
+      <div class="tw-slide-body">
+        ${slideHtml}
+      </div>
+      <div class="tw-slide-nav">
+        <button class="tw-slide-arrow" id="tw-slide-prev" ${idx === 0 ? 'disabled' : ''}>&larr;</button>
+        <div class="tw-slide-dots">${dots}</div>
+        <button class="tw-slide-arrow" id="tw-slide-next" ${idx >= total - 1 ? 'disabled' : ''}>&rarr;</button>
+      </div>
+      <div class="tw-slide-type-badge">${esc(slideType)}</div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  wireSlideModalBase(modal);
+
+  // Nav arrows
+  modal.querySelector('#tw-slide-prev')?.addEventListener('click', () => {
+    if (_contentSlideIdx > 0) {
+      _contentSlideIdx--;
+      renderSlideModal(lessonName);
+    }
+  });
+  modal.querySelector('#tw-slide-next')?.addEventListener('click', () => {
+    if (_contentSlideIdx < total - 1) {
+      _contentSlideIdx++;
+      renderSlideModal(lessonName);
+    }
+  });
+
+  // Dot navigation
+  modal.querySelectorAll('.tw-slide-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      _contentSlideIdx = parseInt(dot.dataset.idx, 10);
+      renderSlideModal(lessonName);
+    });
+  });
+
+  // Keyboard navigation
+  modal._keyHandler = (e) => {
+    if (e.key === 'ArrowLeft' && _contentSlideIdx > 0) {
+      _contentSlideIdx--;
+      renderSlideModal(lessonName);
+    } else if (e.key === 'ArrowRight' && _contentSlideIdx < total - 1) {
+      _contentSlideIdx++;
+      renderSlideModal(lessonName);
+    } else if (e.key === 'Escape') {
+      closeSlideViewer();
+    }
+  };
+  document.addEventListener('keydown', modal._keyHandler);
+}
+
+function wireSlideModalBase(modal) {
+  // Close button
+  modal.querySelector('#tw-slide-close')?.addEventListener('click', closeSlideViewer);
+  // Click overlay to close
+  modal.querySelector('.tw-slide-overlay')?.addEventListener('click', closeSlideViewer);
+}
+
+function closeSlideViewer() {
+  const modal = document.getElementById('tw-slide-modal');
+  if (modal) {
+    if (modal._keyHandler) document.removeEventListener('keydown', modal._keyHandler);
+    modal.remove();
+  }
+  _contentSlides = null;
+  _contentSlideIdx = 0;
+}
+
+function renderSlideContent(type, content, urls) {
+  let html = '';
+
+  // Title
+  const title = content.slide_title || content.title || '';
+  const text = content.content || content.text || content.body || '';
+
+  // Background image
+  const bgImage = urls.background_image || content.background_image || '';
+
+  // Video
+  const videoUrl = urls.video || content.video_url || '';
+
+  // Audio
+  const audioUrl = urls.audio || content.audio_url || '';
+
+  if (type.startsWith('image') || (bgImage && !type.startsWith('video'))) {
+    // Image slide
+    if (bgImage) {
+      html += `<div class="tw-slide-media"><img src="${esc(bgImage)}" alt="${esc(title)}" loading="lazy"></div>`;
+    }
+  } else if (type.startsWith('video') || videoUrl) {
+    // Video slide
+    if (videoUrl) {
+      html += `<div class="tw-slide-media"><video controls preload="metadata" src="${esc(videoUrl)}"></video></div>`;
+    } else if (bgImage) {
+      html += `<div class="tw-slide-media"><img src="${esc(bgImage)}" alt="${esc(title)}" loading="lazy"></div>`;
+    }
+  }
+
+  // Slide types with text content
+  if (type === 'greetings' || type === 'take-away' || type === 'celebrate') {
+    html += `<div class="tw-slide-text-content">`;
+    if (title) html += `<h3 class="tw-slide-text-title">${esc(title)}</h3>`;
+    if (text) html += `<p class="tw-slide-text-body">${esc(text)}</p>`;
+    html += `</div>`;
+  } else if (type.startsWith('question-answer') || type.includes('question')) {
+    html += `<div class="tw-slide-text-content">`;
+    if (title) html += `<h3 class="tw-slide-text-title">${esc(title)}</h3>`;
+    if (text) html += `<p class="tw-slide-text-body">${esc(text)}</p>`;
+    // Render answer options if present
+    const options = content.options || content.answers || content.choices || [];
+    if (options.length > 0) {
+      html += '<div class="tw-slide-options">';
+      for (const opt of options) {
+        const optText = typeof opt === 'string' ? opt : (opt.text || opt.label || opt.answer || JSON.stringify(opt));
+        html += `<div class="tw-slide-option">${esc(optText)}</div>`;
+      }
+      html += '</div>';
+    }
+    html += `</div>`;
+  } else if (type.startsWith('select-') || type.startsWith('choose-')) {
+    html += `<div class="tw-slide-text-content">`;
+    if (title) html += `<h3 class="tw-slide-text-title">${esc(title)}</h3>`;
+    if (text) html += `<p class="tw-slide-text-body">${esc(text)}</p>`;
+    const choices = content.options || content.choices || [];
+    if (choices.length > 0) {
+      html += '<div class="tw-slide-options">';
+      for (const ch of choices) {
+        const chText = typeof ch === 'string' ? ch : (ch.text || ch.label || JSON.stringify(ch));
+        html += `<div class="tw-slide-option">${esc(chText)}</div>`;
+      }
+      html += '</div>';
+    }
+    html += `</div>`;
+  } else {
+    // Default: show title + text, or formatted JSON
+    html += `<div class="tw-slide-text-content">`;
+    if (title) html += `<h3 class="tw-slide-text-title">${esc(title)}</h3>`;
+    if (text) {
+      html += `<p class="tw-slide-text-body">${esc(text)}</p>`;
+    } else if (!bgImage && !videoUrl) {
+      // No media and no text — show formatted JSON
+      html += `<pre class="tw-slide-json">${esc(JSON.stringify(content, null, 2))}</pre>`;
+    }
+    html += `</div>`;
+  }
+
+  // Audio player
+  if (audioUrl) {
+    html += `<div class="tw-slide-audio"><audio controls preload="metadata" src="${esc(audioUrl)}"></audio></div>`;
+  }
+
+  return html;
 }
 
 // ── Agent Log Tab ───────────────────────────────────────────────────────────
