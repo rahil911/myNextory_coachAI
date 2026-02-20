@@ -303,9 +303,11 @@ def get_lesson_content_annotated(lesson_detail_id: int) -> tuple[str, list[dict]
 def get_lesson_metadata(lesson_detail_id: int) -> dict | None:
     """Get lesson name and journey context for richer Opus prompts."""
     rows = mysql_query_xml(
-        f"SELECT ld.id, ld.lesson_name, j.journey_name, j.id as journey_id "
+        f"SELECT ld.id, nl.lesson as lesson_name, "
+        f"jd.journey as journey_name, jd.id as journey_id "
         f"FROM lesson_details ld "
-        f"LEFT JOIN journeys j ON ld.journey_id = j.id "
+        f"LEFT JOIN nx_lessons nl ON nl.id = ld.nx_lesson_id "
+        f"LEFT JOIN nx_journey_details jd ON jd.id = ld.nx_journey_detail_id "
         f"WHERE ld.id = {int(lesson_detail_id)} AND ld.deleted_at IS NULL "
         f"LIMIT 1"
     )
@@ -1065,7 +1067,7 @@ async def tool_process_content(lesson_detail_id: int) -> str:
         # Try direct lookup via lesson_details -> nx_lessons
         rows = mysql_query_xml(
             f"SELECT nl.id FROM nx_lessons nl "
-            f"JOIN lesson_details ld ON nl.lesson_detail_id = ld.id "
+            f"JOIN lesson_details ld ON ld.nx_lesson_id = nl.id "
             f"WHERE ld.id = {int(lesson_detail_id)} AND nl.deleted_at IS NULL "
             f"LIMIT 1"
         )
@@ -1116,9 +1118,9 @@ async def tool_process_all_content(force: bool = False) -> str:
 
     # Also try nx_lessons direct lookup for unmapped ones
     rows = mysql_query_xml(
-        "SELECT nl.id as nx_lesson_id, nl.lesson_detail_id "
-        "FROM nx_lessons nl "
-        "WHERE nl.deleted_at IS NULL AND nl.lesson_detail_id IS NOT NULL"
+        "SELECT ld.id as lesson_detail_id, ld.nx_lesson_id "
+        "FROM lesson_details ld "
+        "WHERE ld.deleted_at IS NULL AND ld.nx_lesson_id IS NOT NULL"
     )
     for r in rows:
         ld_id = int(r["lesson_detail_id"])
