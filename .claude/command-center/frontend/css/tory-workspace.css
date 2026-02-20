@@ -3641,6 +3641,82 @@ details.tw-event[open] summary::after {
   max-height: 360px;
 }
 
+/* ── EPP Radar — Criteria Corp Style ─────────────────────────────────── */
+
+.tw-radar-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-1);
+  text-align: center;
+}
+
+.tw-radar-container {
+  position: relative;
+  padding: 28px 12px 12px;
+}
+
+.tw-radar-container canvas {
+  max-height: 380px;
+}
+
+/* Category pill badges — positioned around chart perimeter */
+.tw-cat-badge {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cat-color) 18%, transparent);
+  color: var(--cat-color);
+  border: 1px solid color-mix(in srgb, var(--cat-color) 35%, transparent);
+  white-space: nowrap;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.tw-cat-tl { top: 4px; left: 8px; }
+.tw-cat-tr { top: 4px; right: 8px; }
+.tw-cat-bl { bottom: 28px; left: 8px; }
+.tw-cat-br { bottom: 28px; right: 8px; }
+
+/* Legend row under the radar chart */
+.tw-radar-legend {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.tw-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.tw-legend-swatch {
+  display: inline-block;
+  width: 20px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.tw-legend-solid {
+  background: #1a365d;
+}
+
+.tw-legend-dashed {
+  background: repeating-linear-gradient(
+    90deg,
+    #9ca3af 0px,
+    #9ca3af 4px,
+    transparent 4px,
+    transparent 7px
+  );
+}
+
 /* Strengths + Gaps pills row */
 .tw-epp-pills-row {
   display: flex;
