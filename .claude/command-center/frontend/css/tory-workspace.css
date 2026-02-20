@@ -4599,3 +4599,212 @@ details.tw-event[open] summary::after {
     height: 90vh;
   }
 }
+
+/* ── Processing Progress Panel ─────────────────────────────────────────── */
+
+.tw-progress-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+
+.tw-progress-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tw-progress-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.tw-progress-done-icon {
+  color: var(--green);
+}
+
+.tw-progress-error-icon {
+  color: var(--red);
+}
+
+.tw-progress-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tw-progress-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* Larger spinner for the progress header */
+.tw-spinner-lg {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Small spinner for step indicator */
+.tw-spinner-sm {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Steps */
+.tw-progress-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  max-width: 340px;
+}
+
+.tw-progress-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  position: relative;
+}
+
+/* Vertical connector line between steps */
+.tw-progress-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 38px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--border);
+}
+
+.tw-progress-step.completed:not(:last-child)::after {
+  background: var(--green);
+}
+
+.tw-progress-step.active:not(:last-child)::after {
+  background: linear-gradient(to bottom, var(--accent), var(--border));
+}
+
+.tw-step-indicator {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  background: var(--bg-2);
+  position: relative;
+  z-index: 1;
+}
+
+.tw-progress-step.completed .tw-step-indicator {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
+
+.tw-progress-step.active .tw-step-indicator {
+  border-color: var(--accent);
+  background: var(--bg-2);
+}
+
+.tw-progress-step.pending .tw-step-indicator {
+  opacity: 0.4;
+}
+
+.tw-step-check {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tw-step-num {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.tw-step-content {
+  padding-top: 3px;
+}
+
+.tw-step-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.tw-progress-step.pending .tw-step-label {
+  color: var(--text-tertiary);
+}
+
+.tw-progress-step.active .tw-step-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tw-step-detail {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Summary card */
+.tw-progress-summary-card {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.tw-progress-summary-stat {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.tw-progress-summary-stat strong {
+  color: var(--text-primary);
+}
+
+/* Error box */
+.tw-progress-error-box {
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--red) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 25%, transparent);
+  border-radius: var(--radius-md);
+  max-width: 400px;
+  width: 100%;
+}
+
+.tw-progress-error-msg {
+  font-size: var(--font-size-sm);
+  color: var(--red);
+  word-break: break-word;
+}
+
+/* Actions */
+.tw-progress-actions {
+  display: flex;
+  gap: var(--space-2);
+}

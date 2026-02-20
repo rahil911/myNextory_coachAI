@@ -22,6 +22,19 @@ let _copilotMessages = [];      // Chat history
 let _copilotStreaming = false;   // Is agent currently streaming?
 let _copilotWsConnected = false;
 
+// ── Processing progress state ──────────────────────────────────────────
+let _processingUserId = null;      // User currently being processed
+let _processingSessionId = null;   // Active processing session
+let _processingSteps = [
+  { key: 'load',      label: 'Loading Data',         tool: 'tory_get_learner_data',  status: 'pending' },
+  { key: 'interpret', label: 'Interpreting Profile',  tool: 'tory_interpret_profile', status: 'pending' },
+  { key: 'score',     label: 'Scoring Content',       tool: 'tory_score_content',     status: 'pending' },
+  { key: 'generate',  label: 'Generating Path',       tool: 'tory_generate_path',     status: 'pending' },
+];
+let _processingComplete = false;
+let _processingError = null;
+let _processingSummary = null;     // { tool_call_count, pipeline_steps }
+
 // ── Curator AI state ────────────────────────────────────────────────────
 let _curatorSessionId = null;     // tory_ai_sessions.id
 let _curatorMessages = [];        // Full conversation history
@@ -511,6 +524,12 @@ function renderTabContent() {
   if (!contentEl) return;
 
   const tw = getState().toryWorkspace;
+
+  // Show processing progress panel (in-progress, error, or completion — until user navigates away)
+  if (_processingUserId && _processingUserId === tw.selectedUserId) {
+    renderProcessingProgress();
+    return;
+  }
 
   // Content tab works without a user selected (it's the content library)
   if (tw.activeTab === 'content') {
@@ -3114,6 +3133,11 @@ function handleCopilotMessage(data) {
       const event = data.event || data.payload || data;
       appendTimelineEvent(event);
 
+      // Update progress panel if processing
+      if (event.type === 'tool_call' && event.tool) {
+        updateProcessingStep(event.tool);
+      }
+
       // Show tool calls as system messages in copilot
       if (event.type === 'tool_call') {
         appendChatMessage('system', `Using tool: ${event.tool || event.name || 'unknown'}`);
@@ -3122,11 +3146,15 @@ function handleCopilotMessage(data) {
     }
 
     case 'agent_tool_use':
-    case 'TORY_AGENT_TOOL':
-      appendChatMessage('system', `Using tool: ${data.tool || data.name || 'unknown'}`);
+    case 'TORY_AGENT_TOOL': {
+      const toolName = data.tool || data.name || 'unknown';
+      appendChatMessage('system', `Using tool: ${toolName}`);
+      // Update progress panel
+      updateProcessingStep(toolName);
       // Also add to agent log
-      appendTimelineEvent({ type: 'tool_call', tool: data.tool || data.name, input: data.input, timestamp: new Date().toISOString() });
+      appendTimelineEvent({ type: 'tool_call', tool: toolName, input: data.input, timestamp: new Date().toISOString() });
       break;
+    }
 
     case 'TORY_AGENT_STREAMING_START':
     case 'agent_streaming_start':
@@ -3162,16 +3190,14 @@ function handleCopilotMessage(data) {
     case 'TORY_AGENT_COMPLETED':
       _copilotStreaming = false;
       appendChatMessage('ai', data.summary || 'Processing complete.');
-      // Refresh sessions + user detail
-      const tw = getState().toryWorkspace;
-      if (tw.selectedUserId) {
-        loadUserDetail(tw.selectedUserId);
-      }
+      // Update progress panel
+      completeProcessing(data.payload || data);
       break;
 
     case 'agent_error':
     case 'TORY_AGENT_ERROR':
       _copilotStreaming = false;
+      failProcessing(data.error || data.message || 'Unknown error');
       appendChatMessage('ai', `Error: ${data.error || data.message || 'Unknown error'}`);
       break;
 
@@ -3316,22 +3342,196 @@ function openSessionInCopilot(sessionId) {
 // ── User Processing ─────────────────────────────────────────────────────────
 
 async function processUser(userId) {
+  // Reset progress state
+  _processingUserId = userId;
+  _processingSessionId = null;
+  _processingComplete = false;
+  _processingError = null;
+  _processingSummary = null;
+  _processingSteps = _processingSteps.map(s => ({ ...s, status: 'pending' }));
+
+  // Show progress panel immediately (before API call)
+  renderProcessingProgress();
+
   try {
-    showToast('Processing user...', 'info');
     const result = await api.processToryUser(userId);
-    showToast(`Agent spawned! Session: ${result.session_id.substring(0, 8)}...`, 'success');
+    _processingSessionId = result.session_id;
 
-    // Reload sessions + open copilot
+    // Connect WebSocket now that we have the session_id
+    // The catch-up mechanism in the WS endpoint replays missed events
+    connectCopilotSession(result.session_id);
+
+    // Reload sessions
     await loadAgentSessions(userId);
-
-    // Make sure right drawer is open
-    const layout = document.querySelector('.tw-layout');
-    if (layout && layout.classList.contains('right-collapsed')) {
-      toggleRightDrawer();
-    }
   } catch (err) {
+    _processingError = err.message;
+    renderProcessingProgress();
     showToast(`Process failed: ${err.message}`, 'error');
   }
+}
+
+function renderProcessingProgress() {
+  const contentEl = document.getElementById('tw-tab-content');
+  if (!contentEl) return;
+
+  const tw = getState().toryWorkspace;
+  const user = (tw.users || []).find(u => u.id === _processingUserId || u.nx_user_id === _processingUserId);
+  const userName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || `User ${_processingUserId}` : `User ${_processingUserId}`;
+
+  // Error state
+  if (_processingError) {
+    contentEl.innerHTML = `
+      <div class="tw-progress-panel">
+        <div class="tw-progress-header">
+          <div class="tw-progress-icon tw-progress-error-icon">&#10060;</div>
+          <div class="tw-progress-title">Processing Failed</div>
+          <div class="tw-progress-subtitle">${esc(userName)}</div>
+        </div>
+        <div class="tw-progress-error-box">
+          <div class="tw-progress-error-msg">${esc(_processingError)}</div>
+        </div>
+        <div class="tw-progress-actions">
+          <button class="btn btn-primary btn-sm" id="tw-progress-retry">Retry Processing</button>
+          <button class="btn btn-ghost btn-sm" id="tw-progress-dismiss">Dismiss</button>
+        </div>
+      </div>
+    `;
+    contentEl.querySelector('#tw-progress-retry')?.addEventListener('click', () => processUser(_processingUserId));
+    contentEl.querySelector('#tw-progress-dismiss')?.addEventListener('click', () => {
+      _processingUserId = null;
+      renderTabContent();
+    });
+    return;
+  }
+
+  // Complete state
+  if (_processingComplete) {
+    const summary = _processingSummary || {};
+    const steps = summary.pipeline_steps || [];
+    const calls = summary.tool_call_count || 0;
+    contentEl.innerHTML = `
+      <div class="tw-progress-panel">
+        <div class="tw-progress-header">
+          <div class="tw-progress-icon tw-progress-done-icon">&#9989;</div>
+          <div class="tw-progress-title">Processing Complete</div>
+          <div class="tw-progress-subtitle">${esc(userName)}</div>
+        </div>
+        <div class="tw-progress-steps">
+          ${_processingSteps.map(s => `
+            <div class="tw-progress-step completed">
+              <div class="tw-step-indicator"><span class="tw-step-check">&#10003;</span></div>
+              <div class="tw-step-content">
+                <div class="tw-step-label">${esc(s.label)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="tw-progress-summary-card">
+          <div class="tw-progress-summary-stat"><strong>${calls}</strong> tool calls</div>
+          <div class="tw-progress-summary-stat"><strong>${steps.length}</strong> pipeline steps</div>
+        </div>
+        <div class="tw-progress-actions">
+          <button class="btn btn-primary btn-sm" id="tw-progress-view-profile">View Profile</button>
+          <button class="btn btn-ghost btn-sm" id="tw-progress-view-log">View Full Reasoning</button>
+        </div>
+      </div>
+    `;
+    contentEl.querySelector('#tw-progress-view-profile')?.addEventListener('click', () => {
+      _processingUserId = null;
+      const tw2 = getState().toryWorkspace;
+      setState({ toryWorkspace: { ...tw2, activeTab: 'profile' } });
+      renderTabs();
+      loadUserDetail(tw2.selectedUserId);
+    });
+    contentEl.querySelector('#tw-progress-view-log')?.addEventListener('click', () => {
+      _processingUserId = null;
+      const tw2 = getState().toryWorkspace;
+      setState({ toryWorkspace: { ...tw2, activeTab: 'agentlog' } });
+      renderTabs();
+      renderTabContent();
+    });
+    return;
+  }
+
+  // In-progress state
+  contentEl.innerHTML = `
+    <div class="tw-progress-panel">
+      <div class="tw-progress-header">
+        <div class="tw-progress-icon"><div class="tw-spinner-lg"></div></div>
+        <div class="tw-progress-title">Processing ${esc(userName)}...</div>
+        <div class="tw-progress-subtitle">Running Tory AI pipeline</div>
+      </div>
+      <div class="tw-progress-steps">
+        ${_processingSteps.map(s => {
+          const cls = s.status === 'completed' ? 'completed' : s.status === 'active' ? 'active' : 'pending';
+          const indicator = s.status === 'completed'
+            ? '<span class="tw-step-check">&#10003;</span>'
+            : s.status === 'active'
+              ? '<div class="tw-spinner-sm"></div>'
+              : '<span class="tw-step-num"></span>';
+          return `
+            <div class="tw-progress-step ${cls}">
+              <div class="tw-step-indicator">${indicator}</div>
+              <div class="tw-step-content">
+                <div class="tw-step-label">${esc(s.label)}</div>
+                ${s.status === 'active' ? '<div class="tw-step-detail">In progress...</div>' : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function updateProcessingStep(toolName) {
+  if (!_processingUserId) return;
+
+  // Map tool name to step key
+  const toolMap = {
+    tory_get_learner_data: 'load',
+    tory_interpret_profile: 'interpret',
+    tory_score_content: 'score',
+    tory_generate_path: 'generate',
+    tory_generate_roadmap: 'generate',
+  };
+
+  const stepKey = toolMap[toolName];
+  if (!stepKey) return;
+
+  let found = false;
+  for (const step of _processingSteps) {
+    if (step.key === stepKey) {
+      // Mark preceding steps as completed
+      found = true;
+      step.status = 'active';
+    } else if (!found) {
+      step.status = 'completed';
+    }
+  }
+
+  renderProcessingProgress();
+}
+
+function completeProcessing(data) {
+  if (!_processingUserId) return;
+
+  _processingComplete = true;
+  _processingSummary = data || {};
+  _processingSteps = _processingSteps.map(s => ({ ...s, status: 'completed' }));
+  renderProcessingProgress();
+
+  // Refresh user detail in background
+  const tw = getState().toryWorkspace;
+  if (tw.selectedUserId) {
+    loadUserDetail(tw.selectedUserId);
+  }
+}
+
+function failProcessing(errorMsg) {
+  if (!_processingUserId) return;
+  _processingError = errorMsg || 'Unknown error';
+  renderProcessingProgress();
 }
 
 async function batchProcess() {
