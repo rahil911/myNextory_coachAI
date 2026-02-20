@@ -1109,3 +1109,219 @@ async def curator_interrogate(req: CuratorInterrogateRequest):
         lesson_id=req.lesson_id,
         question=req.question,
     )
+
+
+# ── AI Instantiation ──────────────────────────────────────────────────────
+
+class InstantiateRequest(BaseModel):
+    initiated_by: int | None = Field(None, description="Coach nx_user_id")
+
+
+class SessionResumeRequest(BaseModel):
+    message: str = Field(..., min_length=1, description="Follow-up question")
+
+
+def _get_instantiation_engine():
+    """Lazy-init singleton InstantiationEngine."""
+    if not hasattr(_get_instantiation_engine, '_instance'):
+        from instantiation import InstantiationEngine
+        _get_instantiation_engine._instance = InstantiationEngine()
+    return _get_instantiation_engine._instance
+
+
+def _get_session_manager():
+    """Lazy-init singleton SessionManager."""
+    if not hasattr(_get_session_manager, '_instance'):
+        from session_manager import SessionManager
+        _get_session_manager._instance = SessionManager()
+    return _get_session_manager._instance
+
+
+@router.post("/instantiate/{user_id}")
+async def instantiate_user(user_id: int, req: InstantiateRequest | None = None):
+    """Trigger AI instantiation — 5-step visible process.
+
+    Runs the full instantiation flow synchronously (each step calls Claude Opus).
+    Returns the complete session with all reasoning steps.
+    For real-time streaming, use the WebSocket endpoint instead.
+    """
+    import asyncio
+
+    engine = _get_instantiation_engine()
+
+    # Collect events for the response
+    events = []
+
+    def on_event(evt):
+        events.append(evt)
+
+    # Run in thread pool to avoid blocking the event loop
+    initiated_by = req.initiated_by if req else None
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        lambda: engine.run(
+            nx_user_id=user_id,
+            on_event=on_event,
+            initiated_by=initiated_by,
+        )
+    )
+
+    return {
+        **result,
+        "events": events,
+    }
+
+
+@router.get("/instantiate/{user_id}/status")
+async def instantiate_status(user_id: int):
+    """Check the progress of an instantiation session.
+
+    Returns step completion status and whether instantiation is complete.
+    """
+    from instantiation import get_instantiation_status
+
+    status = get_instantiation_status(user_id)
+    if not status:
+        return {"has_instantiation": False}
+    return {"has_instantiation": True, **status}
+
+
+@router.get("/sessions/{user_id}")
+async def list_sessions(
+    user_id: int,
+    role: str | None = Query(None),
+    include_archived: bool = Query(False),
+):
+    """List all AI sessions for a user.
+
+    Returns session metadata (no decompressed state — use detail endpoint for that).
+    """
+    mgr = _get_session_manager()
+    sessions = mgr.list_sessions(
+        nx_user_id=user_id,
+        role=role,
+        include_archived=include_archived,
+    )
+    return {"sessions": sessions, "count": len(sessions)}
+
+
+@router.get("/sessions/{user_id}/{session_id}")
+async def get_session_detail(user_id: int, session_id: int):
+    """Get full session detail including decompressed reasoning chain.
+
+    Returns all steps, decisions, tool calls, and messages.
+    """
+    mgr = _get_session_manager()
+    detail = mgr.get_session_detail(session_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    if detail["nx_user_id"] != user_id:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found for user {user_id}")
+    return detail
+
+
+@router.post("/sessions/{user_id}/{session_id}/resume")
+async def resume_session(user_id: int, session_id: int, req: SessionResumeRequest):
+    """Resume a session with a follow-up question.
+
+    The AI responds in the context of its original reasoning.
+    For instantiation sessions, the AI can explain any decision it made.
+    """
+    import asyncio
+
+    engine = _get_instantiation_engine()
+
+    # Verify session belongs to user
+    mgr = _get_session_manager()
+    session = mgr.load_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    if session["nx_user_id"] != user_id:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found for user {user_id}")
+
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        None,
+        lambda: engine.resume_session(
+            session_id=session_id,
+            message=req.message,
+        )
+    )
+
+    if "error" in result and not result.get("response"):
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    return result
+
+
+@router.get("/sessions/{user_id}/timeline/{session_id}")
+async def get_session_timeline(user_id: int, session_id: int):
+    """Get session timeline for the observability viewer.
+
+    Returns a flat list of events ordered by timestamp:
+    steps, tool calls, decisions, and reasoning blocks.
+    """
+    mgr = _get_session_manager()
+    detail = mgr.get_session_detail(session_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    if detail["nx_user_id"] != user_id:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found for user {user_id}")
+
+    # Build timeline from steps + tool_calls + decisions
+    timeline = []
+
+    for step in detail.get("steps", []):
+        timeline.append({
+            "type": "step",
+            "step": step.get("step", ""),
+            "label": step.get("label", ""),
+            "status": step.get("status", ""),
+            "reasoning": step.get("reasoning", ""),
+            "tokens": step.get("tokens", {}),
+            "timestamp": step.get("timestamp", ""),
+        })
+
+    for tc in detail.get("tool_calls", []):
+        timeline.append({
+            "type": "tool_call",
+            "step": tc.get("step", ""),
+            "tool": tc.get("tool", ""),
+            "input": tc.get("input"),
+            "output": tc.get("output"),
+            "timestamp": tc.get("timestamp", ""),
+        })
+
+    for d in detail.get("decisions", []):
+        timeline.append({
+            "type": "decision",
+            "lesson_id": d.get("lesson_id"),
+            "lesson_name": d.get("lesson_name", ""),
+            "reasoning": d.get("reasoning", ""),
+            "timestamp": d.get("timestamp", ""),
+        })
+
+    # Sort by timestamp
+    timeline.sort(key=lambda x: x.get("timestamp", ""))
+
+    return {
+        "session_id": session_id,
+        "nx_user_id": user_id,
+        "model_tier": detail.get("model_tier", "opus"),
+        "cost_usd": detail.get("estimated_cost_usd", 0),
+        "timeline": timeline,
+    }
+
+
+@router.get("/path/{user_id}/reasoning/{lesson_id}")
+async def get_lesson_reasoning(user_id: int, lesson_id: int):
+    """Get the AI's reasoning for why a specific lesson was assigned.
+
+    Searches through instantiation sessions for the decision about this lesson.
+    """
+    engine = _get_instantiation_engine()
+    result = engine.get_lesson_reasoning(user_id, lesson_id)
+    if not result:
+        return {"found": False, "lesson_id": lesson_id}
+    return {"found": True, "lesson_id": lesson_id, **result}

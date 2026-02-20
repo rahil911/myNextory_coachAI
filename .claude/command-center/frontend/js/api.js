@@ -194,6 +194,28 @@ export const api = {
     }, 90000),
   getToryUserProfile: (userId) => request('GET', `/api/tory/users/${userId}/profile`),
 
+  // AI Instantiation — 5-step visible AI birth process
+  instantiateUser: (userId, initiatedBy = null) =>
+    request('POST', `/api/tory/instantiate/${userId}`,
+      initiatedBy ? { initiated_by: initiatedBy } : {}, 300000),
+  getInstantiationStatus: (userId) =>
+    request('GET', `/api/tory/instantiate/${userId}/status`),
+
+  // AI Sessions — observability + audit
+  getAiSessions: (userId, role = null) => {
+    const qs = role ? `?role=${encodeURIComponent(role)}` : '';
+    return request('GET', `/api/tory/sessions/${userId}${qs}`);
+  },
+  getAiSessionDetail: (userId, sessionId) =>
+    request('GET', `/api/tory/sessions/${userId}/${sessionId}`),
+  resumeAiSession: (userId, sessionId, message) =>
+    request('POST', `/api/tory/sessions/${userId}/${sessionId}/resume`,
+      { message }, 90000),
+  getSessionTimeline: (userId, sessionId) =>
+    request('GET', `/api/tory/sessions/${userId}/timeline/${sessionId}`),
+  getLessonReasoning: (userId, lessonId) =>
+    request('GET', `/api/tory/path/${userId}/reasoning/${lessonId}`),
+
   // Companion AI — learner-facing chat
   companionChat:     (body) => request('POST', '/api/companion/chat', body, 60000),
   companionSession:  (userId) => request('GET', `/api/companion/session/${userId}`),
