@@ -68,3 +68,16 @@ ATTACHMENTS_DIR.mkdir(parents=True, exist_ok=True)
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 STATUS_DIR.mkdir(parents=True, exist_ok=True)
 HEARTBEAT_DIR.mkdir(parents=True, exist_ok=True)
+
+# ---------------------------------------------------------------------------
+# RAG Configuration — re-export so any RAG module that still does
+# `from config import X` finds the names here (Python caches this module
+# in sys.modules as 'config').  The canonical source is rag/rag_config.py.
+# ---------------------------------------------------------------------------
+_rag_config_path = Path(__file__).resolve().parent.parent.parent / "rag" / "rag_config.py"
+if _rag_config_path.exists():
+    _rag_ns = {"__file__": str(_rag_config_path)}
+    exec(compile(_rag_config_path.read_text(), str(_rag_config_path), "exec"), _rag_ns)
+    for _k, _v in _rag_ns.items():
+        if not _k.startswith("_") and _k.isupper() and _k not in globals():
+            globals()[_k] = _v
