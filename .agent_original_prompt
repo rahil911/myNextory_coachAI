@@ -1,0 +1,56 @@
+bd show baap-6n0 && bd update baap-6n0 --status=in_progress
+
+BUILD a full-duplex realtime voice experience for the Companion and Curator AI using Sarvam AI.
+
+## What to build
+
+### 1. Backend WebSocket endpoint: routes/voice.py
+Create .claude/command-center/backend/routes/voice.py with:
+- WebSocket at /api/voice/{role}/{user_id} (role = "companion" or "curator")
+- On connect: open Sarvam STT WebSocket (saaras:v3, en-IN, 16kHz PCM)
+- Receive audio chunks from browser → forward to Sarvam STT
+- On transcript received → call existing chat pipeline:
+  - For companion: use _process_chat() from companion.py
+  - For curator: use CuratorEngine.chat() from curator_prompts.py
+- Send AI response text to Sarvam TTS WebSocket → stream audio chunks back
+- Handle barge-in: if new speech_start while TTS playing → cancel TTS, start new STT
+
+### 2. Register voice router in main.py
+Add: from routes import voice
+Add: app.include_router(voice.router)
+
+### 3. Frontend voice component: js/components/voice-chat.js
+Build reusable voice chat component:
+- getUserMedia() for mic access (PCM 16kHz via AudioWorklet or ScriptProcessorNode)
+- WebSocket connection to /api/voice/{role}/{user_id}
+- Send audio chunks as binary frames
+- Receive audio chunks → play via AudioContext
+- Visual states: idle, listening (pulsing mic), thinking (dots), speaking (waveform)
+- Barge-in: user speaks while AI audio playing → stop playback, send new audio
+- Mic toggle button with clear visual indicator
+
+### 4. CSS: css/voice-chat.css
+- Mic button styles (idle/active/disabled states)
+- Pulsing animation for listening state
+- Audio waveform visualization for speaking state
+- Responsive layout
+
+### 5. Wire into companion-chat.js and tory-workspace.js
+- Add mic button to companion chat header
+- Add mic button to curator co-pilot drawer
+- Import and init VoiceChat component
+
+### Sarvam AI Details
+- SARVAM_API_KEY is in .env (sk_lwifrj09_...)
+- Python SDK: sarvamai (pip install sarvamai)
+- STT: AsyncSarvamAI().speech_to_text_streaming.connect(model="saaras:v3", mode="transcribe", language_code="en-IN")
+- TTS: client.text_to_speech.generate(text, model="bulbul:v2", language_code="en-IN", speaker="meera") 
+- For streaming TTS, use text_to_speech_streaming.connect() and send text chunks
+- VAD signals: speech_start, speech_end for natural turn detection
+- Audio format: PCM 16kHz for STT input, configurable for TTS output
+
+### Important
+- The companion.py _process_chat() function takes (user_id, message, session_id, context) and returns a dict with response, mode, sources
+- The curator CuratorEngine.chat() takes (nx_user_id, message, session_id) 
+- Both are synchronous — wrap in asyncio.run_in_executor() for the WebSocket handler
+- Make sure to handle the import path issue: sys.path needs .claude/rag/ directory
