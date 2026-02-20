@@ -66,7 +66,7 @@ export function renderToryWorkspace(root) {
           <select id="tw-filter-status">
             <option value="">All Status</option>
             <option value="processed">Processed</option>
-            <option value="has_epp">Has EPP</option>
+            <option value="has_epp" selected>Has EPP</option>
             <option value="no_data">No Data</option>
           </select>
         </div>
@@ -694,7 +694,7 @@ async function renderProfileTab(el, detail) {
   try {
     let profileData = _eppProfileCache[userId];
     if (!profileData) {
-      const resp = await api(`/api/tory/users/${userId}/profile`);
+      const resp = await api.getToryUserProfile(userId);
       profileData = resp;
       _eppProfileCache[userId] = profileData;
     }
@@ -3438,6 +3438,11 @@ function appendTimelineEvent(event) {
 // ── Curator AI ──────────────────────────────────────────────────────────────
 
 async function loadCuratorSession(userId) {
+  // Check if user has EPP data before auto-generating briefing
+  const tw = getState().toryWorkspace;
+  const user = (tw.users || []).find(u => u.id === userId);
+  const hasEpp = user && (user.tory_status === 'has_epp' || user.tory_status === 'processed' || user.has_epp || user.has_path);
+
   try {
     const data = await api.getCuratorSession(userId);
     _curatorSessionId = data.session_id;
@@ -3454,16 +3459,34 @@ async function loadCuratorSession(userId) {
     // Init voice chat for Curator
     _initCuratorVoice(userId);
 
-    // Auto-generate briefing if no conversation history
+    // Auto-generate briefing if no conversation history AND user has EPP data
     if (_curatorMessages.length === 0) {
-      loadCuratorBriefing(userId);
+      if (hasEpp) {
+        loadCuratorBriefing(userId);
+      } else {
+        _curatorMessages.push({
+          role: 'ai',
+          content: 'Complete EPP assessment to enable AI briefing.',
+          isBriefing: true,
+        });
+        renderCuratorPanel();
+      }
     }
   } catch (err) {
     // Non-critical — Curator just won't show history
     console.warn('Failed to load Curator session:', err);
     renderCuratorPanel();
     _initCuratorVoice(userId);
-    loadCuratorBriefing(userId);
+    if (hasEpp) {
+      loadCuratorBriefing(userId);
+    } else {
+      _curatorMessages.push({
+        role: 'ai',
+        content: 'Complete EPP assessment to enable AI briefing.',
+        isBriefing: true,
+      });
+      renderCuratorPanel();
+    }
   }
 }
 
