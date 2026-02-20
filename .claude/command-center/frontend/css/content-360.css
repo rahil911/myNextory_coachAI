@@ -278,6 +278,26 @@
   border: 1px solid #06b6d440;
 }
 
+.c360-btn-view-slides {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #22d3ee;
+  background: #06b6d415;
+  border: 1px solid #06b6d450;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.c360-btn-view-slides:hover {
+  background: #06b6d430;
+  border-color: #22d3ee;
+  color: #fff;
+}
+
 .c360-badge-tone {
   border: 1px solid transparent;
 }

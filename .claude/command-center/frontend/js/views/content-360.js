@@ -7,6 +7,7 @@ import { getState, setState, subscribe, markFetched, isFresh } from '../state.js
 import { api } from '../api.js';
 import { showToast } from '../components/toast.js';
 import { h } from '../utils/dom.js';
+import { openSlideViewer } from '../components/slide-viewer.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -377,6 +378,7 @@ function _renderDetail(container, d) {
         ${d.estimated_minutes ? `<span class="c360-badge c360-badge-time">${d.estimated_minutes} min</span>` : ''}
         ${d.learning_style ? `<span class="c360-badge c360-badge-style">${STYLE_ICONS[d.learning_style] || ''} ${d.learning_style}</span>` : ''}
         <span class="c360-badge c360-badge-slides">${d.slide_count} slides</span>
+        ${d.slide_count > 0 ? `<button class="c360-btn-view-slides" data-ld-id="${d.lesson_detail_id}" data-name="${_escAttr(d.lesson_name || 'Slides')}">&#9654; View Slides</button>` : ''}
         ${d.emotional_tone ? `<span class="c360-badge c360-badge-tone" style="background:${TONE_COLORS[d.emotional_tone] || '#6b7280'}20;color:${TONE_COLORS[d.emotional_tone] || '#6b7280'}">${d.emotional_tone}</span>` : ''}
         ${d.target_seniority ? `<span class="c360-badge c360-badge-seniority">${d.target_seniority}</span>` : ''}
         ${d.confidence ? `<span class="c360-badge c360-badge-confidence">AI ${d.confidence}%</span>` : ''}
@@ -444,6 +446,15 @@ function _renderDetail(container, d) {
       const id = parseInt(card.dataset.id);
       if (id) _selectLesson(id);
     });
+  });
+
+  // Bind View Slides button
+  detailEl.querySelector('.c360-btn-view-slides')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    const ldId = parseInt(btn.dataset.ldId);
+    const name = btn.dataset.name;
+    if (ldId) openSlideViewer(ldId, name);
   });
 }
 
