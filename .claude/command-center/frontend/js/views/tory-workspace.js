@@ -653,8 +653,15 @@ async function renderProfileTab(el, detail) {
       <div id="tw-epp-narrative-section"></div>
       <div id="tw-epp-qa-section"></div>
     </div>
-    <div class="tw-profile-section" style="text-align:center">
+    <div class="tw-profile-section tw-profile-actions" style="text-align:center">
       <button class="btn btn-primary" id="tw-process-user">Process with AI</button>
+      <button class="btn btn-accent" id="tw-instantiate-user" title="Run 5-step AI instantiation with live reasoning">Initialize AI</button>
+      <button class="btn btn-ghost" id="tw-view-reasoning" style="display:none" title="View the AI's reasoning for this learner">View AI Reasoning</button>
+    </div>
+    <div class="tw-instantiation-progress" id="tw-instantiation-progress" style="display:none">
+      <div class="tw-inst-header">AI Instantiation</div>
+      <div class="tw-inst-steps" id="tw-inst-steps"></div>
+      <div class="tw-inst-reasoning" id="tw-inst-reasoning"></div>
     </div>
   `;
   el.appendChild(container);
@@ -664,6 +671,21 @@ async function renderProfileTab(el, detail) {
   if (processBtn) {
     processBtn.addEventListener('click', () => processUser(userId));
   }
+
+  // Initialize AI button
+  const instBtn = container.querySelector('#tw-instantiate-user');
+  if (instBtn) {
+    instBtn.addEventListener('click', () => runInstantiation(userId));
+  }
+
+  // View Reasoning button
+  const reasonBtn = container.querySelector('#tw-view-reasoning');
+  if (reasonBtn) {
+    reasonBtn.addEventListener('click', () => openSessionViewer(userId));
+  }
+
+  // Check if instantiation exists and show "View Reasoning" button
+  checkInstantiationStatus(userId, container);
 
   // Fetch EPP profile data
   try {
@@ -4141,6 +4163,437 @@ function getUserStatus(user) {
   if (user.tory_status === 'has_epp' || user.has_epp) return 'has_epp';
   return 'no_data';
 }
+
+// ── AI Instantiation UI ──────────────────────────────────────────────────
+
+let _instantiationRunning = false;
+
+async function checkInstantiationStatus(userId, container) {
+  try {
+    const data = await api.getInstantiationStatus(userId);
+    if (data.has_instantiation) {
+      const reasonBtn = container.querySelector('#tw-view-reasoning');
+      if (reasonBtn) {
+        reasonBtn.style.display = '';
+        if (data.is_complete) {
+          reasonBtn.textContent = `View AI Reasoning ($${(data.cost_usd || 0).toFixed(2)})`;
+        } else {
+          reasonBtn.textContent = `View Progress (${data.completed_steps}/${data.total_steps})`;
+        }
+      }
+    }
+  } catch (err) {
+    // Silently fail — just don't show the button
+  }
+}
+
+async function runInstantiation(userId) {
+  if (_instantiationRunning) {
+    showToast('Instantiation already running', 'warning');
+    return;
+  }
+
+  const instBtn = document.getElementById('tw-instantiate-user');
+  const progressEl = document.getElementById('tw-instantiation-progress');
+  const stepsEl = document.getElementById('tw-inst-steps');
+  const reasoningEl = document.getElementById('tw-inst-reasoning');
+
+  if (instBtn) { instBtn.disabled = true; instBtn.textContent = 'Initializing...'; }
+  if (progressEl) progressEl.style.display = '';
+
+  // Render step indicators
+  const stepDefs = [
+    { name: 'read_epp', label: 'Read EPP' },
+    { name: 'read_onboarding', label: 'Read Q&A' },
+    { name: 'form_model', label: 'Form Model' },
+    { name: 'build_path', label: 'Build Path' },
+    { name: 'generate_prompts', label: 'Gen Prompts' },
+  ];
+  if (stepsEl) {
+    stepsEl.innerHTML = stepDefs.map((s, i) =>
+      `<div class="tw-inst-step pending" data-step="${s.name}" id="tw-inst-step-${s.name}">
+        <div class="tw-inst-step-dot">${i + 1}</div>
+        <div class="tw-inst-step-label">${s.label}</div>
+      </div>`
+    ).join('<div class="tw-inst-step-line"></div>');
+  }
+  if (reasoningEl) {
+    reasoningEl.innerHTML = '<div class="tw-inst-reasoning-text">Starting instantiation...</div>';
+  }
+
+  _instantiationRunning = true;
+
+  try {
+    const result = await api.instantiateUser(userId);
+
+    // Process events to update UI
+    const events = result.events || [];
+    for (const evt of events) {
+      if (evt.type === 'step_start') {
+        const stepEl = document.getElementById(`tw-inst-step-${evt.step}`);
+        if (stepEl) stepEl.className = 'tw-inst-step active';
+      }
+      if (evt.type === 'step_complete') {
+        const stepEl = document.getElementById(`tw-inst-step-${evt.step}`);
+        if (stepEl) stepEl.className = 'tw-inst-step complete';
+      }
+      if (evt.type === 'reasoning' && reasoningEl) {
+        const text = evt.text || '';
+        const rendered = typeof marked !== 'undefined' ? marked.parse(text) : esc(text);
+        reasoningEl.innerHTML = `
+          <div class="tw-inst-reasoning-step">${esc(evt.step)}</div>
+          <div class="tw-inst-reasoning-text">${rendered}</div>
+        `;
+      }
+    }
+
+    // Mark all steps complete
+    stepDefs.forEach(s => {
+      const stepEl = document.getElementById(`tw-inst-step-${s.name}`);
+      if (stepEl) stepEl.className = 'tw-inst-step complete';
+    });
+
+    if (instBtn) { instBtn.disabled = false; instBtn.textContent = 'Re-Initialize AI'; }
+
+    // Show View Reasoning button
+    const reasonBtn = document.getElementById('tw-view-reasoning');
+    if (reasonBtn) {
+      reasonBtn.style.display = '';
+      reasonBtn.textContent = `View AI Reasoning ($${(result.cost_usd || 0).toFixed(2)})`;
+    }
+
+    showToast(
+      result.completed
+        ? `AI instantiation complete ($${(result.cost_usd || 0).toFixed(2)})`
+        : `Instantiation incomplete: ${result.error || 'unknown error'}`,
+      result.completed ? 'success' : 'warning'
+    );
+
+  } catch (err) {
+    showToast(`Instantiation failed: ${err.message}`, 'error');
+    if (instBtn) { instBtn.disabled = false; instBtn.textContent = 'Initialize AI'; }
+  } finally {
+    _instantiationRunning = false;
+  }
+}
+
+
+// ── Session Timeline Viewer (Modal) ──────────────────────────────────────
+
+let _sessionViewerOpen = false;
+let _sessionViewerData = null;
+
+async function openSessionViewer(userId) {
+  // Find the most recent instantiation session
+  try {
+    const data = await api.getAiSessions(userId);
+    const sessions = data.sessions || [];
+    if (sessions.length === 0) {
+      showToast('No AI sessions found', 'warning');
+      return;
+    }
+    // Open the most recent session
+    openSessionTimelineModal(userId, sessions[0].id);
+  } catch (err) {
+    showToast(`Failed to load sessions: ${err.message}`, 'error');
+  }
+}
+
+async function openSessionTimelineModal(userId, sessionId) {
+  // Remove existing modal if any
+  const existing = document.getElementById('tw-session-viewer-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'tw-session-viewer-modal';
+  modal.className = 'tw-modal-overlay';
+  modal.innerHTML = `
+    <div class="tw-session-viewer">
+      <div class="tw-sv-header">
+        <span class="tw-sv-title">AI Session Viewer</span>
+        <span class="tw-sv-session-id">Session #${sessionId}</span>
+        <button class="tw-sv-close" id="tw-sv-close">&times;</button>
+      </div>
+      <div class="tw-sv-body">
+        <div class="tw-sv-timeline" id="tw-sv-timeline">
+          <div class="tw-loading"><div class="tw-spinner"></div> Loading timeline...</div>
+        </div>
+        <div class="tw-sv-detail" id="tw-sv-detail">
+          <div class="tw-sv-detail-placeholder">Select a step to view details</div>
+        </div>
+      </div>
+      <div class="tw-sv-footer">
+        <div class="tw-sv-meta" id="tw-sv-meta"></div>
+        <div class="tw-sv-resume">
+          <input type="text" id="tw-sv-resume-input" placeholder="Ask the AI about its reasoning..." class="tw-sv-input">
+          <button class="btn btn-primary btn-sm" id="tw-sv-resume-btn">Ask</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  // Wire close
+  modal.querySelector('#tw-sv-close').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+  // Wire resume
+  const resumeInput = modal.querySelector('#tw-sv-resume-input');
+  const resumeBtn = modal.querySelector('#tw-sv-resume-btn');
+  resumeBtn.addEventListener('click', () => resumeFromViewer(userId, sessionId, resumeInput));
+  resumeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') resumeFromViewer(userId, sessionId, resumeInput);
+  });
+
+  // Load timeline
+  try {
+    const data = await api.getSessionTimeline(userId, sessionId);
+    _sessionViewerData = data;
+    renderSessionTimeline(data, modal);
+  } catch (err) {
+    const tl = modal.querySelector('#tw-sv-timeline');
+    if (tl) tl.innerHTML = `<div class="tw-sv-error">Failed to load: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderSessionTimeline(data, modal) {
+  const timelineEl = modal.querySelector('#tw-sv-timeline');
+  const metaEl = modal.querySelector('#tw-sv-meta');
+  if (!timelineEl) return;
+
+  const timeline = data.timeline || [];
+
+  // Meta info
+  if (metaEl) {
+    metaEl.innerHTML = `
+      <span class="tw-model-badge ${data.model_tier || 'opus'}">${data.model_tier || 'opus'}</span>
+      <span class="tw-sv-cost">$${(data.cost_usd || 0).toFixed(4)}</span>
+      <span>${timeline.filter(t => t.type === 'step').length} steps</span>
+      <span>${timeline.filter(t => t.type === 'decision').length} decisions</span>
+      <span>${timeline.filter(t => t.type === 'tool_call').length} tool calls</span>
+    `;
+  }
+
+  // Build timeline nodes
+  const steps = timeline.filter(t => t.type === 'step');
+  const toolCalls = timeline.filter(t => t.type === 'tool_call');
+  const decisions = timeline.filter(t => t.type === 'decision');
+
+  let html = '<div class="tw-sv-tl-nodes">';
+
+  for (const step of steps) {
+    const stepToolCalls = toolCalls.filter(tc => tc.step === step.step);
+    const stepDecisions = decisions.filter(d => {
+      // Match decisions near the step timestamp
+      return d.timestamp >= step.timestamp;
+    });
+
+    html += `
+      <div class="tw-sv-tl-node step" data-step="${esc(step.step)}">
+        <div class="tw-sv-tl-dot complete"></div>
+        <div class="tw-sv-tl-content">
+          <div class="tw-sv-tl-label">${esc(step.label || step.step)}</div>
+          ${step.tokens ? `<span class="tw-sv-tl-tokens">${(step.tokens.input || 0) + (step.tokens.output || 0)} tokens</span>` : ''}
+          ${stepToolCalls.length > 0 ? `<span class="tw-sv-tl-tools">${stepToolCalls.length} tools</span>` : ''}
+        </div>
+      </div>
+      <div class="tw-sv-tl-line"></div>
+    `;
+  }
+
+  html += '</div>';
+
+  // Decision chips
+  if (decisions.length > 0) {
+    html += '<div class="tw-sv-decisions-label">Path Decisions</div>';
+    html += '<div class="tw-sv-decisions">';
+    for (const d of decisions) {
+      html += `
+        <div class="tw-sv-decision-chip" data-lesson-id="${d.lesson_id || ''}">
+          <span class="tw-sv-decision-name">${esc(d.lesson_name || `Lesson ${d.lesson_id}`)}</span>
+        </div>
+      `;
+    }
+    html += '</div>';
+  }
+
+  timelineEl.innerHTML = html;
+
+  // Wire click handlers for timeline nodes
+  timelineEl.querySelectorAll('.tw-sv-tl-node').forEach(node => {
+    node.addEventListener('click', () => {
+      const stepName = node.dataset.step;
+      const step = steps.find(s => s.step === stepName);
+      if (step) showStepDetail(step, toolCalls.filter(tc => tc.step === stepName), decisions, modal);
+      // Highlight selected
+      timelineEl.querySelectorAll('.tw-sv-tl-node').forEach(n => n.classList.remove('selected'));
+      node.classList.add('selected');
+    });
+  });
+
+  // Wire decision chip clicks
+  timelineEl.querySelectorAll('.tw-sv-decision-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const lessonId = chip.dataset.lessonId;
+      const decision = decisions.find(d => String(d.lesson_id) === lessonId);
+      if (decision) showDecisionDetail(decision, modal);
+    });
+  });
+
+  // Auto-select first step
+  if (steps.length > 0) {
+    const firstNode = timelineEl.querySelector('.tw-sv-tl-node');
+    if (firstNode) firstNode.click();
+  }
+}
+
+function showStepDetail(step, toolCalls, decisions, modal) {
+  const detailEl = modal.querySelector('#tw-sv-detail');
+  if (!detailEl) return;
+
+  const reasoning = step.reasoning || '(No reasoning recorded)';
+  const rendered = typeof marked !== 'undefined' ? marked.parse(reasoning) : esc(reasoning);
+
+  let toolsHtml = '';
+  if (toolCalls.length > 0) {
+    toolsHtml = `
+      <details class="tw-sv-tools-accordion">
+        <summary>Tool Calls (${toolCalls.length})</summary>
+        <div class="tw-sv-tools-list">
+          ${toolCalls.map(tc => `
+            <div class="tw-sv-tool-item">
+              <span class="tw-sv-tool-name">${esc(tc.tool || 'unknown')}</span>
+              ${tc.input ? `<div class="tw-sv-tool-io"><strong>Input:</strong> <code>${esc(JSON.stringify(tc.input))}</code></div>` : ''}
+              ${tc.output ? `<div class="tw-sv-tool-io"><strong>Output:</strong> <code>${esc(JSON.stringify(tc.output))}</code></div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </details>
+    `;
+  }
+
+  detailEl.innerHTML = `
+    <div class="tw-sv-detail-header">
+      <span class="tw-sv-detail-step">${esc(step.label || step.step)}</span>
+      ${step.tokens ? `<span class="tw-sv-detail-tokens">${step.tokens.input || 0}/${step.tokens.output || 0} tokens</span>` : ''}
+    </div>
+    <div class="tw-sv-detail-reasoning">${rendered}</div>
+    ${toolsHtml}
+  `;
+}
+
+function showDecisionDetail(decision, modal) {
+  const detailEl = modal.querySelector('#tw-sv-detail');
+  if (!detailEl) return;
+
+  const reasoning = decision.reasoning || '(No reasoning recorded)';
+  const rendered = typeof marked !== 'undefined' ? marked.parse(reasoning) : esc(reasoning);
+
+  detailEl.innerHTML = `
+    <div class="tw-sv-detail-header">
+      <span class="tw-sv-detail-step">Decision: ${esc(decision.lesson_name || `Lesson ${decision.lesson_id}`)}</span>
+    </div>
+    <div class="tw-sv-detail-reasoning">${rendered}</div>
+  `;
+}
+
+async function resumeFromViewer(userId, sessionId, inputEl) {
+  const message = inputEl.value.trim();
+  if (!message) return;
+
+  inputEl.value = '';
+  const detailEl = document.querySelector('#tw-sv-detail');
+  if (detailEl) {
+    detailEl.innerHTML += `
+      <div class="tw-sv-resume-msg human">
+        <strong>You:</strong> ${esc(message)}
+      </div>
+      <div class="tw-sv-resume-msg ai loading">
+        <span class="tw-typing-dots"><span>.</span><span>.</span><span>.</span></span>
+      </div>
+    `;
+  }
+
+  try {
+    const result = await api.resumeAiSession(userId, sessionId, message);
+    // Remove loading indicator
+    const loadingEl = detailEl?.querySelector('.tw-sv-resume-msg.loading');
+    if (loadingEl) loadingEl.remove();
+
+    if (result.response) {
+      const rendered = typeof marked !== 'undefined' ? marked.parse(result.response) : esc(result.response);
+      if (detailEl) {
+        detailEl.innerHTML += `
+          <div class="tw-sv-resume-msg ai">
+            <strong>AI:</strong> ${rendered}
+            <div class="tw-sv-resume-meta">
+              <span class="tw-model-badge-sm opus">opus</span>
+              <span>${result.input_tokens || 0}/${result.output_tokens || 0} tokens</span>
+              <span>$${(result.cost_usd || 0).toFixed(4)}</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+  } catch (err) {
+    const loadingEl = detailEl?.querySelector('.tw-sv-resume-msg.loading');
+    if (loadingEl) loadingEl.remove();
+    if (detailEl) {
+      detailEl.innerHTML += `
+        <div class="tw-sv-resume-msg error">Error: ${esc(err.message)}</div>
+      `;
+    }
+  }
+}
+
+
+// ── Enhanced "Why?" with stored reasoning ────────────────────────────────
+
+async function interrogateLessonWithReasoning(lessonId, lessonName) {
+  const tw = getState().toryWorkspace;
+  if (!tw.selectedUserId) return;
+
+  // First, try to get stored reasoning from an instantiation session
+  try {
+    const reasoning = await api.getLessonReasoning(tw.selectedUserId, lessonId);
+    if (reasoning.found) {
+      // Show stored reasoning immediately, then offer to ask more
+      _curatorMode = 'curator';
+      document.querySelectorAll('.tw-curator-tab').forEach(t => t.classList.remove('active'));
+      const curatorTab = document.getElementById('tw-curator-tab-curator');
+      if (curatorTab) curatorTab.classList.add('active');
+      const curatorPanel = document.getElementById('tw-curator-panel');
+      const agentPanel = document.getElementById('tw-agent-panel');
+      if (curatorPanel) curatorPanel.style.display = '';
+      if (agentPanel) agentPanel.style.display = 'none';
+
+      const layout = document.querySelector('.tw-layout');
+      if (layout && layout.classList.contains('right-collapsed')) {
+        toggleRightDrawer();
+      }
+
+      appendCuratorMessage('human', `Why was "${lessonName}" assigned?`);
+      const storedReasoning = reasoning.reasoning || 'No reasoning recorded for this lesson.';
+      _curatorMessages.push({
+        role: 'ai',
+        content: `**Stored Reasoning (from AI Instantiation):**\n\n${storedReasoning}\n\n*Want more detail? Ask a follow-up question below.*`,
+        modelTier: 'stored',
+        isBriefing: false,
+      });
+      renderCuratorPanel();
+      return;
+    }
+  } catch {
+    // Fall through to live interrogation
+  }
+
+  // Fallback: use live Curator interrogation
+  interrogateLesson(lessonId, lessonName);
+}
+
+// Override the global handler to use enhanced version
+window._interrogateLesson = interrogateLessonWithReasoning;
+
 
 function esc(str) {
   if (!str) return '';
