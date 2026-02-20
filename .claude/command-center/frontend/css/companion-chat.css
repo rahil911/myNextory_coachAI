@@ -1,5 +1,5 @@
 /* ==========================================================================
-   COMPANION-CHAT.CSS — Learner-Facing AI Companion Chat Interface
+   COMPANION-CHAT.CSS — Two-panel layout: Sidebar (user list) + Chat area
    Dark theme matching the Command Center design system.
    ========================================================================== */
 
@@ -11,6 +11,13 @@
   height: calc(100vh - 48px);
   background: var(--bg-primary, #0f0f0f);
   overflow: hidden;
+}
+
+.companion-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* ── Top Bar ─────────────────────────────────────────────────────────────── */
@@ -103,47 +110,317 @@
 
 .companion-topbar-right {
   flex-shrink: 0;
-}
-
-.companion-user-select {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
 }
 
-.companion-user-select input {
-  width: 100px;
-  padding: 5px 10px;
-  background: var(--bg-tertiary, #222);
-  border: 1px solid var(--border, #2a2a2a);
-  border-radius: 6px;
+.cc-topbar-stats {
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+}
+
+.cc-topbar-stats strong {
   color: var(--text-primary, #e5e5e5);
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
 }
 
-.companion-user-select input:focus {
-  border-color: #8b5cf6;
+.cc-stat {
+  margin-right: 12px;
 }
 
-.companion-btn {
-  padding: 5px 14px;
+/* ── Sidebar toggle button ───────────────────────────────────────────────── */
+
+.cc-sidebar-toggle {
+  padding: 4px 10px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  border: none;
+  border: 1px solid var(--border, #2a2a2a);
+  background: var(--bg-tertiary, #222);
+  color: var(--text-primary, #e5e5e5);
   transition: all 0.15s;
 }
 
-.companion-btn-primary {
-  background: #8b5cf6;
-  color: white;
+.cc-sidebar-toggle:hover {
+  background: #8b5cf622;
+  border-color: #8b5cf644;
 }
 
-.companion-btn-primary:hover {
-  background: #7c3aed;
+/* ── Left Sidebar ────────────────────────────────────────────────────────── */
+
+.cc-sidebar {
+  width: 300px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary, #1a1a1a);
+  border-right: 1px solid var(--border, #2a2a2a);
+  transition: width 0.2s ease, min-width 0.2s ease;
+  overflow: hidden;
+}
+
+.cc-sidebar.collapsed {
+  width: 0;
+  min-width: 0;
+  border-right: none;
+}
+
+/* ── Sidebar Header (Search + Filters) ───────────────────────────────────── */
+
+.cc-sidebar-header {
+  padding: 12px;
+  border-bottom: 1px solid var(--border, #2a2a2a);
+  flex-shrink: 0;
+}
+
+.cc-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-tertiary, #222);
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 8px;
+  padding: 0 10px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+
+.cc-search-row:focus-within {
+  border-color: #8b5cf6;
+}
+
+.cc-search-icon {
+  font-size: 14px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.cc-search-row input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-primary, #e5e5e5);
+  font-size: 13px;
+  padding: 8px 0;
+  outline: none;
+}
+
+.cc-search-row input::placeholder {
+  color: var(--text-muted, #555);
+}
+
+.cc-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cc-filters select {
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--bg-tertiary, #222);
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 6px;
+  color: var(--text-primary, #e5e5e5);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.cc-filters select:focus {
+  border-color: #8b5cf6;
+}
+
+/* ── User List ───────────────────────────────────────────────────────────── */
+
+.cc-user-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.cc-user-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cc-user-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cc-user-list::-webkit-scrollbar-thumb {
+  background: var(--border, #2a2a2a);
+  border-radius: 2px;
+}
+
+.cc-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--text-secondary, #888);
+  font-size: 13px;
+}
+
+.cc-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border, #2a2a2a);
+  border-top: 2px solid #8b5cf6;
+  border-radius: 50%;
+  animation: cc-spin 0.8s linear infinite;
+}
+
+@keyframes cc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cc-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary, #888);
+  font-size: 13px;
+}
+
+/* ── User Card ───────────────────────────────────────────────────────────── */
+
+.cc-user-card {
+  padding: 10px 12px;
+  margin: 2px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+
+.cc-user-card:hover {
+  background: var(--bg-tertiary, #222);
+}
+
+.cc-user-card.selected {
+  background: #8b5cf615;
+  border-color: #8b5cf644;
+}
+
+.cc-user-card-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cc-user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.cc-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cc-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #e5e5e5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cc-user-meta {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cc-user-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  padding-left: 44px;
+}
+
+.cc-badge {
+  display: inline-flex;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.cc-badge-epp {
+  color: #10b981;
+  background: #10b98115;
+  border-color: #10b98133;
+}
+
+.cc-badge-backpack {
+  color: #f59e0b;
+  background: #f59e0b15;
+  border-color: #f59e0b33;
+}
+
+.cc-badge-processed {
+  color: #6366f1;
+  background: #6366f115;
+  border-color: #6366f133;
+}
+
+/* ── Sidebar Footer (Pagination) ─────────────────────────────────────────── */
+
+.cc-sidebar-footer {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border, #2a2a2a);
+  flex-shrink: 0;
+}
+
+.cc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cc-page-btn {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border, #2a2a2a);
+  background: var(--bg-tertiary, #222);
+  color: var(--text-primary, #e5e5e5);
+  transition: all 0.15s;
+}
+
+.cc-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cc-page-btn:not(:disabled):hover {
+  background: #8b5cf622;
+  border-color: #8b5cf644;
+}
+
+.cc-page-info {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
 }
 
 /* ── Main chat area ──────────────────────────────────────────────────────── */
@@ -154,6 +431,7 @@
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+  min-width: 0;
 }
 
 /* ── Messages container ──────────────────────────────────────────────────── */
