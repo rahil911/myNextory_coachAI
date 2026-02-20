@@ -248,7 +248,7 @@ def convert_insert_statement(stmt):
     # Convert VALUES section using state machine
     converted_values = convert_values_section(values_section)
 
-    return f"INSERT IGNORE INTO `{table_name}` ({columns}) VALUES {converted_values};"
+    return f"INSERT IGNORE INTO `{table_name}` ({columns}) VALUES {converted_values};"  # nosec: table_name from hardcoded dict
 
 
 def is_insert_complete(text):
@@ -290,7 +290,7 @@ def extract_inserts(filepath, target_tables):
     Handles multi-line INSERT statements (string values with embedded newlines).
     Returns dict of table_name → list of complete INSERT statement strings.
     """
-    prefixes = {f"INSERT [dbo].[{t}]": t for t in target_tables}
+    prefixes = {f"INSERT [dbo].[{t}]": t for t in target_tables}  # nosec: table names from hardcoded dict
     result = {t: [] for t in target_tables}
 
     current_table = None
@@ -343,7 +343,7 @@ def run_sql(sql, timeout=60):
 
 def get_row_count(table):
     """Get current row count for a table."""
-    ok, out, err = run_sql(f'SELECT COUNT(*) FROM `{table}`')
+    ok, out, err = run_sql(f'SELECT COUNT(*) FROM `{table}`')  # nosec: table from hardcoded dict
     if not ok:
         log.error(f"Failed to count {table}: {err}")
         return -1
