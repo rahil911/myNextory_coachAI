@@ -1,0 +1,51 @@
+bd show baap-3ru && bd update baap-3ru --status=in_progress
+
+Your task: Build the Companion AI — a learner-facing personal AI coach.
+
+CONTEXT (what exists on main):
+- Model Harness: .claude/rag/model_harness.py (655 lines) — context builder, tier router, guardrails
+- Mode Detector: .claude/rag/mode_detector.py (201 lines) — TEACH, QUIZ, REFLECT, PREPARE, CELEBRATE, CONNECT, ESCALATE
+- Tools Schema: .claude/rag/tools_schema.py (203 lines) — MCP tool definitions
+- RAG Infrastructure: .claude/rag/ (8 adapted files) — FAISS, hybrid query, chat manager, user manager
+- Content Processor: .claude/mcp/content_processor.py — 15-field extraction
+- Tory Engine: .claude/mcp/tory_engine.py — existing MCP tools
+- Config: .claude/rag/config.py — model names, costs, dimensions
+- EPP Reference: .claude/knowledge/epp-dimensions.md — all 25 dims with meanings
+- DB: MariaDB 'baap', tables: tory_ai_sessions, tory_content_tags, tory_learner_profiles, backpacks, tory_recommendations
+
+WHAT TO BUILD:
+1. Companion system prompt template (.claude/rag/companion_prompts.py):
+   - Second-person warm voice ('You chose Growth as your one word...')
+   - Mode-specific sub-prompts for each of the 7 modes
+   - Pre-loaded context sections: EPP translated to human language, assigned lesson content via RAG
+   - Guardrails: never expose raw EPP scores, always cite slide sources, scope to assigned lessons only
+   - CRITICAL: Never fabricate content. Only reference actual slide content from FAISS.
+
+2. Companion context assembler — loads learner data:
+   - EPP profile (translated — NOT raw scores. 'You push hard for results' not 'Achievement: 67')
+   - Backpack entries VERBATIM (mirror their own words back)
+   - Assigned lesson content via FAISS retrieval (scoped to their path only)
+   - Progress data (completion %, ratings, activity)
+   - Learning style preference
+
+3. Companion API endpoints (NEW route file: .claude/command-center/backend/routes/companion.py):
+   - POST /api/companion/chat — send message, get response with mode detection
+   - GET /api/companion/session/:userId — get/create session
+   - GET /api/companion/greeting/:userId — contextual greeting based on recent activity
+   - POST /api/companion/quiz/:userId — generate quiz from completed lesson content
+
+4. Companion Chat UI (.claude/command-center/frontend/js/views/companion-chat.js):
+   - Modern chat interface with markdown rendering
+   - Mode indicator (Teaching, Quiz, Reflect, Prepare, Celebrate)
+   - Quick action pills: 'Quiz me', 'Next lesson', 'How am I doing?', 'Talk to my coach'
+   - Backpack integration: inline quoted cards when AI references backpack entries
+   - Progress bar showing path completion
+   - Citations: 'From slide 7 of Imposter Syndrome...'
+
+5. CSS: .claude/command-center/frontend/css/companion-chat.css
+
+6. Session management with three-tier memory (same as Curator but separate sessions)
+
+PERSONALITY: Warm but substantive. Like a smart friend who's read everything you've been assigned and remembers what you said. Adapts tone to learner's emotional state. NEVER clinical. NEVER robotic.
+
+Production grade. Real API calls. No mocks.

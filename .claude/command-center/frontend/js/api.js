@@ -180,6 +180,14 @@ export const api = {
     return request('GET', `/api/tory/content-360${q ? '?' + q : ''}`);
   },
   getContent360Detail: (lessonDetailId) => request('GET', `/api/tory/content-360/${lessonDetailId}`),
+
+  // Companion AI — learner-facing chat
+  companionChat:     (body) => request('POST', '/api/companion/chat', body, 60000),
+  companionSession:  (userId) => request('GET', `/api/companion/session/${userId}`),
+  companionGreeting: (userId) => request('GET', `/api/companion/greeting/${userId}`),
+  companionActions:  (userId) => request('GET', `/api/companion/actions/${userId}`),
+  companionQuiz:     (userId, lessonId) =>
+    request('POST', `/api/companion/quiz/${userId}`, lessonId ? { lesson_id: lessonId } : {}),
 };
 
 // ── WebSocket Manager ──────────────────────────────────────────────────────
