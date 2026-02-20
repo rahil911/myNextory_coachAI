@@ -1857,6 +1857,22 @@ details.tw-event[open] summary::after {
   white-space: nowrap;
 }
 
+.tw-card-view-slides {
+  padding: 2px 8px;
+  font-size: 10px;
+  line-height: 1.4;
+  border-radius: 4px;
+  white-space: nowrap;
+  margin-left: auto;
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+.tw-card-view-slides:hover { opacity: 1; }
+
 /* ── Match Score Overlay ─────────────────────────────────────────────── */
 
 .tw-content-match {

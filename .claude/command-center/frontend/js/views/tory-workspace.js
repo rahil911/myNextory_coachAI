@@ -1861,10 +1861,12 @@ function buildContentCard(lesson, pathRec, journey) {
     qualityHtml = `<span class="tw-content-quality" title="Quality: ${qScore.toFixed(1)}/5">${'\u2605'.repeat(full)}${half ? '\u00BD' : ''}${'<span class="tw-star-empty">\u2606</span>'.repeat(5 - full - half)}</span>`;
   }
 
-  // Slide count
+  // Slide count + View Slides button
   let mediaIcons = '';
+  let viewSlidesBtn = '';
   if (slideCount > 0) {
     mediaIcons = `<span class="tw-content-slides-badge" title="${slideCount} slides">&#128444; ${slideCount}</span>`;
+    viewSlidesBtn = `<button class="btn btn-ghost btn-xs tw-card-view-slides" data-ldid="${esc(String(lesson.lesson_detail_id || ''))}" data-name="${esc(lesson.lesson_name || '')}">View Slides</button>`;
   }
 
   // ── Trait tags (top 3) ──
@@ -1891,8 +1893,20 @@ function buildContentCard(lesson, pathRec, journey) {
         <div class="tw-content-confidence-bar" style="width:${confidence}%"></div>
       </div>
       ${mediaIcons}
+      ${viewSlidesBtn}
     </div>
   `;
+
+  // View Slides button — stop propagation to prevent card expand
+  const vsBtn = card.querySelector('.tw-card-view-slides');
+  if (vsBtn) {
+    vsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ldId = vsBtn.dataset.ldid;
+      const name = vsBtn.dataset.name;
+      if (ldId) openSlideViewer(ldId, name);
+    });
+  }
 
   // Click to expand
   card.addEventListener('click', () => {
