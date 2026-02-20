@@ -40,3 +40,6 @@ Thumbs.db
 
 # Think Tank session data (runtime, not committed)
 .claude/command-center/sessions/
+
+# SSL certificates (generated per-machine)
+.claude/command-center/certs/
