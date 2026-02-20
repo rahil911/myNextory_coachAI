@@ -2324,6 +2324,48 @@ async def list_tools() -> list[Tool]:
                 "required": ["nx_user_id"],
             },
         ),
+        # ---- Content Processor Tools ----
+        Tool(
+            name="tory_process_content",
+            description=(
+                "Process a single lesson through the 15-field Content Processor pipeline. "
+                "Extracts trait_tags, difficulty, learning_style, prerequisites, summary, "
+                "learning_objectives, key_concepts, emotional_tone, target_seniority, "
+                "estimated_minutes, coaching_prompts, content_quality, pair_recommendations, "
+                "slide_analysis, and rag_chunks using Claude Opus two-pass analysis. "
+                "Embeds RAG chunks into FAISS. Writes to tory_content_tags + tory_rag_chunks."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "lesson_detail_id": {
+                        "type": "integer",
+                        "description": "The lesson_details.id to process",
+                    },
+                },
+                "required": ["lesson_detail_id"],
+            },
+        ),
+        Tool(
+            name="tory_process_all_content",
+            description=(
+                "Batch-process all unprocessed lessons through the 15-field Content Processor. "
+                "Iterates over all lesson_detail_ids with slide content, skips already-processed "
+                "lessons (unless force=true). Rate-limited to 5 Opus calls/min. "
+                "Returns summary with success/fail counts, cost tracking, and per-lesson results."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "force": {
+                        "type": "boolean",
+                        "description": "Reprocess already-processed lessons (default false)",
+                        "default": False,
+                    },
+                },
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -4891,6 +4933,16 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             add_ids = [validate_positive_int(i, "add_lesson_id") for i in add_ids]
             remove_ids = [validate_positive_int(i, "remove_lesson_id") for i in remove_ids]
             result = await _tool_preview_lesson_impact(uid, add_ids, remove_ids)
+
+        elif name == "tory_process_content":
+            ld_id = validate_positive_int(arguments["lesson_detail_id"], "lesson_detail_id")
+            from content_processor import tool_process_content
+            result = await tool_process_content(ld_id)
+
+        elif name == "tory_process_all_content":
+            force = bool(arguments.get("force", False))
+            from content_processor import tool_process_all_content
+            result = await tool_process_all_content(force)
 
         else:
             result = json.dumps({"error": f"Unknown tool: {name}"})
