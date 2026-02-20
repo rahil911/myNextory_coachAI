@@ -94,9 +94,9 @@ You speak about learners in the **third person** — like a case worker presenti
 - Never address the learner directly — you are talking TO the coach ABOUT the learner
 
 ## What You Do
-1. **Explain path decisions**: "I assigned 'Imposter Syndrome' because {learner}'s SelfConfidence is 28 and their backpack shows they chose 'Confidence' as their one word."
-2. **Suggest adjustments**: "Given {learner}'s high Competitiveness (82) but low Cooperativeness (24), consider moving 'Team Dynamics' earlier in the path."
-3. **Flag concerns**: "Warning: {learner} has been stalled on lesson 3 for 2 weeks. Their backpack answers are unusually short (avg 8 words vs platform avg 35 words)."
+1. **Explain path decisions**: "I assigned 'Imposter Syndrome' because [learner]'s SelfConfidence is 28 and their backpack shows they chose 'Confidence' as their one word."
+2. **Suggest adjustments**: "Given [learner]'s high Competitiveness (82) but low Cooperativeness (24), consider moving 'Team Dynamics' earlier in the path."
+3. **Flag concerns**: "Warning: [learner] has been stalled on lesson 3 for 2 weeks. Their backpack answers are unusually short (avg 8 words vs platform avg 35 words)."
 4. **Provide coaching prompts**: "For the upcoming session, try asking: 'What did the Imposter Syndrome lesson bring up for you?' — this connects to their low SelfConfidence."
 5. **Answer 'why?' questions**: When a coach asks why a lesson was assigned, explain the EPP-trait-content matching logic.
 
@@ -733,8 +733,9 @@ class CuratorSessionManager:
     def get_or_create_session(self, nx_user_id: int) -> Dict[str, Any]:
         """Get existing active curator session or create a new one."""
         # Check for existing non-archived session
+        # NOTE: exclude session_state (binary blob) — loaded separately via HEX
         rows = _db_query(
-            f"SELECT id, session_state, key_facts, message_count, "
+            f"SELECT id, key_facts, message_count, "
             f"model_tier, total_input_tokens, total_output_tokens, "
             f"estimated_cost_usd, created_at "
             f"FROM tory_ai_sessions "
@@ -786,24 +787,26 @@ class CuratorSessionManager:
         }
 
         # Decompress session_state (gzip LONGBLOB)
-        state_raw = row.get("session_state", "")
-        if state_raw:
-            try:
-                # The XML parser returns text; session_state is binary blob
-                # Need to query it differently for binary data
-                state_rows = _db_query(
-                    f"SELECT HEX(session_state) AS state_hex "
-                    f"FROM tory_ai_sessions WHERE id = {session_id}"
-                )
-                if state_rows and state_rows[0].get("state_hex"):
-                    hex_data = state_rows[0]["state_hex"]
-                    binary = bytes.fromhex(hex_data)
-                    decompressed = gzip.decompress(binary)
-                    state = json.loads(decompressed.decode('utf-8'))
-                    session["messages"] = state.get("messages", [])
-                    session["summary"] = state.get("summary", "")
-            except Exception as e:
-                logger.warning("session_state_decompress_failed", session_id=session_id, error=str(e))
+        # The XML parser can't handle raw binary, so we query as HEX
+        try:
+            result = subprocess.run(
+                ["mysql", DATABASE, "--batch", "--raw", "-e",
+                 f"SELECT HEX(session_state) AS state_hex "
+                 f"FROM tory_ai_sessions WHERE id = {session_id}"],
+                capture_output=True, text=True, timeout=DB_QUERY_TIMEOUT,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                lines = result.stdout.strip().split("\n")
+                if len(lines) >= 2:
+                    hex_data = lines[1].strip()
+                    if hex_data and hex_data != "NULL":
+                        binary = bytes.fromhex(hex_data)
+                        decompressed = gzip.decompress(binary)
+                        state = json.loads(decompressed.decode('utf-8'))
+                        session["messages"] = state.get("messages", [])
+                        session["summary"] = state.get("summary", "")
+        except Exception as e:
+            logger.warning("session_state_decompress_failed", session_id=session_id, error=str(e))
 
         # Key facts (stored as JSON text)
         kf = row.get("key_facts", "")

@@ -1,0 +1,37 @@
+## Checkpoint 2026-02-20 10:50:00
+- **Bead**: baap-jla
+- **Status**: completed
+- **Completed**:
+  - Built curator_prompts.py (660+ lines) with:
+    - EPP dimension reference table (13 personality + 12 job-fit)
+    - Curator system prompt template (third-person analytical voice)
+    - CuratorContextAssembler: loads EPP, Q&A, path, backpack, coaching prompts from DB
+    - CuratorSessionManager: three-tier memory, gzip-compressed session_state in tory_ai_sessions
+    - CuratorEngine: full chat flow via Anthropic API with tier routing + guardrails
+    - Briefing generation, lesson interrogation ("why?"), degraded mode fallback
+  - Added 4 API endpoints to tory_workspace.py:
+    - POST /api/tory/curator/chat
+    - GET /api/tory/curator/session/{user_id}
+    - GET /api/tory/curator/briefing/{user_id}
+    - POST /api/tory/curator/interrogate
+  - Added Curator API methods to api.js (curatorChat, getCuratorSession, getCuratorBriefing, curatorInterrogate)
+  - Upgraded tory-workspace.js co-pilot drawer:
+    - Persistent Curator chat (not one-shot) with message history
+    - Curator/Agent tab switching in right drawer
+    - Auto-briefing when coach selects a learner
+    - Model tier badge (Sonnet/Opus) on each response
+    - Tool call transparency (expandable accordion per response)
+    - Cost tracking per session
+    - "Why?" buttons on path cards linking to curator explanation
+  - Added CSS for Curator UI (model badges, tool accordion, briefing bubble, meta bar)
+  - Tested: context assembler loads real data, session round-trip works, server starts
+- **Files modified**:
+  - NEW: .claude/rag/curator_prompts.py
+  - MODIFIED: .claude/command-center/backend/routes/tory_workspace.py
+  - MODIFIED: .claude/command-center/frontend/js/api.js
+  - MODIFIED: .claude/command-center/frontend/js/views/tory-workspace.js
+  - MODIFIED: .claude/command-center/frontend/css/tory-workspace.css
+- **Decisions made**:
+  - Used Anthropic API directly (not LangChain) for CuratorEngine — simpler, more control
+  - Session state stored as gzip LONGBLOB, loaded via HEX() to avoid XML binary parsing issues
+  - Kept old agent copilot as secondary tab in right drawer
