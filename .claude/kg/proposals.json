@@ -145,5 +145,25 @@
     "status": "pending",
     "auto_approved": false,
     "reason": "Requires human review (file not in agent's module)"
+  },
+  {
+    "id": "prop-20260219221359",
+    "file": ".claude/command-center/frontend/js/views/tory-workspace.js",
+    "agent": "tory-agent",
+    "evidence": "New 3-pane workspace view for the Tory module - replaces the old single-pane tory.js view. Created for bead baap-8rg.",
+    "proposed_at": "2026-02-19T22:13:59.718197+00:00",
+    "status": "approved",
+    "auto_approved": true,
+    "reason": "File is within agent's module (tory-module)"
+  },
+  {
+    "id": "prop-20260219221403",
+    "file": ".claude/command-center/frontend/css/tory-workspace.css",
+    "agent": "tory-agent",
+    "evidence": "CSS for the new Tory Workspace 3-pane layout. Created for bead baap-8rg.",
+    "proposed_at": "2026-02-19T22:14:03.341626+00:00",
+    "status": "approved",
+    "auto_approved": true,
+    "reason": "File is within agent's module (tory-module)"
   }
 ]

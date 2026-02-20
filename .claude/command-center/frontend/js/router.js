@@ -14,7 +14,7 @@ export function registerRoute(name, renderFn) {
 }
 
 export function navigate(hash) {
-  const view = hash.replace('#', '') || 'dashboard';
+  const view = (hash.replace('#', '') || 'dashboard').toLowerCase();
   const root = document.getElementById('view-root');
   if (!root) return;
 

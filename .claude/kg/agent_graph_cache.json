@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "built_at": "2026-02-19T02:36:50.520444+00:00",
-    "node_count": 55,
-    "edge_count": 262,
+    "built_at": "2026-02-19T22:14:03.343183+00:00",
+    "node_count": 57,
+    "edge_count": 264,
     "agent_count": 10,
     "module_count": 8,
     "concept_count": 32,
@@ -1003,6 +1003,20 @@
       "type": "file",
       "language": "python",
       "module": "content-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/command-center/frontend/js/views/tory-workspace.js",
+      "type": "file",
+      "language": "javascript",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/command-center/frontend/css/tory-workspace.css",
+      "type": "file",
+      "language": "css",
+      "module": "tory-module",
       "locked_by": null
     }
   ],
@@ -2343,6 +2357,18 @@
       "to": "test_review_queue.py",
       "type": "OWNS",
       "inferred_from": "E2E test for coach review queue (baap-qkk.10), created by content-agent"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/command-center/frontend/js/views/tory-workspace.js",
+      "type": "OWNS",
+      "inferred_from": "New 3-pane workspace view for the Tory module - replaces the old single-pane tory.js view. Created for bead baap-8rg."
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/command-center/frontend/css/tory-workspace.css",
+      "type": "OWNS",
+      "inferred_from": "CSS for the new Tory Workspace 3-pane layout. Created for bead baap-8rg."
     }
   ]
 }

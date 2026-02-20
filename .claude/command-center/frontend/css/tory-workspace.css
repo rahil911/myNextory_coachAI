@@ -1761,6 +1761,13 @@ details.tw-event[open] summary::after {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
+.tw-content-card.no-content {
+  opacity: 0.45;
+  border-style: dashed;
+}
+.tw-content-card.no-content:hover {
+  opacity: 0.65;
+}
 
 .tw-content-card-title {
   font-size: var(--font-size-xs);
@@ -1773,6 +1780,33 @@ details.tw-event[open] summary::after {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.tw-content-card-desc {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tw-content-card-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+.tw-content-trait {
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-secondary);
+}
+.tw-content-trait.builds { background: rgba(99, 102, 241, 0.15); color: rgba(165, 168, 255, 0.9); }
+.tw-content-trait.leverages { background: rgba(34, 197, 94, 0.12); color: rgba(134, 239, 172, 0.9); }
+.tw-content-trait.challenges { background: rgba(249, 115, 22, 0.12); color: rgba(253, 186, 116, 0.9); }
 
 .tw-content-card-meta {
   display: flex;
@@ -2108,7 +2142,7 @@ details.tw-event[open] summary::after {
   position: relative;
   max-width: 960px;
   width: 95vw;
-  max-height: 90vh;
+  height: 85vh;
   overflow: hidden;
   border-radius: 16px;
   background: var(--bg-surface, var(--bg-card));
@@ -2157,15 +2191,13 @@ details.tw-event[open] summary::after {
   color: var(--text-primary);
 }
 
-/* ── Swiper overrides for dark theme ──────────────────────────────────── */
+/* ── Swiper core — no built-in nav/pagination (custom controls on parent) */
 
 .tw-swiper {
-  --swiper-theme-color: var(--accent);
-  --swiper-navigation-color: white;
-  --swiper-pagination-color: white;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  width: 100%;
 }
 
 .tw-swiper .swiper-slide {
@@ -2173,9 +2205,75 @@ details.tw-event[open] summary::after {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-3);
+  padding: var(--space-4);
   overflow-y: auto;
-  position: relative;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* ── Custom navigation — positioned on .tw-slide-container ──────────── */
+
+.tw-slide-nav-prev,
+.tw-slide-nav-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  line-height: 1;
+}
+.tw-slide-nav-prev:hover,
+.tw-slide-nav-next:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
+.tw-slide-nav-prev:disabled,
+.tw-slide-nav-next:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.tw-slide-nav-prev {
+  left: 10px;
+}
+.tw-slide-nav-next {
+  right: 10px;
+}
+
+/* ── Custom pagination dots — bottom of .tw-slide-container ─────────── */
+
+.tw-slide-dots {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 20;
+}
+.tw-slide-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.tw-slide-dot.active {
+  background: var(--accent, #6366f1);
+  width: 20px;
+  border-radius: 4px;
 }
 
 .tw-slide-inner {
@@ -2197,7 +2295,7 @@ details.tw-event[open] summary::after {
 
 .tw-slide-media img {
   max-width: 100%;
-  max-height: 65vh;
+  max-height: 60vh;
   object-fit: contain;
   border-radius: 12px;
   display: block;
@@ -2206,7 +2304,7 @@ details.tw-event[open] summary::after {
 
 .tw-slide-media video {
   max-width: 100%;
-  max-height: 65vh;
+  max-height: 60vh;
   border-radius: 12px;
   display: block;
   margin: 0 auto;
@@ -2283,8 +2381,9 @@ details.tw-event[open] summary::after {
   align-items: center;
   justify-content: center;
   min-height: 200px;
-  color: var(--text-muted, var(--text-tertiary));
-  font-size: var(--font-size-sm);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.1rem;
+  gap: 8px;
 }
 
 /* ── Slide Type Badge ────────────────────────────────────────────────── */
@@ -2306,4 +2405,788 @@ details.tw-event[open] summary::after {
 
 .tw-slide-modal .plyr {
   --plyr-color-main: var(--accent);
+  --plyr-video-controls-background: linear-gradient(transparent, rgba(0,0,0,0.75));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* ── Video Transcript ──────────────────────────────────────────────── */
+
+.tw-slide-transcript {
+  margin-top: 1rem;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  text-align: left;
+}
+.tw-slide-transcript-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent, #6366f1);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.tw-slide-transcript-text {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.75);
+  font-style: italic;
+}
+
+/* ── Source Badge (blob inventory match indicator) ─────────────────── */
+
+.tw-slide-source-badge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.15);
+  color: rgba(255,255,255,0.5);
+}
+
+/* ==========================================================================
+   SLIDE CATEGORY STYLES — Type-specific renderers for 68 slide types
+   ========================================================================== */
+
+/* ── Shared: Heads-Up Callout ────────────────────────────────────────── */
+
+.tw-slide-headsup {
+  background: rgba(99, 102, 241, 0.12);
+  border-left: 3px solid var(--accent, #6366f1);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  margin-top: 1rem;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--text-secondary, rgba(255,255,255,0.75));
+  line-height: 1.5;
+  width: 100%;
+}
+.tw-slide-headsup strong {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent, #6366f1);
+  margin-bottom: 4px;
+}
+
+/* ── Shared: Badges (Backpack / Task) ────────────────────────────────── */
+
+.tw-slide-badges {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+.tw-slide-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+.tw-badge-backpack {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.tw-badge-task {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+/* ── Shared: Textarea inputs ─────────────────────────────────────────── */
+
+.tw-slide-textarea {
+  width: 100%;
+  background: var(--bg-2, rgba(255,255,255,0.05));
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  border-radius: 8px;
+  color: var(--text-primary, rgba(255,255,255,0.9));
+  font-size: 0.9rem;
+  padding: 10px 12px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+  transition: border-color 0.2s;
+}
+.tw-slide-textarea:focus {
+  outline: none;
+  border-color: var(--accent, #6366f1);
+}
+.tw-slide-textarea::placeholder {
+  color: var(--text-tertiary, rgba(255,255,255,0.3));
+}
+
+/* ── Shared: Question containers ─────────────────────────────────────── */
+
+.tw-slide-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 1rem;
+  text-align: left;
+  width: 100%;
+}
+.tw-slide-question-item label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255,255,255,0.9));
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+/* ── Shared: Notes ───────────────────────────────────────────────────── */
+
+.tw-slide-note {
+  font-size: 0.85rem;
+  color: var(--text-muted, rgba(255,255,255,0.5));
+  font-style: italic;
+  margin-top: 1rem;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 6px;
+}
+
+/* ── Shared: Content title ───────────────────────────────────────────── */
+
+.tw-slide-content-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255,255,255,0.85));
+  margin-bottom: 0.75rem;
+}
+
+/* ── Shared: Description ─────────────────────────────────────────────── */
+
+.tw-slide-description {
+  font-size: 0.95rem;
+  color: var(--text-secondary, rgba(255,255,255,0.65));
+  margin-top: 0.5rem;
+}
+
+/* ── Shared: Expandable details ──────────────────────────────────────── */
+
+.tw-slide-expand-item {
+  background: var(--bg-3, rgba(255,255,255,0.04));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tw-slide-expand-item summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255,255,255,0.9));
+  font-size: 0.9rem;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tw-slide-expand-item summary::before {
+  content: '▸';
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.tw-slide-expand-item[open] summary::before {
+  transform: rotate(90deg);
+}
+.tw-slide-expand-desc {
+  padding: 0 14px 12px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, rgba(255,255,255,0.65));
+  line-height: 1.5;
+}
+
+/* ── Shared: Examples (expandable hints) ─────────────────────────────── */
+
+.tw-slide-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 1rem;
+  text-align: left;
+  width: 100%;
+}
+.tw-slide-example-group summary {
+  font-size: 0.85rem;
+  color: var(--accent, #6366f1);
+  cursor: pointer;
+  padding: 6px 0;
+}
+.tw-slide-example-group ul {
+  margin: 4px 0 8px 1.5rem;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary, rgba(255,255,255,0.65));
+  line-height: 1.5;
+}
+
+/* ── Category A: Video ───────────────────────────────────────────────── */
+
+.tw-slide-video-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+.tw-slide-video-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.08) 100%);
+  border-radius: 12px;
+  border: 1px dashed rgba(99,102,241,0.3);
+  color: rgba(255,255,255,0.55);
+  padding: 2rem;
+  text-align: center;
+  font-size: 1.05rem;
+}
+
+/* ── Category A: Image — expandable options (image5) ─────────────────── */
+
+.tw-slide-expand-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+/* ── Category A: Image — imageExamples cards (image2) ───────────────── */
+
+.tw-slide-image-examples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 1rem;
+  text-align: left;
+}
+.tw-slide-image-example-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px;
+  overflow: hidden;
+}
+.tw-slide-image-example-card img {
+  width: 100%;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  max-height: 120px;
+  object-fit: cover;
+}
+.tw-slide-image-example-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent, #6366f1);
+  margin-bottom: 4px;
+}
+.tw-slide-image-example-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+  margin-bottom: 4px;
+}
+.tw-slide-image-example-desc {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.4;
+}
+
+/* ── Category A: Image — special word ────────────────────────────────── */
+
+.tw-slide-special-word {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent, #6366f1);
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* ── Category F: Greetings — letter-style layout ─────────────────────── */
+
+.tw-slide-greeting {
+  text-align: left;
+  max-width: 640px;
+}
+.tw-slide-greeting-message {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text-primary, rgba(255,255,255,0.88));
+  margin-bottom: 2rem;
+  white-space: pre-line;
+}
+.tw-slide-greeting-sig {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border, rgba(255,255,255,0.1));
+}
+.tw-slide-advisor-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-strong, #fff);
+}
+.tw-slide-advisor-role {
+  font-size: 0.85rem;
+  color: var(--text-muted, rgba(255,255,255,0.5));
+}
+
+/* ── Category F: Take-away — summary card ────────────────────────────── */
+
+.tw-slide-takeaway {
+  background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(16,185,129,0.06) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(99,102,241,0.15);
+  padding: 2rem;
+  text-align: left;
+  max-width: 640px;
+}
+.tw-slide-takeaway-msg {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text-primary, rgba(255,255,255,0.88));
+  margin-bottom: 1.5rem;
+}
+.tw-slide-takeaway-prompt {
+  font-size: 0.95rem;
+  color: var(--text-secondary, rgba(255,255,255,0.7));
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+.tw-slide-takeaway-q {
+  font-style: italic;
+  color: var(--accent, #6366f1);
+}
+
+/* ── Category F: One-word appreciation ───────────────────────────────── */
+
+.tw-slide-oneword {
+  text-align: center;
+}
+.tw-slide-appreciation {
+  font-size: 1.15rem;
+  line-height: 1.7;
+  color: var(--text-primary, rgba(255,255,255,0.88));
+}
+
+/* ── Category B: Question-answer card ────────────────────────────────── */
+
+.tw-slide-question-card {
+  text-align: left;
+  max-width: 700px;
+}
+
+/* ── Category G: Stakeholder ─────────────────────────────────────────── */
+
+.tw-slide-stakeholder {
+  text-align: center;
+}
+.tw-slide-stakeholder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 16px;
+  margin-top: 1rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.tw-slide-stakeholder-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-3, rgba(255,255,255,0.04));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.tw-slide-stakeholder-card:hover {
+  border-color: var(--accent, #6366f1);
+  background: rgba(99,102,241,0.08);
+}
+.tw-slide-stakeholder-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.tw-slide-stakeholder-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bg-2, rgba(255,255,255,0.06));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+.tw-slide-stakeholder-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255,255,255,0.85));
+  text-align: center;
+}
+.tw-slide-stakeholder-label {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(99,102,241,0.12);
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent, #6366f1);
+  margin-bottom: 0.75rem;
+}
+
+/* ── Category C: Quiz (multiple-choice) ──────────────────────────────── */
+
+.tw-slide-quiz {
+  text-align: left;
+  max-width: 700px;
+}
+.tw-slide-quiz-question {
+  margin-bottom: 1.25rem;
+}
+.tw-slide-quiz-q {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255,255,255,0.9));
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.tw-slide-quiz-options {
+  flex-direction: column;
+  align-items: stretch;
+}
+.tw-quiz-correct {
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+  color: #34d399 !important;
+}
+.tw-slide-quiz-explain {
+  font-size: 0.85rem;
+  color: var(--text-muted, rgba(255,255,255,0.5));
+  margin-top: 8px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border, rgba(255,255,255,0.1));
+  line-height: 1.5;
+}
+
+/* ── Category C: Checklist (check-yes-or-no) ─────────────────────────── */
+
+.tw-slide-checklist {
+  text-align: left;
+  max-width: 640px;
+}
+.tw-slide-checklist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 1rem;
+}
+.tw-slide-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-3, rgba(255,255,255,0.04));
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--text-primary, rgba(255,255,255,0.85));
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tw-slide-checklist-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+.tw-slide-check-box {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  line-height: 1;
+  color: var(--text-tertiary, rgba(255,255,255,0.35));
+}
+
+/* ── Feedback messages ───────────────────────────────────────────────── */
+
+.tw-slide-feedback {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  line-height: 1.5;
+}
+.tw-feedback-good {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #34d399;
+}
+.tw-feedback-improve {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: #fbbf24;
+}
+
+/* ── Category C: Likert scale (select-range) ─────────────────────────── */
+
+.tw-slide-likert {
+  text-align: left;
+  max-width: 700px;
+}
+.tw-slide-likert-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+.tw-slide-likert-header,
+.tw-slide-likert-row {
+  display: flex;
+  align-items: center;
+}
+.tw-slide-likert-header {
+  font-weight: 600;
+  color: var(--text-muted, rgba(255,255,255,0.5));
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+}
+.tw-slide-likert-row {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.tw-slide-likert-q {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary, rgba(255,255,255,0.85));
+  line-height: 1.3;
+  padding-right: 12px;
+}
+.tw-slide-likert-opt {
+  width: 72px;
+  text-align: center;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tw-slide-radio-circle {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border, rgba(255,255,255,0.2));
+  border-radius: 50%;
+  display: block;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.tw-slide-radio-circle:hover {
+  border-color: var(--accent, #6366f1);
+  background: rgba(99,102,241,0.15);
+}
+
+/* ── Category C: Word cloud ──────────────────────────────────────────── */
+
+.tw-slide-word-cloud {
+  text-align: center;
+}
+.tw-slide-word-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+.tw-slide-word-chip {
+  padding: 6px 16px;
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: 100px;
+  font-size: 0.88rem;
+  color: var(--text-primary, rgba(255,255,255,0.85));
+  background: var(--bg-3, rgba(255,255,255,0.04));
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.tw-slide-word-chip:hover {
+  border-color: var(--accent, #6366f1);
+  background: rgba(99,102,241,0.12);
+  color: #fff;
+}
+
+/* ── Category C: Select option ───────────────────────────────────────── */
+
+.tw-slide-select {
+  text-align: left;
+  max-width: 700px;
+}
+.tw-slide-option {
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.tw-slide-option:hover {
+  border-color: var(--accent, #6366f1);
+  background: rgba(99,102,241,0.08);
+}
+
+/* ── Category C: Dropdown selector ───────────────────────────────────── */
+
+.tw-slide-dropdown-selector {
+  text-align: left;
+  max-width: 700px;
+}
+.tw-slide-select-input {
+  background: var(--bg-2, rgba(255,255,255,0.05));
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  border-radius: 6px;
+  color: var(--text-primary, rgba(255,255,255,0.9));
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  width: 100%;
+  font-family: inherit;
+}
+.tw-slide-select-input:focus {
+  outline: none;
+  border-color: var(--accent, #6366f1);
+}
+
+/* ── Category D: Side-by-side form ───────────────────────────────────── */
+
+.tw-slide-form {
+  text-align: left;
+  max-width: 780px;
+}
+.tw-slide-form-header {
+  display: flex;
+  gap: 16px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, rgba(255,255,255,0.5));
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+  margin-top: 1rem;
+}
+.tw-slide-form-header .tw-slide-form-lhs,
+.tw-slide-form-header .tw-slide-form-rhs {
+  flex: 1;
+}
+.tw-slide-form-row {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.tw-slide-form-lhs,
+.tw-slide-form-rhs {
+  flex: 1;
+  min-width: 0;
+}
+.tw-slide-form-lhs label,
+.tw-slide-form-rhs label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255,255,255,0.85));
+  margin-bottom: 6px;
+}
+
+/* ── Category F: Engagement (celebrate, decision, chat, etc.) ────────── */
+
+.tw-slide-engagement {
+  text-align: center;
+  max-width: 700px;
+}
+
+/* Chat interface */
+.tw-slide-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 1rem;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+}
+.tw-slide-chat-q {
+  align-self: flex-start;
+  background: var(--bg-3, rgba(255,255,255,0.06));
+  border-radius: 12px 12px 12px 2px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: var(--text-primary, rgba(255,255,255,0.85));
+  line-height: 1.4;
+  max-width: 85%;
+}
+.tw-slide-chat-a {
+  align-self: flex-end;
+  background: rgba(99,102,241,0.15);
+  border-radius: 12px 12px 2px 12px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: var(--text-primary, rgba(255,255,255,0.9));
+  line-height: 1.4;
+  max-width: 85%;
+}
+
+/* ── Category: Fallback ──────────────────────────────────────────────── */
+
+.tw-slide-fallback {
+  text-align: left;
+}
+
+/* ── Global: HTML content inherits text color ────────────────────────── */
+
+.tw-slide-text-content a {
+  color: var(--accent, #6366f1);
+  text-decoration: underline;
+  text-decoration-color: rgba(99,102,241,0.4);
+}
+.tw-slide-text-content ul,
+.tw-slide-text-content ol {
+  text-align: left;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  line-height: 1.6;
+}
+.tw-slide-text-content li {
+  margin-bottom: 4px;
+}
+
+/* ── Responsive: smaller screens ─────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .tw-slide-form-header,
+  .tw-slide-form-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tw-slide-likert-opt {
+    width: 48px;
+    font-size: 0.7rem;
+  }
+  .tw-slide-stakeholder-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+  }
 }
