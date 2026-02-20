@@ -225,8 +225,8 @@ async function _sendMessage(container) {
     // Update mode
     _updateMode(container, result.mode, result.mode_confidence);
 
-    // Add assistant response
-    _addMessage(container, 'assistant', result.response, result.mode, result.sources);
+    // Add assistant response (with referenced lessons)
+    _addMessage(container, 'assistant', result.response, result.mode, result.sources, result.referenced_lessons);
 
     // Handle escalation
     if (result.escalate) {
@@ -245,7 +245,7 @@ async function _sendMessage(container) {
 
 // ── Message rendering ───────────────────────────────────────────────────
 
-function _addMessage(container, role, content, mode = null, sources = []) {
+function _addMessage(container, role, content, mode = null, sources = [], referencedLessons = []) {
   const messagesEl = container.querySelector('#companion-messages');
   const msgEl = document.createElement('div');
   msgEl.className = `companion-msg companion-msg-${role}`;
@@ -278,6 +278,15 @@ function _addMessage(container, role, content, mode = null, sources = []) {
 
   inner += `<div class="companion-msg-content">${htmlContent}</div>`;
 
+  // Referenced lesson cards
+  if (referencedLessons && referencedLessons.length > 0) {
+    inner += '<div class="companion-lesson-cards">';
+    for (const lesson of referencedLessons) {
+      inner += _renderLessonCard(lesson);
+    }
+    inner += '</div>';
+  }
+
   // Source citations
   if (sources && sources.length > 0) {
     inner += '<div class="companion-msg-sources">';
@@ -298,6 +307,12 @@ function _addMessage(container, role, content, mode = null, sources = []) {
   inner += `<div class="companion-msg-time">${now}</div>`;
 
   msgEl.innerHTML = inner;
+
+  // Wire lesson card buttons
+  if (referencedLessons && referencedLessons.length > 0) {
+    _wireLessonCardActions(msgEl, referencedLessons);
+  }
+
   messagesEl.appendChild(msgEl);
 
   // Store message
@@ -443,4 +458,379 @@ function _initVoice(container, userId) {
       }
     },
   });
+}
+
+
+// ── Inline lesson cards ──────────────────────────────────────────────────
+
+function _esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function _renderLessonCard(lesson) {
+  const diffLabel = lesson.difficulty ? `${lesson.difficulty}/5` : '';
+  const diffClass = lesson.difficulty ? `difficulty-${lesson.difficulty}` : '';
+  const duration = lesson.estimated_minutes ? `${lesson.estimated_minutes} min` : '';
+
+  let html = `<div class="companion-lesson-card" data-detail-id="${lesson.lesson_detail_id}">`;
+
+  // Header: title + badges
+  html += '<div class="lesson-card-header">';
+  html += `<span class="lesson-card-title">${_esc(lesson.lesson_title)}</span>`;
+  html += '<div class="lesson-card-badges">';
+  if (diffLabel) html += `<span class="lesson-card-badge ${diffClass}">${diffLabel}</span>`;
+  if (duration) html += `<span class="lesson-card-badge badge-duration">${duration}</span>`;
+  html += '</div></div>';
+
+  // Journey name
+  if (lesson.journey_name) {
+    html += `<div class="lesson-card-journey">${_esc(lesson.journey_name)}</div>`;
+  }
+
+  // Summary
+  if (lesson.summary) {
+    html += `<p class="lesson-card-summary">${_esc(lesson.summary)}</p>`;
+  }
+
+  // Actions
+  html += '<div class="lesson-card-actions">';
+  if (lesson.slide_count > 0) {
+    html += `<button class="lesson-card-btn btn-view-slides" data-detail-id="${lesson.lesson_detail_id}" data-title="${_esc(lesson.lesson_title)}">`;
+    html += `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> `;
+    html += `View Slides (${lesson.slide_count})</button>`;
+  }
+  if (lesson.has_video) {
+    html += `<button class="lesson-card-btn btn-play-video" data-detail-id="${lesson.lesson_detail_id}" data-title="${_esc(lesson.lesson_title)}">`;
+    html += `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> `;
+    html += 'Play Video</button>';
+  }
+  html += '</div></div>';
+
+  return html;
+}
+
+function _wireLessonCardActions(msgEl, lessons) {
+  // View Slides buttons
+  msgEl.querySelectorAll('.btn-view-slides').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const detailId = parseInt(btn.dataset.detailId);
+      const title = btn.dataset.title || 'Slides';
+      _openCompanionSlideViewer(detailId, title);
+    });
+  });
+
+  // Play Video buttons — fetches resolved video URL from slides API
+  msgEl.querySelectorAll('.btn-play-video').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const detailId = parseInt(btn.dataset.detailId);
+      const card = btn.closest('.companion-lesson-card');
+
+      // Toggle: if video already showing, remove it
+      const existing = card.querySelector('.companion-inline-video');
+      if (existing) {
+        existing.remove();
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Video`;
+        return;
+      }
+
+      // Show loading state
+      btn.disabled = true;
+      btn.innerHTML = 'Loading...';
+
+      try {
+        const data = await api.getToryLessonSlides(detailId);
+        const slides = data.slides || data || [];
+
+        // Find first video slide with a resolved URL
+        const videoSlide = slides.find(s =>
+          /^video/.test(s.type) && s.video_library && s.video_library.video_url
+        );
+
+        if (!videoSlide) {
+          showToast('Video not available for this lesson', 'warning');
+          btn.disabled = false;
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Video`;
+          return;
+        }
+
+        const vl = videoSlide.video_library;
+        const videoWrap = document.createElement('div');
+        videoWrap.className = 'companion-inline-video';
+        videoWrap.innerHTML = `
+          <video controls playsinline preload="metadata"
+            ${vl.thumbnail_url ? `poster="${_esc(vl.thumbnail_url)}"` : ''}>
+            <source src="${_esc(vl.video_url)}" type="video/mp4">
+            Your browser does not support video playback.
+          </video>
+        `;
+        card.querySelector('.lesson-card-actions').before(videoWrap);
+
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Hide Video`;
+
+        // Init Plyr if available
+        const videoEl = videoWrap.querySelector('video');
+        if (typeof Plyr !== 'undefined') {
+          new Plyr(videoEl, {
+            controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
+          });
+        }
+
+        videoWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play Video`;
+        showToast(`Failed to load video: ${err.message}`, 'error');
+      }
+    });
+  });
+}
+
+
+// ── Companion slide viewer modal ─────────────────────────────────────────
+// Self-contained version — does NOT depend on tory-workspace.js exports.
+
+let _compSlides = null;
+let _compSlideIdx = 0;
+
+async function _openCompanionSlideViewer(lessonDetailId, lessonName) {
+  _compSlides = null;
+  _compSlideIdx = 0;
+
+  // Show modal with loading state
+  _renderCompanionSlideModal(lessonName, true);
+
+  try {
+    const data = await api.getToryLessonSlides(lessonDetailId);
+    _compSlides = data.slides || data || [];
+    _renderCompanionSlideModal(lessonName, false);
+  } catch (err) {
+    showToast(`Failed to load slides: ${err.message}`, 'error');
+    _closeCompanionSlideModal();
+  }
+}
+
+function _renderCompanionSlideModal(lessonName, loading) {
+  document.getElementById('companion-slide-modal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'companion-slide-modal';
+  modal.id = 'companion-slide-modal';
+
+  if (loading) {
+    modal.innerHTML = `
+      <div class="companion-slide-overlay"></div>
+      <div class="companion-slide-container">
+        <div class="companion-slide-header">
+          <span class="companion-slide-title">${_esc(lessonName)}</span>
+          <button class="companion-slide-close">&times;</button>
+        </div>
+        <div class="companion-slide-loading">Loading slides...</div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    _wireCompanionSlideClose(modal);
+    return;
+  }
+
+  const slides = _compSlides || [];
+  if (slides.length === 0) {
+    modal.innerHTML = `
+      <div class="companion-slide-overlay"></div>
+      <div class="companion-slide-container">
+        <div class="companion-slide-header">
+          <span class="companion-slide-title">${_esc(lessonName)}</span>
+          <button class="companion-slide-close">&times;</button>
+        </div>
+        <div class="companion-slide-loading">No slides found for this lesson.</div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    _wireCompanionSlideClose(modal);
+    return;
+  }
+
+  // Build slide carousel
+  let slidesHtml = '';
+  for (let i = 0; i < slides.length; i++) {
+    const slide = slides[i];
+    const content = typeof slide.content === 'string' ? (() => { try { return JSON.parse(slide.content); } catch { return {}; } })() : (slide.content || {});
+    const type = slide.type || slide.slide_type || 'unknown';
+    slidesHtml += `<div class="companion-slide-item ${i === 0 ? 'active' : ''}" data-idx="${i}">
+      <div class="companion-slide-body">${_renderCompanionSlide(type, content, slide)}</div>
+    </div>`;
+  }
+
+  // Pagination dots (max 20 visible)
+  const dotCount = Math.min(slides.length, 20);
+  let dotsHtml = '';
+  for (let i = 0; i < dotCount; i++) {
+    dotsHtml += `<span class="companion-slide-dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></span>`;
+  }
+
+  modal.innerHTML = `
+    <div class="companion-slide-overlay"></div>
+    <div class="companion-slide-container">
+      <div class="companion-slide-header">
+        <span class="companion-slide-title">${_esc(lessonName)}</span>
+        <span class="companion-slide-counter">1 / ${slides.length}</span>
+        <button class="companion-slide-close">&times;</button>
+      </div>
+      <div class="companion-slide-carousel">${slidesHtml}</div>
+      <div class="companion-slide-nav">
+        <button class="companion-slide-prev" disabled>&larr;</button>
+        <div class="companion-slide-dots">${dotsHtml}</div>
+        <button class="companion-slide-next" ${slides.length <= 1 ? 'disabled' : ''}>&rarr;</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  _wireCompanionSlideClose(modal);
+  _wireCompanionSlideNav(modal, slides.length);
+
+  // Init Plyr for any videos in active slide
+  _initCompanionSlidePlyr(modal);
+}
+
+function _renderCompanionSlide(type, content, slide) {
+  // Video slides
+  if (/^video/.test(type)) {
+    const vl = slide && slide.video_library;
+    if (vl && vl.video_url) {
+      let h = '';
+      const title = content.slide_title || vl.title || '';
+      if (title) h += `<h3 class="companion-slide-text-title">${_esc(title)}</h3>`;
+      h += `<div class="companion-slide-media">
+        <video class="companion-slide-video" playsinline controls preload="metadata"
+          ${vl.thumbnail_url ? `poster="${_esc(vl.thumbnail_url)}"` : ''}>
+          <source src="${_esc(vl.video_url)}" type="video/mp4">
+        </video>
+      </div>`;
+      if (vl.transcript) {
+        h += `<div class="companion-slide-transcript"><strong>Transcript:</strong> ${_esc(vl.transcript).substring(0, 500)}${vl.transcript.length > 500 ? '...' : ''}</div>`;
+      }
+      return h;
+    }
+    return `<div class="companion-slide-placeholder">Video content — available in the MyNextory app</div>`;
+  }
+
+  // Image slides
+  if (/^image|^special-image|^sparkle/.test(type)) {
+    const imgUrl = content.image_url || content.background_image || content.image || '';
+    let h = '';
+    const title = content.slide_title || content.title || '';
+    if (title) h += `<h3 class="companion-slide-text-title">${_esc(title)}</h3>`;
+    if (imgUrl) {
+      h += `<div class="companion-slide-media"><img src="${_esc(imgUrl)}" alt="${_esc(title)}" loading="lazy"></div>`;
+    }
+    const desc = content.content || content.description || '';
+    if (desc) h += `<div class="companion-slide-text">${_esc(desc)}</div>`;
+    return h || '<div class="companion-slide-placeholder">Image slide</div>';
+  }
+
+  // Text-based slides (question-answer, greetings, take-away, etc.)
+  let h = '';
+  const title = content.slide_title || content.title || content.heading || '';
+  if (title) h += `<h3 class="companion-slide-text-title">${_esc(title)}</h3>`;
+
+  const body = content.content || content.description || content.text || content.subheading || '';
+  if (body) h += `<div class="companion-slide-text">${_esc(body)}</div>`;
+
+  // Questions
+  if (content.question) h += `<div class="companion-slide-question">${_esc(content.question)}</div>`;
+  if (content.questions && Array.isArray(content.questions)) {
+    for (const q of content.questions.slice(0, 5)) {
+      const qt = typeof q === 'string' ? q : (q.question || q.text || '');
+      if (qt) h += `<div class="companion-slide-question">${_esc(qt)}</div>`;
+    }
+  }
+
+  // Options
+  if (content.options && Array.isArray(content.options)) {
+    h += '<div class="companion-slide-options">';
+    for (const opt of content.options.slice(0, 6)) {
+      const label = typeof opt === 'string' ? opt : (opt.title || opt.text || opt.label || opt.msg || '');
+      if (label) h += `<div class="companion-slide-option">${_esc(label)}</div>`;
+    }
+    h += '</div>';
+  }
+
+  return h || `<div class="companion-slide-placeholder">${_esc(type)} slide</div>`;
+}
+
+function _wireCompanionSlideClose(modal) {
+  modal.querySelector('.companion-slide-close')?.addEventListener('click', _closeCompanionSlideModal);
+  modal.querySelector('.companion-slide-overlay')?.addEventListener('click', _closeCompanionSlideModal);
+  const handler = (e) => {
+    if (e.key === 'Escape') {
+      _closeCompanionSlideModal();
+      document.removeEventListener('keydown', handler);
+    }
+  };
+  document.addEventListener('keydown', handler);
+}
+
+function _wireCompanionSlideNav(modal, total) {
+  const prevBtn = modal.querySelector('.companion-slide-prev');
+  const nextBtn = modal.querySelector('.companion-slide-next');
+  const counter = modal.querySelector('.companion-slide-counter');
+  const dots = modal.querySelectorAll('.companion-slide-dot');
+  const items = modal.querySelectorAll('.companion-slide-item');
+
+  function goTo(idx) {
+    if (idx < 0 || idx >= total) return;
+    items.forEach(el => el.classList.remove('active'));
+    items[idx]?.classList.add('active');
+    dots.forEach(d => d.classList.remove('active'));
+    dots[idx]?.classList.add('active');
+    if (counter) counter.textContent = `${idx + 1} / ${total}`;
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === total - 1;
+    _compSlideIdx = idx;
+    _initCompanionSlidePlyr(modal);
+  }
+
+  prevBtn?.addEventListener('click', () => goTo(_compSlideIdx - 1));
+  nextBtn?.addEventListener('click', () => goTo(_compSlideIdx + 1));
+  dots.forEach(d => d.addEventListener('click', () => goTo(parseInt(d.dataset.idx))));
+
+  // Keyboard nav
+  const keyHandler = (e) => {
+    if (!document.getElementById('companion-slide-modal')) {
+      document.removeEventListener('keydown', keyHandler);
+      return;
+    }
+    if (e.key === 'ArrowLeft') goTo(_compSlideIdx - 1);
+    if (e.key === 'ArrowRight') goTo(_compSlideIdx + 1);
+  };
+  document.addEventListener('keydown', keyHandler);
+}
+
+function _initCompanionSlidePlyr(modal) {
+  if (typeof Plyr === 'undefined') return;
+  const active = modal.querySelector('.companion-slide-item.active');
+  if (!active) return;
+  active.querySelectorAll('video:not(.plyr--setup)').forEach(v => {
+    if (!v.closest('.plyr')) {
+      new Plyr(v, { controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'] });
+      v.classList.add('plyr--setup');
+    }
+  });
+}
+
+function _closeCompanionSlideModal() {
+  const modal = document.getElementById('companion-slide-modal');
+  if (modal) {
+    // Destroy any Plyr instances
+    modal.querySelectorAll('.plyr').forEach(el => el.plyr?.destroy?.());
+    modal.remove();
+  }
+  _compSlides = null;
+  _compSlideIdx = 0;
 }
