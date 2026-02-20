@@ -301,9 +301,17 @@ class ToryAgentService:
         })
 
         # Launch Claude subprocess in background
-        asyncio.create_task(self._run_subprocess(session_id, nx_user_id))
+        # Small delay lets the client connect its WebSocket before events fire.
+        # Missed events are still available via the catch-up mechanism, but this
+        # reduces the window where the client would need to rely on it.
+        asyncio.create_task(self._delayed_run_subprocess(session_id, nx_user_id))
 
         return session
+
+    async def _delayed_run_subprocess(self, session_id: str, nx_user_id: int) -> None:
+        """Wait briefly for WebSocket clients to connect, then run subprocess."""
+        await asyncio.sleep(0.2)
+        await self._run_subprocess(session_id, nx_user_id)
 
     async def _run_subprocess(self, session_id: str, nx_user_id: int, resume_id: str | None = None, message: str | None = None) -> None:
         """Run the Claude subprocess with semaphore-controlled concurrency."""
