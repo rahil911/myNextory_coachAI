@@ -1,0 +1,835 @@
+/* ==========================================================================
+   CONTENT-360.CSS — Full Lesson Intelligence Dashboard
+   ========================================================================== */
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+
+.c360-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary, #0a0a0f);
+  color: var(--text-primary, #e2e8f0);
+}
+
+.c360-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-color, #1e293b);
+  background: var(--bg-secondary, #0f1117);
+  flex-shrink: 0;
+}
+
+.c360-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.c360-topbar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.c360-topbar-stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.c360-stat-sep {
+  color: var(--text-muted, #475569);
+}
+
+.c360-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.c360-view-toggle {
+  display: flex;
+  border: 1px solid var(--border-color, #1e293b);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.c360-vt-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #94a3b8);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.c360-vt-btn:hover {
+  background: var(--bg-hover, #1e293b);
+}
+
+.c360-vt-btn.active {
+  background: var(--accent, #3b82f6);
+  color: white;
+}
+
+/* ── Main Split ─────────────────────────────────────────────────────────── */
+
+.c360-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.c360-left {
+  width: 420px;
+  min-width: 320px;
+  border-right: 1px solid var(--border-color, #1e293b);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary, #0a0a0f);
+}
+
+.c360-left-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #1e293b);
+  flex-shrink: 0;
+}
+
+.c360-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary, #0f1117);
+  border: 1px solid var(--border-color, #1e293b);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.c360-search-icon {
+  font-size: 14px;
+  opacity: 0.5;
+}
+
+.c360-search-row input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #e2e8f0);
+  font-size: 13px;
+  outline: none;
+}
+
+.c360-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.c360-filters select {
+  background: var(--bg-secondary, #0f1117);
+  border: 1px solid var(--border-color, #1e293b);
+  border-radius: 6px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 11px;
+  padding: 5px 8px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 90px;
+}
+
+.c360-filters select:focus {
+  border-color: var(--accent, #3b82f6);
+  outline: none;
+}
+
+/* ── Lesson List ────────────────────────────────────────────────────────── */
+
+.c360-lesson-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.c360-loading, .c360-error, .c360-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 13px;
+  text-align: center;
+}
+
+.c360-error {
+  color: #ef4444;
+}
+
+/* ── Grid Mode ──────────────────────────────────────────────────────────── */
+
+.c360-grid-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.c360-card {
+  background: var(--bg-secondary, #0f1117);
+  border: 1px solid var(--border-color, #1e293b);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.c360-card:hover {
+  border-color: var(--accent, #3b82f6);
+  background: var(--bg-hover, #131620);
+}
+
+.c360-card.selected {
+  border-color: var(--accent, #3b82f6);
+  background: #3b82f610;
+  box-shadow: 0 0 0 1px var(--accent, #3b82f6) inset;
+}
+
+.c360-card-header {
+  margin-bottom: 6px;
+}
+
+.c360-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  line-height: 1.3;
+}
+
+.c360-card-breadcrumb {
+  font-size: 11px;
+  color: var(--text-muted, #475569);
+  margin-top: 2px;
+}
+
+.c360-card-summary {
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.c360-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.c360-card-quality {
+  font-size: 12px;
+  color: #f59e0b;
+  margin-top: 4px;
+}
+
+.c360-card-untagged {
+  font-size: 11px;
+  color: var(--text-muted, #475569);
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* ── Badges ─────────────────────────────────────────────────────────────── */
+
+.c360-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.c360-badge-diff {
+  font-weight: 600;
+}
+
+.c360-badge-time {
+  background: #6366f120;
+  color: #818cf8;
+  border: 1px solid #6366f140;
+}
+
+.c360-badge-style {
+  background: #8b5cf620;
+  color: #a78bfa;
+  border: 1px solid #8b5cf640;
+}
+
+.c360-badge-slides {
+  background: #06b6d420;
+  color: #22d3ee;
+  border: 1px solid #06b6d440;
+}
+
+.c360-badge-tone {
+  border: 1px solid transparent;
+}
+
+.c360-badge-seniority {
+  background: #14b8a620;
+  color: #2dd4bf;
+  border: 1px solid #14b8a640;
+}
+
+.c360-badge-confidence {
+  background: #22c55e20;
+  color: #4ade80;
+  border: 1px solid #22c55e40;
+}
+
+/* ── Concept Pills ──────────────────────────────────────────────────────── */
+
+.c360-concept-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.c360-pill {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--bg-hover, #1e293b);
+  color: var(--text-secondary, #94a3b8);
+  border: 1px solid var(--border-color, #334155);
+}
+
+.c360-pill-more {
+  background: transparent;
+  color: var(--text-muted, #475569);
+  border-style: dashed;
+}
+
+/* ── List/Table Mode ────────────────────────────────────────────────────── */
+
+.c360-list-mode {
+  padding: 0;
+}
+
+.c360-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.c360-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #475569);
+  border-bottom: 1px solid var(--border-color, #1e293b);
+  background: var(--bg-secondary, #0f1117);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.c360-table-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.c360-table-row:hover {
+  background: var(--bg-hover, #1e293b);
+}
+
+.c360-table-row.selected {
+  background: #3b82f610;
+}
+
+.c360-table-row td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-color, #1e293b10);
+  white-space: nowrap;
+}
+
+.c360-table-name {
+  font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Right Panel: Detail ────────────────────────────────────────────────── */
+
+.c360-right {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-primary, #0a0a0f);
+}
+
+.c360-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted, #475569);
+}
+
+.c360-placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.3;
+}
+
+.c360-placeholder-text {
+  font-size: 14px;
+}
+
+.c360-detail {
+  padding: 24px;
+  max-width: 900px;
+}
+
+/* ── Detail Header ──────────────────────────────────────────────────────── */
+
+.c360-detail-header {
+  margin-bottom: 24px;
+}
+
+.c360-detail-breadcrumb {
+  font-size: 12px;
+  color: var(--text-muted, #475569);
+  margin-bottom: 4px;
+}
+
+.c360-detail-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary, #e2e8f0);
+  margin: 0 0 10px;
+  line-height: 1.3;
+}
+
+.c360-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.c360-no-ai-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f59e0b10;
+  border: 1px solid #f59e0b30;
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.c360-no-ai-icon {
+  font-size: 18px;
+}
+
+/* ── Quality Stars ──────────────────────────────────────────────────────── */
+
+.c360-quality-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.c360-quality-stars {
+  font-size: 16px;
+  color: #f59e0b;
+  letter-spacing: 2px;
+}
+
+.c360-quality-score {
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+
+.c360-section {
+  margin-bottom: 24px;
+}
+
+.c360-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #475569);
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-color, #1e293b);
+}
+
+.c360-summary-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary, #94a3b8);
+  margin: 0;
+}
+
+/* ── Learning Objectives ────────────────────────────────────────────────── */
+
+.c360-objectives-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.c360-objective-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.4;
+}
+
+.c360-check {
+  color: #22c55e;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Trait Tags (Horizontal Bars) ───────────────────────────────────────── */
+
+.c360-trait-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.c360-trait-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.c360-trait-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.c360-trait-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.c360-trait-dir {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.c360-trait-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-secondary, #1e293b);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.c360-trait-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  opacity: 0.8;
+}
+
+.c360-trait-score {
+  font-size: 11px;
+  color: var(--text-secondary, #94a3b8);
+  min-width: 24px;
+  text-align: right;
+}
+
+/* ── Coaching Prompts ───────────────────────────────────────────────────── */
+
+.c360-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.c360-prompt-card {
+  background: var(--bg-secondary, #0f1117);
+  border: 1px solid var(--border-color, #1e293b);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.c360-prompt-card:hover {
+  border-color: var(--accent, #3b82f6);
+}
+
+.c360-prompt-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.c360-prompt-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent, #3b82f6);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.c360-prompt-preview {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.c360-copy-btn {
+  background: var(--bg-hover, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 4px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 10px;
+  padding: 3px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.c360-copy-btn:hover {
+  background: var(--accent, #3b82f6);
+  color: white;
+  border-color: var(--accent, #3b82f6);
+}
+
+.c360-prompt-body {
+  display: none;
+  padding: 0 14px 12px 46px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.c360-prompt-card.expanded .c360-prompt-body {
+  display: block;
+}
+
+.c360-prompt-card.expanded .c360-prompt-preview {
+  display: none;
+}
+
+/* ── Slide Analysis Timeline ────────────────────────────────────────────── */
+
+.c360-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  padding-left: 16px;
+}
+
+.c360-timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--border-color, #1e293b);
+}
+
+.c360-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+  position: relative;
+}
+
+.c360-timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.c360-timeline-item[data-phase="warm-up"] .c360-timeline-dot { background: #f59e0b; }
+.c360-timeline-item[data-phase="core"] .c360-timeline-dot { background: #3b82f6; }
+.c360-timeline-item[data-phase="reflection"] .c360-timeline-dot { background: #8b5cf6; }
+.c360-timeline-item[data-phase="wrap-up"] .c360-timeline-dot { background: #22c55e; }
+.c360-timeline-item .c360-timeline-dot { background: #6b7280; }
+
+.c360-timeline-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.c360-timeline-phase {
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.c360-timeline-type {
+  color: var(--text-muted, #475569);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.c360-timeline-desc {
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* ── Slide Types (fallback) ─────────────────────────────────────────────── */
+
+.c360-slide-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.c360-slide-type-pill {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--bg-secondary, #0f1117);
+  border: 1px solid var(--border-color, #1e293b);
+  color: var(--text-secondary, #94a3b8);
+}
+
+.c360-slide-type-pill strong {
+  color: var(--text-primary, #e2e8f0);
+  margin-left: 4px;
+}
+
+/* ── Pair Recommendations ───────────────────────────────────────────────── */
+
+.c360-pairs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.c360-pair-card {
+  background: var(--bg-secondary, #0f1117);
+  border: 1px solid var(--border-color, #1e293b);
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: all 0.15s;
+}
+
+.c360-pair-card:hover {
+  border-color: var(--accent, #3b82f6);
+  background: var(--bg-hover, #131620);
+}
+
+.c360-pair-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  margin-bottom: 4px;
+}
+
+.c360-pair-reason {
+  font-size: 11px;
+  color: var(--text-muted, #475569);
+  line-height: 1.3;
+}
+
+/* ── Slide Breakdown Grid ───────────────────────────────────────────────── */
+
+.c360-slides-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.c360-slide-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--bg-secondary, #0f1117);
+  border: 1px solid var(--border-color, #1e293b);
+  font-size: 10px;
+}
+
+.c360-slide-num {
+  font-weight: 700;
+  color: var(--accent, #3b82f6);
+}
+
+.c360-slide-type {
+  color: var(--text-secondary, #94a3b8);
+  font-family: var(--font-mono, monospace);
+}
+
+/* ── Scrollbar Styling ──────────────────────────────────────────────────── */
+
+.c360-lesson-list::-webkit-scrollbar,
+.c360-right::-webkit-scrollbar {
+  width: 6px;
+}
+
+.c360-lesson-list::-webkit-scrollbar-track,
+.c360-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.c360-lesson-list::-webkit-scrollbar-thumb,
+.c360-right::-webkit-scrollbar-thumb {
+  background: var(--border-color, #1e293b);
+  border-radius: 3px;
+}
+
+.c360-lesson-list::-webkit-scrollbar-thumb:hover,
+.c360-right::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted, #475569);
+}

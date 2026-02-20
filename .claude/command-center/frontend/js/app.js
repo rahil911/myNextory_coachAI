@@ -20,6 +20,7 @@ import { renderApprovals } from './views/approvals.js';
 import { renderArchitecture } from './views/architecture.js';
 import { renderToryWorkspace } from './views/tory-workspace.js';
 import { renderToryAdmin } from './views/tory-admin.js';
+import { renderContent360 } from './views/content-360.js';
 
 // ── Initialize ─────────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   registerRoute('approvals', renderApprovals);
   registerRoute('tory', renderToryWorkspace);
   registerRoute('tory-admin', renderToryAdmin);
+  registerRoute('content-360', renderContent360);
 
   // 2. Initialize router
   initRouter();
@@ -101,6 +103,8 @@ function setupCommandPalette() {
       shortcut: 'G Y', icon: '\u2728', action: () => { window.location.hash = 'tory'; } },
     { name: 'Go to HR Dashboard', description: 'Tory progress tracking for HR/Admin', category: 'Navigation',
       shortcut: 'G H', icon: '\u25A4', action: () => { window.location.hash = 'tory-admin'; } },
+    { name: 'Go to Content 360', description: 'Full lesson intelligence dashboard', category: 'Navigation',
+      shortcut: 'G C', icon: '\uD83D\uDCDA', action: () => { window.location.hash = 'content-360'; } },
 
     // Actions
     { name: 'New Think Tank Session', description: 'Start brainstorming', category: 'Actions',
