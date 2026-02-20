@@ -285,51 +285,37 @@ async def cancel_agent_session(user_id: int, session_id: str):
 async def get_content_library(
     review_status: str | None = Query(None),
 ):
-    """Content library with tags enriched with lesson name, journey, and trait_tags.
+    """Content library: all lessons grouped by journey, with optional tag metadata.
 
-    Calls MCP tory_list_content_tags, then joins with nx_lessons + nx_journey_details
-    to provide full lesson metadata grouped by journey.
+    Queries lesson_details + nx_lessons + nx_journey_details + lesson_slides directly.
+    LEFT JOINs tory_content_tags for supplementary tag metadata when available.
+    Works even when tory_content_tags has 0 rows.
     """
-    from tory_engine import _tool_list_content_tags
-
-    result = await _call_mcp_tool(
-        _tool_list_content_tags,
-        review_status=review_status,
-    )
-
-    tags = result.get("tags", [])
-    if not tags:
-        return {"journeys": [], "tag_count": 0, "review_stats": {}}
-
-    # Gather lesson IDs from tags
-    lesson_ids = list({int(t["nx_lesson_id"]) for t in tags if t.get("nx_lesson_id")})
-    if not lesson_ids:
-        return {"journeys": [], "tag_count": 0, "review_stats": {}}
-
-    # Fetch lesson + journey metadata and trait_tags in one query
     import subprocess
-    id_list = ",".join(str(i) for i in lesson_ids)
+
     sql = (
-        f"SELECT ct.id AS tag_id, ct.nx_lesson_id, ct.trait_tags, ct.confidence, "
-        f"ct.review_status, ct.difficulty, ct.learning_style, ct.pass_agreement, "
-        f"l.lesson AS lesson_name, l.description AS lesson_desc, "
-        f"jd.id AS journey_detail_id, jd.journey AS journey_name, "
-        f"ct.lesson_detail_id, "
-        f"COALESCE(sc.slide_count, 0) AS slide_count "
-        f"FROM tory_content_tags ct "
-        f"LEFT JOIN nx_lessons l ON ct.nx_lesson_id = l.id "
-        f"LEFT JOIN nx_journey_details jd ON l.nx_journey_detail_id = jd.id "
-        f"LEFT JOIN ("
-        f"  SELECT lesson_detail_id, COUNT(*) AS slide_count "
-        f"  FROM lesson_slides WHERE deleted_at IS NULL "
-        f"  GROUP BY lesson_detail_id"
-        f") sc ON sc.lesson_detail_id = ct.lesson_detail_id "
-        f"WHERE ct.deleted_at IS NULL AND ct.nx_lesson_id IN ({id_list}) "
+        "SELECT ld.id AS lesson_detail_id, ld.nx_lesson_id, "
+        "nl.lesson AS lesson_name, nl.description AS lesson_desc, "
+        "jd.id AS journey_detail_id, jd.journey AS journey_name, "
+        "COALESCE(sc.slide_count, 0) AS slide_count, "
+        "ct.id AS tag_id, ct.trait_tags, ct.confidence, "
+        "ct.review_status, ct.difficulty, ct.learning_style, ct.pass_agreement "
+        "FROM lesson_details ld "
+        "JOIN nx_lessons nl ON ld.nx_lesson_id = nl.id "
+        "JOIN nx_journey_details jd ON nl.nx_journey_detail_id = jd.id "
+        "LEFT JOIN ("
+        "  SELECT lesson_detail_id, COUNT(*) AS slide_count "
+        "  FROM lesson_slides WHERE deleted_at IS NULL "
+        "  GROUP BY lesson_detail_id"
+        ") sc ON sc.lesson_detail_id = ld.id "
+        "LEFT JOIN tory_content_tags ct "
+        "  ON ct.lesson_detail_id = ld.id AND ct.deleted_at IS NULL "
+        "WHERE ld.deleted_at IS NULL AND nl.deleted_at IS NULL "
     )
     valid_statuses = {"pending", "approved", "needs_review", "dismissed", "corrected"}
     if review_status and review_status in valid_statuses:
         sql += f"AND ct.review_status = '{review_status}' "
-    sql += "ORDER BY jd.id, l.id"
+    sql += "GROUP BY ld.id, ct.id ORDER BY jd.id, nl.id"
 
     proc = subprocess.run(
         ["mysql", "baap", "--batch", "--raw", "-e", sql],
@@ -340,7 +326,7 @@ async def get_content_library(
 
     output = proc.stdout.strip()
     if not output:
-        return {"journeys": [], "tag_count": 0, "review_stats": {}}
+        return {"journeys": [], "total_lessons": 0, "tag_count": 0, "review_stats": {}}
 
     lines = output.split("\n")
     headers = lines[0].split("\t")
@@ -349,7 +335,6 @@ async def get_content_library(
         vals = line.split("\t")
         rows.append({col: (vals[i] if i < len(vals) and vals[i] != "NULL" else None) for i, col in enumerate(headers)})
 
-    # Parse trait_tags JSON
     for row in rows:
         if row.get("trait_tags"):
             try:
@@ -358,14 +343,14 @@ async def get_content_library(
                 row["trait_tags"] = []
         else:
             row["trait_tags"] = []
-        # Parse numeric fields
         for field in ("confidence", "difficulty", "pass_agreement"):
             row[field] = int(row[field]) if row.get(field) else None
         row["journey_detail_id"] = int(row["journey_detail_id"]) if row.get("journey_detail_id") else None
         row["lesson_detail_id"] = int(row["lesson_detail_id"]) if row.get("lesson_detail_id") else None
+        row["nx_lesson_id"] = int(row["nx_lesson_id"]) if row.get("nx_lesson_id") else None
         row["slide_count"] = int(row["slide_count"]) if row.get("slide_count") else 0
+        row["tag_id"] = int(row["tag_id"]) if row.get("tag_id") else None
 
-    # Group by journey
     journey_map = {}
     ungrouped = []
     for row in rows:
@@ -389,14 +374,16 @@ async def get_content_library(
             "lessons": ungrouped,
         })
 
-    # Review stats
-    stats = {"pending": 0, "approved": 0, "needs_review": 0, "dismissed": 0, "corrected": 0}
+    stats = {"pending": 0, "approved": 0, "needs_review": 0, "dismissed": 0, "corrected": 0, "untagged": 0}
     for row in rows:
-        s = row.get("review_status", "pending")
-        if s in stats:
-            stats[s] += 1
+        if row.get("tag_id"):
+            s = row.get("review_status", "pending")
+            if s in stats:
+                stats[s] += 1
+        else:
+            stats["untagged"] += 1
 
-    return {"journeys": journeys, "tag_count": len(rows), "review_stats": stats}
+    return {"journeys": journeys, "total_lessons": len(rows), "tag_count": sum(1 for r in rows if r.get("tag_id")), "review_stats": stats}
 
 
 # ── Content tag review ─────────────────────────────────────────────────────
