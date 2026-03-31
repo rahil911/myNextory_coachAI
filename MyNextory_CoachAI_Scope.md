@@ -1,12 +1,13 @@
 # MyNextory CoachAI
 ## Intelligent Coaching & Personalized Learning Platform
 
-**Prepared by:** ThoughtWire
-
-**Prepared for:** MyNextory Leadership
-
-**Date:** March 2026
-**Version:** 1.0 — Scope & Capability Document
+| | |
+|---|---|
+| **Prepared by** | ThoughtWire |
+| **Prepared for** | MyNextory Leadership |
+| **Date** | March 2026 |
+| **Version** | 1.0 — Scope & Capability Document |
+| **Classification** | Confidential |
 
 ---
 
@@ -54,36 +55,25 @@ MyNextory is sitting on exceptionally rich data: personality profiles, behaviora
 
 CoachAI transforms MyNextory from a content delivery platform into an **intelligent coaching partner** that understands each learner as an individual.
 
-### How It Works (Simplified)
+### How It Works
 
-```
-Learner takes EPP Assessment + Answers onboarding questions
-                    |
-                    v
-     AI analyzes personality across 25 dimensions
-     Identifies strengths, growth areas, learning style
-     Generates a human-readable personality narrative
-                    |
-                    v
-     AI has independently analyzed every lesson
-     Tagged each with: traits it builds, difficulty, style,
-     emotional tone, coaching prompts, prerequisites
-                    |
-                    v
-     Matching engine scores every lesson against the learner
-     Factors in: gap-filling, strength-building, pedagogy mode
-     Applies diversity rules (no monotony, balanced mix)
-                    |
-                    v
-     Personalized 20-lesson roadmap generated
-     First 3-5 lessons = low-commitment "discovery" phase
-     Coach reviews, adjusts, locks specific items
-                    |
-                    v
-     System monitors engagement: saves, ratings, completions
-     Triggers reassessment when patterns shift
-     Path re-ranks automatically — coach notified
-```
+> **Step 1 — Learner Assessment**
+> Learner takes EPP Assessment + answers onboarding questions
+>
+> **Step 2 — Profile Intelligence**
+> AI analyzes personality across 25 dimensions. Identifies strengths, growth areas, learning style. Generates a human-readable personality narrative.
+>
+> **Step 3 — Content Intelligence**
+> AI independently analyzes every lesson in the library. Tags each with: traits it builds, difficulty, style, emotional tone, coaching prompts, prerequisites.
+>
+> **Step 4 — Matching Engine**
+> Scores every lesson against the learner's profile. Factors in: gap-filling, strength-building, pedagogy mode. Applies diversity rules for balanced, engaging paths.
+>
+> **Step 5 — Personalized Roadmap**
+> 20-lesson personalized learning path generated. First 3-5 lessons = low-commitment "discovery" phase. Coach reviews, adjusts, and locks specific items.
+>
+> **Step 6 — Continuous Adaptation**
+> System monitors engagement: saves, ratings, completions. Triggers reassessment when patterns shift. Path re-ranks automatically — coach notified.
 
 ### Key Design Principles
 
