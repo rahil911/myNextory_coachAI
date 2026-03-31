@@ -79,8 +79,9 @@ export function renderToryWorkspace(root) {
           </select>
           <select id="tw-filter-status">
             <option value="">All Status</option>
-            <option value="processed">Processed</option>
-            <option value="has_epp" selected>Has EPP</option>
+            <option value="processed" selected>Processed</option>
+            <option value="profiled">Profiled</option>
+            <option value="has_epp">Has EPP</option>
             <option value="no_data">No Data</option>
           </select>
         </div>
@@ -1017,6 +1018,18 @@ function difficultyDots(level) {
 let _pathDraggedCard = null;
 let _pathPreDragState = null;  // snapshot for cancel
 let _impactDebounce = null;
+let _pathExpandedLessonId = null;  // Currently expanded path card
+
+function _buildContentLookup() {
+  const map = new Map();
+  if (!_contentCache) return map;
+  for (const j of (_contentCache.journeys || [])) {
+    for (const l of (j.lessons || [])) {
+      map.set(parseInt(l.nx_lesson_id, 10), l);
+    }
+  }
+  return map;
+}
 
 function renderPathTab(el, detail) {
   el.innerHTML = '';
@@ -1042,6 +1055,18 @@ function renderPathTab(el, detail) {
     `;
     return;
   }
+
+  // Enrich recs with content metadata (async — re-render when ready)
+  if (!_contentCache) {
+    loadContentLibrary().then(() => {
+      const freshEl = document.getElementById('tw-tab-content');
+      if (freshEl && getState().toryWorkspace.activeTab === 'path') {
+        renderPathTab(freshEl, detail);
+      }
+    });
+  }
+  // Build content lookup by lesson_id
+  const contentMap = _buildContentLookup();
 
   // Partition into columns
   const discovery = recs.filter(r => r.is_discovery);
@@ -1072,7 +1097,7 @@ function renderPathTab(el, detail) {
 
     for (let i = 0; i < col.items.length; i++) {
       const rec = col.items[i];
-      cardsContainer.appendChild(buildPathCard(rec, col.id, i));
+      cardsContainer.appendChild(buildPathCard(rec, col.id, i, contentMap));
     }
 
     // Empty slot indicator
@@ -1161,10 +1186,14 @@ function renderPathTab(el, detail) {
   loadAvailablePool(recs);
 }
 
-function buildPathCard(rec, colId, idx) {
+function buildPathCard(rec, colId, idx, contentMap) {
   const isLocked = rec.locked_by_coach;
+  const lessonId = parseInt(rec.nx_lesson_id, 10);
+  const content = contentMap ? contentMap.get(lessonId) : null;
+  const isExpanded = _pathExpandedLessonId === lessonId;
+
   const card = h('div', {
-    class: `tw-path-card${isLocked ? ' locked' : ''}`,
+    class: `tw-path-card${isLocked ? ' locked' : ''}${content ? ' enriched' : ''}${isExpanded ? ' expanded' : ''}`,
     dataset: {
       lessonId: String(rec.nx_lesson_id),
       recId: String(rec.recommendation_id || ''),
@@ -1174,30 +1203,97 @@ function buildPathCard(rec, colId, idx) {
   });
 
   const score = Math.min(Math.round(rec.match_score || 0), 100);
+  const scoreClass = score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low';
   const jColor = journeyColor(rec.journey_id);
   const seqBadge = (colId === 'discovery' || colId === 'main')
     ? `<span class="tw-path-seq">#${rec.sequence || idx + 1}</span>` : '';
   const lockIcon = isLocked ? '<span class="tw-path-lock" title="Locked by coach">&#128274;</span>' : '';
 
-  const lessonName = rec.lesson_name || rec.lesson_title || 'Lesson ' + rec.nx_lesson_id;
+  const lessonName = rec.lesson_name || rec.lesson_title || content?.lesson_name || 'Lesson ' + rec.nx_lesson_id;
+
+  // Enriched badges from content metadata
+  let badgesHtml = '';
+  const difficulty = content?.difficulty || rec.difficulty;
+  const slideCount = parseInt(content?.slide_count, 10) || 0;
+  if (content) {
+    const parts = [];
+    if (difficulty) {
+      const dc = DIFFICULTY_COLORS[difficulty] || '#6b7280';
+      parts.push(`<span class="tw-enrich-badge tw-badge-diff" style="background:${dc}20;color:${dc};border:1px solid ${dc}40">${DIFFICULTY_LABELS[difficulty] || difficulty}</span>`);
+    }
+    if (content.estimated_minutes) parts.push(`<span class="tw-enrich-badge tw-badge-time">${content.estimated_minutes}m</span>`);
+    if (content.learning_style) parts.push(`<span class="tw-enrich-badge tw-badge-style">${STYLE_ICONS[content.learning_style] || ''} ${esc(content.learning_style)}</span>`);
+    if (content.emotional_tone) {
+      const tc = TONE_COLORS[content.emotional_tone] || '#6b7280';
+      parts.push(`<span class="tw-enrich-badge tw-badge-tone" style="background:${tc}20;color:${tc}">${esc(content.emotional_tone)}</span>`);
+    }
+    if (slideCount > 0) parts.push(`<span class="tw-enrich-badge tw-badge-slides">${slideCount} slides</span>`);
+    if (parts.length > 0) badgesHtml = `<div class="tw-content-badges">${parts.join('')}</div>`;
+  } else {
+    badgesHtml = `<div class="tw-path-card-meta">${difficultyDots(difficulty || 3)}</div>`;
+  }
+
+  // Summary
+  const summary = content?.summary;
+  const summaryHtml = summary
+    ? `<div class="tw-content-card-summary">${esc(_truncate(summary, 80))}</div>` : '';
+
+  // Matching traits from path recommendation
+  const traits = rec.matching_traits || [];
+  const traitHtml = traits.length > 0
+    ? `<div class="tw-content-card-traits">${traits.slice(0, 3).map(t =>
+        `<span class="tw-content-trait ${esc(t.direction || t.type || '')}" title="${esc(t.trait)}">${esc(t.trait)}</span>`
+      ).join('')}</div>`
+    : '';
+
+  // View Slides button
+  const ldId = content?.lesson_detail_id;
+  const viewSlidesBtn = slideCount > 0 && ldId
+    ? `<button class="btn btn-ghost btn-xs tw-path-view-slides" data-ldid="${esc(String(ldId))}" data-name="${esc(lessonName)}">View Slides</button>`
+    : '';
+
   card.innerHTML = `
     <div class="tw-path-card-top">
-      <span class="tw-path-journey" style="background:${jColor}20;color:${jColor}">${esc(rec.journey_name || rec.journey_title || 'J' + (rec.journey_id || '?'))}</span>
-      <span class="tw-path-score">Score ${score}</span>
+      <span class="tw-path-journey" style="background:${jColor}20;color:${jColor}">${esc(rec.journey_name || rec.journey_title || content?.journey_name || 'Journey')}</span>
+      <span class="tw-path-score ${scoreClass}">Score ${score}</span>
     </div>
     <div class="tw-path-card-title">${seqBadge}${lockIcon}${esc(lessonName)}</div>
+    ${summaryHtml}
+    ${badgesHtml}
+    ${traitHtml}
     <div class="tw-path-card-bottom">
-      ${difficultyDots(rec.difficulty)}
       <span class="tw-path-source ${rec.source || 'tory'}">${esc(rec.source || 'tory')}</span>
-      <button class="tw-why-btn" title="Ask Curator: why this lesson?" onclick="window._interrogateLesson(${rec.nx_lesson_id}, '${esc(lessonName).replace(/'/g, "\\'")}')">Why?</button>
+      ${viewSlidesBtn}
+      <button class="tw-why-btn" title="Ask Curator: why this lesson?" onclick="event.stopPropagation(); window._interrogateLesson(${rec.nx_lesson_id}, '${esc(lessonName).replace(/'/g, "\\'")}')">Why?</button>
     </div>
+    ${isExpanded ? _buildPathExpandedDetail(rec, content) : ''}
   `;
 
-  // Drag handlers (reuse kanban.js:204-217 pattern)
+  // View Slides click
+  const vsBtn = card.querySelector('.tw-path-view-slides');
+  if (vsBtn) {
+    vsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openSlideViewer(vsBtn.dataset.ldid, vsBtn.dataset.name);
+    });
+  }
+
+  // Click to expand/collapse detail
+  card.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;  // don't expand on button clicks
+    _pathExpandedLessonId = isExpanded ? null : lessonId;
+    // Re-render the path tab into tw-tab-content
+    const tw = getState().toryWorkspace;
+    if (tw.selectedUserDetail) {
+      const el = document.getElementById('tw-tab-content');
+      if (el) renderPathTab(el, tw.selectedUserDetail);
+    }
+  });
+
+  // Drag handlers
   if (!isLocked) {
     card.addEventListener('dragstart', (e) => {
       _pathDraggedCard = card;
-      // Snapshot the board state for cancel
       _pathPreDragState = snapshotBoardState();
       card.classList.add('tw-dragging');
       e.dataTransfer.effectAllowed = 'move';
@@ -1215,6 +1311,58 @@ function buildPathCard(rec, colId, idx) {
   }
 
   return card;
+}
+
+function _buildPathExpandedDetail(rec, content) {
+  const parts = [];
+
+  // Match rationale from AI
+  if (rec.match_rationale) {
+    parts.push(`<div class="tw-path-detail-section">
+      <div class="tw-path-detail-label">AI Rationale</div>
+      <p class="tw-path-detail-text">${esc(rec.match_rationale)}</p>
+    </div>`);
+  }
+
+  // Learning objectives
+  const objectives = Array.isArray(content?.learning_objectives) ? content.learning_objectives : [];
+  if (objectives.length > 0) {
+    parts.push(`<div class="tw-path-detail-section">
+      <div class="tw-path-detail-label">Learning Objectives</div>
+      <ul class="tw-objectives-list">${objectives.map(o =>
+        `<li class="tw-objective-item"><span class="tw-check">\u2713</span> ${esc(String(o))}</li>`
+      ).join('')}</ul>
+    </div>`);
+  }
+
+  // Key concepts
+  const concepts = Array.isArray(content?.key_concepts) ? content.key_concepts : [];
+  if (concepts.length > 0) {
+    parts.push(`<div class="tw-path-detail-section">
+      <div class="tw-path-detail-label">Key Concepts</div>
+      <div class="tw-content-concepts">${concepts.map(c =>
+        `<span class="tw-concept-pill">${esc(String(c))}</span>`
+      ).join('')}</div>
+    </div>`);
+  }
+
+  // Coaching prompts (top 2)
+  const prompts = Array.isArray(content?.coaching_prompts) ? content.coaching_prompts : [];
+  if (prompts.length > 0) {
+    parts.push(`<div class="tw-path-detail-section">
+      <div class="tw-path-detail-label">Coaching Prompts</div>
+      ${prompts.slice(0, 2).map(p => {
+        const text = typeof p === 'string' ? p : (p.prompt || p.text || JSON.stringify(p));
+        return `<div class="tw-path-prompt">${esc(text)}</div>`;
+      }).join('')}
+    </div>`);
+  }
+
+  if (parts.length === 0) {
+    parts.push('<div class="tw-path-detail-empty">No enriched metadata yet. Process content to see more details.</div>');
+  }
+
+  return `<div class="tw-path-expanded-detail">${parts.join('')}</div>`;
 }
 
 // ── Path DnD Helpers (adapted from kanban.js:329-353) ─────────────────────
@@ -1557,8 +1705,11 @@ async function loadAvailablePool(currentRecs) {
       return;
     }
 
+    // Build content map so pool cards get full enrichment too
+    const contentMap = _buildContentLookup();
+
     for (let i = 0; i < poolLessons.length; i++) {
-      poolCol.appendChild(buildPathCard(poolLessons[i], 'pool', i));
+      poolCol.appendChild(buildPathCard(poolLessons[i], 'pool', i, contentMap));
     }
   } catch (err) {
     poolCol.innerHTML = `<div class="tw-path-empty">Failed to load: ${esc(err.message)}</div>`;

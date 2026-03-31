@@ -27,7 +27,7 @@ from services.tory_service import ToryService
 from services.tory_agent_service import ToryAgentService
 from services.azure_blob_service import AzureBlobService
 
-from routes import agents, approvals, beads, attachments, thinktank, commands, dashboard, epics, tory, tory_admin, tory_workspace, websocket, companion, voice
+from routes import agents, approvals, beads, attachments, thinktank, commands, dashboard, epics, tory, tory_admin, tory_workspace, websocket, companion, voice, engine
 
 # ── Service singletons ────────────────────────────────────────────────────────
 
@@ -160,6 +160,7 @@ app.include_router(tory_workspace.router)
 app.include_router(websocket.router)
 app.include_router(companion.router)
 app.include_router(voice.router)
+app.include_router(engine.router)
 
 
 # ── Convenience endpoint ─────────────────────────────────────────────────────

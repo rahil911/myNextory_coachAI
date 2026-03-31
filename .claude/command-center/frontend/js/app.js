@@ -22,6 +22,7 @@ import { renderToryWorkspace } from './views/tory-workspace.js';
 import { renderToryAdmin } from './views/tory-admin.js';
 import { renderContent360 } from './views/content-360.js';
 import { renderCompanionChat } from './views/companion-chat.js';
+import { renderEngine } from './views/engine.js';
 
 // ── Initialize ─────────────────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   registerRoute('tory-admin', renderToryAdmin);
   registerRoute('content-360', renderContent360);
   registerRoute('companion', renderCompanionChat);
+  registerRoute('engine', renderEngine);
 
   // 2. Initialize router
   initRouter();

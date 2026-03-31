@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "built_at": "2026-02-19T22:14:03.343183+00:00",
-    "node_count": 57,
-    "edge_count": 264,
+    "built_at": "2026-02-20T11:21:01.955809+00:00",
+    "node_count": 71,
+    "edge_count": 278,
     "agent_count": 10,
     "module_count": 8,
     "concept_count": 32,
@@ -1016,6 +1016,104 @@
       "id": ".claude/command-center/frontend/css/tory-workspace.css",
       "type": "file",
       "language": "css",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/db/migrations/003_ai_experience_tables.sql",
+      "type": "file",
+      "language": "sql",
+      "module": "platform-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/command-center/frontend/js/views/content-360.js",
+      "type": "file",
+      "language": "javascript",
+      "module": "platform-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/command-center/frontend/css/content-360.css",
+      "type": "file",
+      "language": "css",
+      "module": "platform-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/config.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/shared_vector_manager.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/hybrid_query_engine.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/chat_manager.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/user_backpack_ingestion.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/user_manager_optimized.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/incremental_ingestion.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/avatar_manager.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/mcp/content_processor.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/curator_prompts.py",
+      "type": "file",
+      "language": "python",
+      "module": "tory-module",
+      "locked_by": null
+    },
+    {
+      "id": ".claude/rag/companion_context.py",
+      "type": "file",
+      "language": "python",
       "module": "tory-module",
       "locked_by": null
     }
@@ -2369,6 +2467,90 @@
       "to": ".claude/command-center/frontend/css/tory-workspace.css",
       "type": "OWNS",
       "inferred_from": "CSS for the new Tory Workspace 3-pane layout. Created for bead baap-8rg."
+    },
+    {
+      "from": "platform-agent",
+      "to": ".claude/db/migrations/003_ai_experience_tables.sql",
+      "type": "OWNS",
+      "inferred_from": "Created by platform-agent for bead baap-d49: AI Experience Tables migration (ALTER tory_content_tags + CREATE tory_rag_chunks + CREATE tory_ai_sessions)"
+    },
+    {
+      "from": "platform-agent",
+      "to": ".claude/command-center/frontend/js/views/content-360.js",
+      "type": "OWNS",
+      "inferred_from": "Content 360 lesson intelligence dashboard view, created for bead baap-mto"
+    },
+    {
+      "from": "platform-agent",
+      "to": ".claude/command-center/frontend/css/content-360.css",
+      "type": "OWNS",
+      "inferred_from": "Content 360 CSS styles, created for bead baap-mto"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/config.py",
+      "type": "OWNS",
+      "inferred_from": "RAG system config adapted for MyNextory - core dependency for all RAG modules"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/shared_vector_manager.py",
+      "type": "OWNS",
+      "inferred_from": "Global FAISS index manager for lesson content - part of Tory AI RAG infrastructure"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/hybrid_query_engine.py",
+      "type": "OWNS",
+      "inferred_from": "Core query engine combining shared + personal FAISS with EPP context and scope enforcement"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/chat_manager.py",
+      "type": "OWNS",
+      "inferred_from": "Chat conversation manager with three-tier memory and Claude model routing"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/user_backpack_ingestion.py",
+      "type": "OWNS",
+      "inferred_from": "Per-learner ingestion: backpacks table, EPP scores, onboarding Q&A into personal overlays"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/user_manager_optimized.py",
+      "type": "OWNS",
+      "inferred_from": "User management with nx_user_id-based overlays and MyNextory components"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/incremental_ingestion.py",
+      "type": "OWNS",
+      "inferred_from": "Lesson slide ingestion from lesson_slides table into global FAISS with bloom filter dedup"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/avatar_manager.py",
+      "type": "OWNS",
+      "inferred_from": "HeyGen avatar integration - downloaded unchanged for Phase D future use"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/mcp/content_processor.py",
+      "type": "OWNS",
+      "inferred_from": "Content Processor is a core Tory pipeline component - 15-field extraction for lesson content tagging. Created by tory-agent for bead baap-9q3."
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/curator_prompts.py",
+      "type": "OWNS",
+      "inferred_from": "Curator AI engine - core RAG pipeline for coach-facing AI"
+    },
+    {
+      "from": "tory-agent",
+      "to": ".claude/rag/companion_context.py",
+      "type": "OWNS",
+      "inferred_from": "Companion context builder - learner-facing AI context assembly"
     }
   ]
 }

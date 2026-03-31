@@ -142,7 +142,7 @@ export const api = {
   // Tory Workspace — split-view path builder
   getToryUsers: (params = {}) => {
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString();
-    return request('GET', `/api/tory/users${qs ? '?' + qs : ''}`);
+    return request('GET', `/api/tory/users${qs ? '?' + qs : ''}`, null, 30000);
   },
   getToryUserDetail:    (userId) => request('GET', `/api/tory/users/${userId}/detail`),
   processToryUser:      (userId) => request('POST', `/api/tory/process/${userId}`, {}, 60000),
@@ -237,6 +237,11 @@ export const api = {
   companionActions:  (userId) => request('GET', `/api/companion/actions/${userId}`),
   companionQuiz:     (userId, lessonId) =>
     request('POST', `/api/companion/quiz/${userId}`, lessonId ? { lesson_id: lessonId } : {}),
+
+  // Engine Observability
+  getEngineStats:    () => request('GET', '/api/engine/stats'),
+  getEngineUsers:    () => request('GET', '/api/engine/users'),
+  getEnginePipeline: (userId) => request('GET', `/api/engine/pipeline/${userId}`),
 };
 
 // ── WebSocket Manager ──────────────────────────────────────────────────────
@@ -250,47 +255,31 @@ class WebSocketManager {
     this.maxReconnectDelay = 30000;
     this.reconnectTimer = null;
     this.intentionalClose = false;
+    this._failCount = 0;
+    this._maxFails = 3;
+    this._gavUp = false;
   }
 
   connect() {
+    if (this._gavUp) return;
     this.intentionalClose = false;
-    const primaryUrl = `${WS_BASE_PRIMARY}${this.path}`;
-
-    if (WS_BASE_FALLBACK && !this._triedFallback) {
-      // HTTPS page → try wss:// first, fall back to ws:// after 3s
-      const fallbackUrl = `${WS_BASE_FALLBACK}${this.path}`;
-      this._tryConnect(primaryUrl, () => {
-        console.log(`WebSocket wss:// failed [${this.path}], falling back to ws://`);
-        this._triedFallback = true;
-        this._tryConnect(fallbackUrl, null);
-      });
-    } else {
-      // HTTP page, or already fell back to ws:// → connect directly
-      this._tryConnect(this._triedFallback ? `${WS_BASE_FALLBACK}${this.path}` : primaryUrl, null);
-    }
+    const url = `${WS_BASE_PRIMARY}${this.path}`;
+    this._tryConnect(url);
   }
 
-  _tryConnect(url, fallbackFn) {
+  _tryConnect(url) {
     try {
       this.ws = new WebSocket(url);
     } catch (err) {
-      console.error(`WebSocket connect error [${this.path}]:`, err);
-      if (fallbackFn) { fallbackFn(); return; }
-      this._scheduleReconnect();
+      // On HTTPS pages, ws:// will throw SecurityError — give up immediately
+      console.warn(`WebSocket unavailable [${this.path}]: ${err.message}`);
+      this._giveUp();
       return;
     }
 
-    const fallbackTimer = fallbackFn
-      ? setTimeout(() => {
-          this.ws.onopen = this.ws.onclose = this.ws.onerror = this.ws.onmessage = null;
-          this.ws.close();
-          fallbackFn();
-        }, 3000)
-      : null;
-
     this.ws.onopen = () => {
-      clearTimeout(fallbackTimer);
       console.log(`WebSocket connected: ${url}`);
+      this._failCount = 0;
       this.reconnectDelay = 1000;
       setState({ wsConnected: true });
       this._updateStatusUI(true);
@@ -306,24 +295,27 @@ class WebSocketManager {
     };
 
     this.ws.onclose = (event) => {
-      clearTimeout(fallbackTimer);
-      console.log(`WebSocket closed: ${this.path} (code=${event.code})`);
       setState({ wsConnected: false });
       this._updateStatusUI(false);
       if (!this.intentionalClose) {
-        this._scheduleReconnect();
+        this._failCount++;
+        if (this._failCount >= this._maxFails) {
+          this._giveUp();
+        } else {
+          this._scheduleReconnect();
+        }
       }
     };
 
-    this.ws.onerror = (err) => {
-      clearTimeout(fallbackTimer);
-      console.error(`WebSocket error [${this.path}]:`, err);
-      if (fallbackFn) {
-        this.ws.onopen = this.ws.onclose = this.ws.onerror = this.ws.onmessage = null;
-        this.ws.close();
-        fallbackFn();
-      }
+    this.ws.onerror = () => {
+      // onclose will fire after onerror — handled there
     };
+  }
+
+  _giveUp() {
+    this._gavUp = true;
+    console.log(`WebSocket [${this.path}]: giving up after ${this._failCount} attempts — app works fine without it`);
+    this._updateStatusUI(false);
   }
 
   send(data) {
@@ -340,7 +332,6 @@ class WebSocketManager {
 
   _scheduleReconnect() {
     clearTimeout(this.reconnectTimer);
-    console.log(`WebSocket reconnecting in ${this.reconnectDelay}ms...`);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
       this.connect();

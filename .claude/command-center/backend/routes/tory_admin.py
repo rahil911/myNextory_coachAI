@@ -79,13 +79,14 @@ async def get_cohort(
         "SELECT p.nx_user_id, p.confidence, p.version, p.learning_style, "
         "p.feedback_flags, p.created_at AS profile_created, p.updated_at AS profile_updated, "
         "u.email, o.first_name, o.last_name, "
-        "d.department_title AS department, "
+        "d.department_title AS department, cl.company_name, "
         "cf.coach_id, cf.compat_signal, c.username AS coach_name "
         "FROM tory_learner_profiles p "
         "JOIN nx_users u ON u.id = p.nx_user_id "
         "LEFT JOIN nx_user_onboardings o ON o.nx_user_id = p.nx_user_id "
         "LEFT JOIN employees e ON e.nx_user_id = p.nx_user_id AND e.deleted_at IS NULL "
         "LEFT JOIN departments d ON d.id = e.department_id AND d.deleted_at IS NULL "
+        "LEFT JOIN clients cl ON cl.id = d.client_id AND cl.deleted_at IS NULL "
         "LEFT JOIN tory_coach_flags cf ON cf.nx_user_id = p.nx_user_id AND cf.deleted_at IS NULL "
         "AND cf.id = (SELECT MAX(cf2.id) FROM tory_coach_flags cf2 "
         "  WHERE cf2.nx_user_id = p.nx_user_id AND cf2.deleted_at IS NULL) "
@@ -167,6 +168,7 @@ async def get_cohort(
             "first_name": row.get("first_name"),
             "last_name": row.get("last_name"),
             "department": row.get("department"),
+            "company_name": row.get("company_name"),
             "total_lessons": total_lessons,
             "discovery_count": discovery_count,
             "coach_modified": coach_modified,
@@ -579,12 +581,23 @@ async def get_epp_aggregate():
         parsed = _parse_json(r.get("assesment_result"))
         if not isinstance(parsed, dict):
             continue
-        user_count += 1
-        for dim, val in parsed.items():
+        # EPP scores are nested under 'scores' key with EPP prefix
+        scores = parsed.get("scores", parsed)
+        if not isinstance(scores, dict):
+            continue
+        has_epp = False
+        for dim, val in scores.items():
+            if not dim.startswith("EPP") or dim in ("EPPPercentMatch", "EPPInconsistency", "EPPInvalid"):
+                continue
             score = _safe_float(val)
             if score > 0:
-                dimension_sums[dim] = dimension_sums.get(dim, 0) + score
-                dimension_counts[dim] = dimension_counts.get(dim, 0) + 1
+                # Strip EPP prefix for cleaner labels
+                clean_dim = dim[3:]  # "EPPAchievement" → "Achievement"
+                dimension_sums[clean_dim] = dimension_sums.get(clean_dim, 0) + score
+                dimension_counts[clean_dim] = dimension_counts.get(clean_dim, 0) + 1
+                has_epp = True
+        if has_epp:
+            user_count += 1
 
     averages = {}
     for dim in dimension_sums:
@@ -785,7 +798,8 @@ async def get_companies():
     rows = _mysql_query(
         "SELECT cl.id, cl.company_name, COUNT(DISTINCT e.nx_user_id) AS user_count "
         "FROM clients cl "
-        "LEFT JOIN employees e ON e.client_id = cl.id AND e.deleted_at IS NULL "
+        "LEFT JOIN departments d ON d.client_id = cl.id AND d.deleted_at IS NULL "
+        "LEFT JOIN employees e ON e.department_id = d.id AND e.deleted_at IS NULL "
         "WHERE cl.deleted_at IS NULL "
         "GROUP BY cl.id, cl.company_name "
         "ORDER BY cl.company_name"

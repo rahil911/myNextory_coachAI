@@ -120,9 +120,9 @@ case "$TYPE" in
 #!/bin/bash
 # Prevent nested Claude Code detection
 unset CLAUDECODE
-# Strip API keys so Claude Code uses subscription auth, not API billing.
-# App code (tag_content.py etc.) loads .env directly when it needs API keys.
-unset ANTHROPIC_API_KEY OPENAI_API_KEY 2>/dev/null
+# Export API keys so agent subprocesses (Python scripts) can access them.
+# Claude Code uses subscription auth regardless.
+export ANTHROPIC_API_KEY OPENAI_API_KEY GITHUB_TOKEN 2>/dev/null
 cd "$AGENT_DIR/$NAME"
 PROMPT=\$(cat .agent_prompt.txt)
 SYSPROMPT=\$(cat .agent_sysprompt.txt)

@@ -252,7 +252,7 @@ function getFilteredLearners() {
   const s = getToryAdmin();
   let list = [...(s.cohort?.learners || [])];
 
-  if (s.filterCompany) list = list.filter(l => l.department && l.department.includes(s.filterCompany));
+  if (s.filterCompany) list = list.filter(l => l.company_name === s.filterCompany);
   if (s.filterCoach) list = list.filter(l => l.coach_name === s.filterCoach);
   if (s.filterPhase) list = list.filter(l => l.phase === s.filterPhase);
   if (s.filterSearch) {
@@ -519,14 +519,17 @@ function renderRadarChart(s) {
   const avgs = s.eppAgg?.dimension_averages || {};
   if (!Object.keys(avgs).length) return;
 
-  // Pick 11 key dimensions for readability
+  // Pick key EPP dimensions (backend strips EPP prefix)
   const dims = [
-    'Achievement', 'Motivation', 'Team_Player', 'Decisiveness',
-    'Self_Confidence', 'Empathy', 'Sociability', 'Composure',
-    'Energy', 'Stress_Tolerance', 'Openness_To_Feedback'
+    'Achievement', 'Motivation', 'Competitiveness', 'Managerial',
+    'Assertiveness', 'Extroversion', 'Cooperativeness', 'Patience',
+    'SelfConfidence', 'Conscientiousness', 'Openness',
+    'Stability', 'StressTolerance'
   ];
-  const labels = dims.map(d => d.replace(/_/g, ' '));
-  const values = dims.map(d => avgs[d] || 50);
+  const available = dims.filter(d => avgs[d] != null);
+  if (!available.length) return;
+  const labels = available.map(d => d.replace(/([A-Z])/g, ' $1').trim());
+  const values = available.map(d => avgs[d] || 50);
 
   _charts.radar = new Chart(canvas, {
     type: 'radar',
@@ -1261,13 +1264,16 @@ function renderDrilldownRadar(data) {
   const epp = data.profile?.epp_summary;
   if (!epp || typeof epp !== 'object') return;
 
-  const dims = Object.keys(epp).filter(k => typeof epp[k] === 'number' || !isNaN(parseFloat(epp[k])));
-  if (dims.length < 3) return;
+  // Core personality dimensions (exclude JobFit scores for cleaner radar)
+  const coreDims = Object.keys(epp).filter(k => {
+    if (k.includes('JobFit') || k.includes('_JobFit')) return false;
+    const v = epp[k];
+    return typeof v === 'number' || !isNaN(parseFloat(v));
+  });
+  if (coreDims.length < 3) return;
 
-  // Use max 15 dimensions for readability
-  const selected = dims.slice(0, 15);
-  const labels = selected.map(d => d.replace(/_/g, ' ').replace('JobFit ', ''));
-  const values = selected.map(d => parseFloat(epp[d]) || 50);
+  const labels = coreDims.map(d => d.replace(/([A-Z])/g, ' $1').trim());
+  const values = coreDims.map(d => parseFloat(epp[d]) || 50);
 
   if (_charts.ddRadar) { _charts.ddRadar.destroy(); delete _charts.ddRadar; }
 

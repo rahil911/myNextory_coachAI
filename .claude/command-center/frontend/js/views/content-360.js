@@ -40,6 +40,14 @@ const TONE_COLORS = {
   neutral: '#6b7280',
 };
 
+// Known EPP traits for tag editor
+const EPP_TRAITS = [
+  'Achievement', 'Assertiveness', 'Attention to Detail', 'Cooperativeness',
+  'Creativity', 'Dependability', 'Flexibility', 'Initiative',
+  'Leadership', 'Optimism', 'Patience', 'Persistence',
+  'Self-Confidence', 'Self-Control', 'Social Orientation', 'Stress Tolerance',
+];
+
 // ── Module state ───────────────────────────────────────────────────────────
 
 let _lessons = [];
@@ -410,6 +418,30 @@ function _renderDetail(container, d) {
     <!-- EPP Trait Tags -->
     ${_renderTraitTagsSection(d.trait_tags)}
 
+    <!-- Tag Review Actions -->
+    ${hasAI ? `
+      <div class="c360-section c360-review-section">
+        <div class="c360-review-bar">
+          <span class="c360-review-status">Review: <strong>${_esc(d.review_status || 'pending')}</strong></span>
+          <span class="c360-review-confidence">Confidence: <strong>${Math.round(d.confidence || 0)}%</strong></span>
+          <div class="c360-review-actions">
+            <button class="c360-btn c360-btn-approve" data-tag-id="${d.tag_id}">Approve</button>
+            <button class="c360-btn c360-btn-dismiss" data-tag-id="${d.tag_id}">Dismiss</button>
+            <button class="c360-btn c360-btn-edit-tags" data-tag-id="${d.tag_id}">Edit Tags</button>
+          </div>
+        </div>
+        <div class="c360-tag-editor" id="c360-tag-editor" style="display:none">
+          <div class="c360-tag-editor-title">Edit Tags</div>
+          <div id="c360-tag-editor-rows"></div>
+          <button class="c360-btn c360-btn-add-row" id="c360-tag-add-row">+ Add Tag</button>
+          <div class="c360-tag-editor-actions">
+            <button class="c360-btn c360-btn-cancel" id="c360-tag-cancel">Cancel</button>
+            <button class="c360-btn c360-btn-save" id="c360-tag-save" data-tag-id="${d.tag_id}">Save Tags</button>
+          </div>
+        </div>
+      </div>
+    ` : ''}
+
     <!-- Coaching Prompts -->
     ${_renderCoachingPromptsSection(d.coaching_prompts)}
 
@@ -456,6 +488,124 @@ function _renderDetail(container, d) {
     const name = btn.dataset.name;
     if (ldId) openSlideViewer(ldId, name);
   });
+
+  // ── Tag Review Actions ──
+  _bindTagReviewActions(detailEl, d);
+}
+
+// ── Tag Review Actions ──────────────────────────────────────────────────────
+
+function _bindTagReviewActions(detailEl, d) {
+  if (!d.tag_id) return;
+
+  const traitTags = Array.isArray(d.trait_tags) ? d.trait_tags : [];
+
+  // Approve
+  detailEl.querySelector('.c360-btn-approve')?.addEventListener('click', async (e) => {
+    const tagId = parseInt(e.target.dataset.tagId, 10);
+    if (!tagId) return;
+    try {
+      await api.reviewApprove(tagId, 0, '');
+      showToast('Tag approved', 'success');
+      if (_selectedLessonId) _selectLesson(_selectedLessonId);
+    } catch (err) {
+      showToast(`Approve failed: ${err.message}`, 'error');
+    }
+  });
+
+  // Dismiss
+  detailEl.querySelector('.c360-btn-dismiss')?.addEventListener('click', async (e) => {
+    const tagId = parseInt(e.target.dataset.tagId, 10);
+    if (!tagId) return;
+    try {
+      await api.reviewDismiss(tagId, 0, 'Dismissed via Content 360');
+      showToast('Tag dismissed', 'success');
+      if (_selectedLessonId) _selectLesson(_selectedLessonId);
+    } catch (err) {
+      showToast(`Dismiss failed: ${err.message}`, 'error');
+    }
+  });
+
+  // Edit Tags toggle
+  detailEl.querySelector('.c360-btn-edit-tags')?.addEventListener('click', () => {
+    const editor = detailEl.querySelector('#c360-tag-editor');
+    if (!editor) return;
+    const isVisible = editor.style.display !== 'none';
+    editor.style.display = isVisible ? 'none' : '';
+    if (!isVisible) _populateTagEditor(detailEl, traitTags);
+  });
+
+  // Cancel
+  detailEl.querySelector('#c360-tag-cancel')?.addEventListener('click', () => {
+    const editor = detailEl.querySelector('#c360-tag-editor');
+    if (editor) editor.style.display = 'none';
+  });
+
+  // Add Row
+  detailEl.querySelector('#c360-tag-add-row')?.addEventListener('click', () => {
+    _addTagEditorRow(detailEl.querySelector('#c360-tag-editor-rows'), null);
+  });
+
+  // Save Tags
+  detailEl.querySelector('#c360-tag-save')?.addEventListener('click', async (e) => {
+    const tagId = parseInt(e.target.dataset.tagId, 10);
+    if (!tagId) return;
+    const rows = detailEl.querySelectorAll('.c360-tag-row');
+    const correctedTags = [];
+    rows.forEach(row => {
+      const trait = row.querySelector('.c360-tag-trait')?.value;
+      const score = parseInt(row.querySelector('.c360-tag-relevance')?.value || '50', 10);
+      const direction = row.querySelector('.c360-tag-direction')?.value || 'builds';
+      if (trait) correctedTags.push({ trait, relevance_score: score, direction });
+    });
+    try {
+      await api.reviewCorrect(tagId, 0, correctedTags);
+      showToast('Tags updated', 'success');
+      if (_selectedLessonId) _selectLesson(_selectedLessonId);
+    } catch (err) {
+      showToast(`Tag correction failed: ${err.message}`, 'error');
+    }
+  });
+}
+
+function _populateTagEditor(container, existingTags) {
+  const rows = container.querySelector('#c360-tag-editor-rows');
+  if (!rows) return;
+  rows.innerHTML = '';
+  if (!existingTags || existingTags.length === 0) {
+    _addTagEditorRow(rows, null);
+  } else {
+    for (const tag of existingTags) {
+      _addTagEditorRow(rows, tag);
+    }
+  }
+}
+
+function _addTagEditorRow(container, tag) {
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'c360-tag-row';
+  row.innerHTML = `
+    <select class="c360-tag-trait">
+      <option value="">Select trait...</option>
+      ${EPP_TRAITS.map(t => `<option value="${_esc(t)}" ${tag && tag.trait === t ? 'selected' : ''}>${_esc(t)}</option>`).join('')}
+    </select>
+    <input type="range" class="c360-tag-relevance" min="0" max="100" value="${tag ? tag.relevance_score || 50 : 50}">
+    <span class="c360-tag-relevance-val">${tag ? tag.relevance_score || 50 : 50}</span>
+    <select class="c360-tag-direction">
+      <option value="builds" ${tag && tag.direction === 'builds' ? 'selected' : ''}>builds</option>
+      <option value="leverages" ${tag && tag.direction === 'leverages' ? 'selected' : ''}>leverages</option>
+      <option value="challenges" ${tag && tag.direction === 'challenges' ? 'selected' : ''}>challenges</option>
+    </select>
+    <button class="c360-tag-remove" title="Remove">&times;</button>
+  `;
+
+  const range = row.querySelector('.c360-tag-relevance');
+  const rangeVal = row.querySelector('.c360-tag-relevance-val');
+  range.addEventListener('input', () => { rangeVal.textContent = range.value; });
+  row.querySelector('.c360-tag-remove').addEventListener('click', () => row.remove());
+
+  container.appendChild(row);
 }
 
 // ── Section Renderers ──────────────────────────────────────────────────────
@@ -556,25 +706,42 @@ function _renderCoachingPromptsSection(prompts) {
 function _renderSlideAnalysisSection(analysis, slides) {
   if (!analysis && (!slides || slides.length === 0)) return '';
 
-  // If we have structured slide_analysis, render timeline
+  // If we have structured slide_analysis, group by phase and show summary
   if (analysis && Array.isArray(analysis) && analysis.length > 0) {
+    // Group consecutive same-phase slides into segments
+    const segments = [];
+    let current = null;
+    for (const s of analysis) {
+      const phase = s.phase || s.role || 'core';
+      if (current && current.phase === phase) {
+        current.count++;
+        if (s.description) current.descriptions.push(s.description);
+        current.importance = Math.max(current.importance, s.importance || s.importance_score || 5);
+      } else {
+        current = { phase, count: 1, descriptions: s.description ? [s.description] : [], importance: s.importance || s.importance_score || 5, type: s.type || s.slide_type || '' };
+        segments.push(current);
+      }
+    }
+
+    const PHASE_COLORS = { intro: '#3b82f6', core: '#8b5cf6', exercise: '#f59e0b', reflection: '#ec4899', summary: '#22c55e', 'warm-up': '#3b82f6', 'wrap-up': '#22c55e' };
+
     return `
       <div class="c360-section">
-        <h3 class="c360-section-title">Slide Analysis Timeline</h3>
-        <div class="c360-timeline">
-          ${analysis.map((s, i) => {
-            const phase = s.phase || s.role || 'core';
-            const importance = s.importance || s.importance_score || 5;
-            return `
-              <div class="c360-timeline-item" data-phase="${phase}">
-                <div class="c360-timeline-dot" style="transform:scale(${0.6 + (importance / 10) * 0.8})"></div>
-                <div class="c360-timeline-content">
-                  <span class="c360-timeline-phase">${_esc(phase)}</span>
-                  <span class="c360-timeline-type">${_esc(s.type || s.slide_type || '')}</span>
-                  ${s.description ? `<span class="c360-timeline-desc">${_esc(_truncate(s.description, 60))}</span>` : ''}
-                </div>
-              </div>
-            `;
+        <h3 class="c360-section-title">Slide Flow (${analysis.length} slides)</h3>
+        <div class="c360-slide-flow">
+          ${segments.map(seg => {
+            const color = PHASE_COLORS[seg.phase] || '#6b7280';
+            const width = Math.max(20, (seg.count / analysis.length) * 100);
+            return `<div class="c360-flow-segment" style="flex:${seg.count};background:${color}20;border:1px solid ${color}40" title="${seg.phase}: ${seg.count} slide${seg.count > 1 ? 's' : ''}">
+              <span class="c360-flow-label" style="color:${color}">${_esc(seg.phase)}</span>
+              <span class="c360-flow-count">${seg.count}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="c360-phase-legend">
+          ${[...new Set(segments.map(s => s.phase))].map(phase => {
+            const color = PHASE_COLORS[phase] || '#6b7280';
+            return `<span class="c360-legend-item"><span class="c360-legend-dot" style="background:${color}"></span>${_esc(phase)}</span>`;
           }).join('')}
         </div>
       </div>
